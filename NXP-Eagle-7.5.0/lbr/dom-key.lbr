@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE eagle SYSTEM "eagle.dtd">
+<eagle version="7.3.2">
+<drawing>
+<settings>
+<setting alwaysvectorfont="no"/>
+<setting verticaltext="up"/>
+</settings>
+<grid distance="50" unitdist="mil" unit="mil" style="lines" multiple="2" display="yes" altdistance="10" altunitdist="mil" altunit="mil"/>
+<layers>
+<layer number="1" name="Top" color="4" fill="11" visible="yes" active="yes"/>
+<layer number="2" name="Route2" color="1" fill="3" visible="no" active="yes"/>
+<layer number="3" name="Route3" color="4" fill="3" visible="no" active="yes"/>
+<layer number="4" name="Route4" color="1" fill="4" visible="no" active="yes"/>
+<layer number="5" name="Route5" color="4" fill="4" visible="no" active="yes"/>
+<layer number="6" name="Route6" color="1" fill="8" visible="no" active="yes"/>
+<layer number="7" name="Route7" color="4" fill="8" visible="no" active="yes"/>
+<layer number="8" name="Route8" color="1" fill="2" visible="no" active="yes"/>
+<layer number="9" name="Route9" color="4" fill="2" visible="no" active="yes"/>
+<layer number="10" name="Route10" color="1" fill="7" visible="no" active="yes"/>
+<layer number="11" name="Route11" color="4" fill="7" visible="no" active="yes"/>
+<layer number="12" name="Route12" color="1" fill="5" visible="no" active="yes"/>
+<layer number="13" name="Route13" color="4" fill="5" visible="no" active="yes"/>
+<layer number="14" name="Route14" color="1" fill="6" visible="no" active="yes"/>
+<layer number="15" name="Route15" color="4" fill="6" visible="no" active="yes"/>
+<layer number="16" name="Bottom" color="3" fill="1" visible="no" active="yes"/>
+<layer number="17" name="Pads" color="2" fill="1" visible="no" active="yes"/>
+<layer number="18" name="Vias" color="2" fill="1" visible="no" active="yes"/>
+<layer number="19" name="Unrouted" color="6" fill="1" visible="no" active="yes"/>
+<layer number="20" name="Dimension" color="15" fill="1" visible="no" active="yes"/>
+<layer number="21" name="tPlace" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="22" name="bPlace" color="7" fill="1" visible="no" active="yes"/>
+<layer number="23" name="tOrigins" color="15" fill="1" visible="no" active="yes"/>
+<layer number="24" name="bOrigins" color="15" fill="1" visible="no" active="yes"/>
+<layer number="25" name="tNames" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="26" name="bNames" color="7" fill="1" visible="no" active="yes"/>
+<layer number="27" name="tValues" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="28" name="bValues" color="7" fill="1" visible="no" active="yes"/>
+<layer number="29" name="tStop" color="7" fill="3" visible="yes" active="yes"/>
+<layer number="30" name="bStop" color="7" fill="6" visible="no" active="yes"/>
+<layer number="31" name="tCream" color="7" fill="4" visible="yes" active="yes"/>
+<layer number="32" name="bCream" color="7" fill="5" visible="no" active="yes"/>
+<layer number="33" name="tFinish" color="6" fill="3" visible="no" active="yes"/>
+<layer number="34" name="bFinish" color="6" fill="6" visible="no" active="yes"/>
+<layer number="35" name="tGlue" color="7" fill="4" visible="no" active="yes"/>
+<layer number="36" name="bGlue" color="7" fill="5" visible="no" active="yes"/>
+<layer number="37" name="tTest" color="7" fill="1" visible="no" active="yes"/>
+<layer number="38" name="bTest" color="7" fill="1" visible="no" active="yes"/>
+<layer number="39" name="tKeepout" color="4" fill="11" visible="no" active="yes"/>
+<layer number="40" name="bKeepout" color="1" fill="11" visible="no" active="yes"/>
+<layer number="41" name="tRestrict" color="4" fill="10" visible="no" active="yes"/>
+<layer number="42" name="bRestrict" color="1" fill="10" visible="no" active="yes"/>
+<layer number="43" name="vRestrict" color="2" fill="10" visible="no" active="yes"/>
+<layer number="44" name="Drills" color="7" fill="1" visible="no" active="yes"/>
+<layer number="45" name="Holes" color="7" fill="1" visible="no" active="yes"/>
+<layer number="46" name="Milling" color="3" fill="1" visible="no" active="yes"/>
+<layer number="47" name="Measures" color="7" fill="1" visible="no" active="yes"/>
+<layer number="48" name="Document" color="7" fill="1" visible="no" active="yes"/>
+<layer number="49" name="Reference" color="7" fill="1" visible="no" active="yes"/>
+<layer number="51" name="tDocu" color="7" fill="1" visible="no" active="yes"/>
+<layer number="52" name="bDocu" color="7" fill="1" visible="no" active="yes"/>
+<layer number="91" name="Nets" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="92" name="Busses" color="1" fill="1" visible="yes" active="yes"/>
+<layer number="93" name="Pins" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="94" name="Symbols" color="4" fill="1" visible="yes" active="yes"/>
+<layer number="95" name="Names" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="96" name="Values" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="97" name="Info" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="98" name="Guide" color="6" fill="1" visible="yes" active="yes"/>
+</layers>
+<library>
+<description>Beispiel eines DOM-Key (Carbon-Key)&lt;p&gt;
+alf@cadsoft.de</description>
+<packages>
+<package name="DOM-KEY">
+<description>PCB-DOM-Key</description>
+<circle x="-2.3" y="2.3" radius="1.5" width="0" layer="51"/>
+<circle x="2.3" y="2.3" radius="1.5" width="0" layer="51"/>
+<smd name="1" x="0" y="2.8575" dx="0.6096" dy="0.2286" layer="1" stop="no" cream="no"/>
+<smd name="2" x="0" y="-2.8575" dx="0.6096" dy="0.2286" layer="1" stop="no" cream="no"/>
+<rectangle x1="-3.81" y1="-3.81" x2="3.81" y2="3.81" layer="29"/>
+<wire x1="0" y1="2.8575" x2="-1.4288" y2="2.8575" width="0.4" layer="1"/>
+<wire x1="-1.4288" y1="2.8575" x2="-3.3338" y2="2.8575" width="0.4" layer="1"/>
+<wire x1="-3.3338" y1="2.8575" x2="-3.3338" y2="-1.905" width="0.4" layer="1"/>
+<wire x1="-1.4288" y1="2.8575" x2="-1.4288" y2="-1.905" width="0.4" layer="1"/>
+<wire x1="2.3812" y1="2.8575" x2="0.4762" y2="2.8575" width="0.4" layer="1"/>
+<wire x1="0.4762" y1="2.8575" x2="0" y2="2.8575" width="0.4" layer="1"/>
+<wire x1="0.4762" y1="2.8575" x2="0.4762" y2="-1.905" width="0.4" layer="1"/>
+<wire x1="2.3812" y1="2.8575" x2="2.3812" y2="-1.905" width="0.4" layer="1"/>
+<wire x1="0" y1="-2.8575" x2="1.4287" y2="-2.8575" width="0.4" layer="1"/>
+<wire x1="1.4287" y1="-2.8575" x2="3.3337" y2="-2.8575" width="0.4" layer="1"/>
+<wire x1="3.3337" y1="-2.8575" x2="3.3337" y2="1.905" width="0.4" layer="1"/>
+<wire x1="1.4287" y1="-2.8575" x2="1.4287" y2="1.905" width="0.4" layer="1"/>
+<wire x1="-2.3813" y1="-2.8575" x2="-0.4763" y2="-2.8575" width="0.4" layer="1"/>
+<wire x1="-0.4763" y1="-2.8575" x2="0" y2="-2.8575" width="0.4" layer="1"/>
+<wire x1="-2.3813" y1="-2.8575" x2="-2.3813" y2="1.905" width="0.4" layer="1"/>
+<wire x1="-0.4763" y1="-2.8575" x2="-0.4763" y2="1.905" width="0.4" layer="1"/>
+<circle x="2.3" y="-2.3" radius="1.5" width="0" layer="51"/>
+<circle x="-2.3" y="-2.3" radius="1.5" width="0" layer="51"/>
+<text x="-2.8575" y="4.1275" size="1.27" layer="25">&gt;NAME</text>
+</package>
+<package name="FINGERPAD-2A">
+<description>Source:  http://www.polycase.com/uploads/14531129045666549.pdf</description>
+<wire x1="-4.13026875" y1="0.04089375" x2="7.15640625" y2="0.04089375" width="1.1" layer="1"/>
+<wire x1="7.15640625" y1="0.04089375" x2="5.43886875" y2="4.743675" width="1.1" layer="1" curve="38.036659"/>
+<wire x1="5.43886875" y1="4.743675" x2="1.51306875" y2="7.15640625" width="1.1" layer="1" curve="34.963953"/>
+<wire x1="-0.77698125" y1="4.743675" x2="5.43886875" y2="4.743675" width="1.1" layer="1"/>
+<wire x1="-0.77698125" y1="-4.70278125" x2="5.43886875" y2="-4.70278125" width="1.1" layer="1"/>
+<wire x1="5.43886875" y1="-4.70278125" x2="1.51306875" y2="-7.1155125" width="1.1" layer="1" curve="-32.434113"/>
+<wire x1="5.43886875" y1="-4.70278125" x2="7.15640625" y2="0.04089375" width="1.1" layer="1" curve="37.941679"/>
+<wire x1="3.80311875" y1="2.33094375" x2="-7.1155125" y2="2.33094375" width="1.1" layer="1"/>
+<wire x1="-7.1155125" y1="2.33094375" x2="-7.48355625" y2="0" width="1.1" layer="1" curve="17.469114"/>
+<wire x1="-7.48355625" y1="0" x2="-7.1155125" y2="-2.29005" width="1.1" layer="1" curve="17.360839"/>
+<wire x1="-7.1155125" y1="-2.29005" x2="3.80311875" y2="-2.29005" width="1.1" layer="1"/>
+<wire x1="-7.1155125" y1="-2.29005" x2="-1.8811125" y2="-7.1155125" width="1.1" layer="1" curve="57.102773"/>
+<wire x1="-7.1155125" y1="2.33094375" x2="-1.8811125" y2="7.15640625" width="1.1" layer="1" curve="-57.059852"/>
+<smd name="1" x="-7.48355625" y="0" dx="0.5" dy="0.5" layer="1" stop="no" cream="no"/>
+<smd name="2" x="7.15640625" y="0.04089375" dx="0.5" dy="0.5" layer="1" stop="no" cream="no"/>
+</package>
+<package name="FINGERPAD-2B">
+<description>Source:  http://www.polycase.com/uploads/14531129045666549.pdf</description>
+<wire x1="-2.560359375" y1="0" x2="5.486484375" y2="0" width="1.1" layer="1"/>
+<wire x1="5.486484375" y1="0" x2="5.486484375" y2="4.836234375" width="1.1" layer="1"/>
+<wire x1="5.486484375" y1="4.836234375" x2="5.486484375" y2="7.355953125" width="1.1" layer="1"/>
+<wire x1="-2.601" y1="4.836234375" x2="5.486484375" y2="4.836234375" width="1.1" layer="1"/>
+<wire x1="5.486484375" y1="0" x2="5.486484375" y2="-4.836234375" width="1.1" layer="1"/>
+<wire x1="5.486484375" y1="-4.836234375" x2="-2.601" y2="-4.836234375" width="1.1" layer="1"/>
+<wire x1="5.486484375" y1="-4.836234375" x2="5.486484375" y2="-7.355953125" width="1.1" layer="1"/>
+<wire x1="2.68228125" y1="-7.355953125" x2="-5.3645625" y2="-7.355953125" width="1.1" layer="1"/>
+<wire x1="-5.3645625" y1="-7.355953125" x2="-5.3645625" y2="-2.560359375" width="1.1" layer="1"/>
+<wire x1="-5.3645625" y1="-2.560359375" x2="-5.3645625" y2="0" width="1.1" layer="1"/>
+<wire x1="-5.3645625" y1="0" x2="-5.3645625" y2="2.560359375" width="1.1" layer="1"/>
+<wire x1="-5.3645625" y1="2.560359375" x2="-5.3645625" y2="7.355953125" width="1.1" layer="1"/>
+<wire x1="-5.3645625" y1="7.355953125" x2="2.68228125" y2="7.355953125" width="1.1" layer="1"/>
+<wire x1="-5.3645625" y1="2.560359375" x2="2.68228125" y2="2.560359375" width="1.1" layer="1"/>
+<wire x1="-5.3645625" y1="-2.560359375" x2="2.68228125" y2="-2.560359375" width="1.1" layer="1"/>
+<text x="-2.641640625" y="8.575171875" size="1.27" layer="25" font="vector" ratio="6">&gt;NAME</text>
+<smd name="1" x="-5.3645625" y="0" dx="0.5" dy="0.5" layer="1" stop="no" cream="no"/>
+<smd name="2" x="5.486484375" y="0" dx="0.5" dy="0.5" layer="1" stop="no" cream="no"/>
+</package>
+<package name="FINGERPAD-3">
+<description>Source:  http://www.polycase.com/uploads/14531129045666549.pdf</description>
+<polygon width="0.2" layer="1">
+<vertex x="-7.73313125" y="0.364390625"/>
+<vertex x="-3.562909375" y="0.364390625"/>
+<vertex x="-3.562909375" y="4.7775375"/>
+<vertex x="-2.38876875" y="4.7775375"/>
+<vertex x="-2.38876875" y="-3.643884375"/>
+<vertex x="-0.48585" y="-3.643884375"/>
+<vertex x="-0.48585" y="4.7775375"/>
+<vertex x="3.603396875" y="4.7775375"/>
+<vertex x="3.603396875" y="0.364390625"/>
+<vertex x="7.73313125" y="0.364390625"/>
+<vertex x="7.73313125" y="-0.404875"/>
+<vertex x="3.603396875" y="-0.404875"/>
+<vertex x="3.603396875" y="-4.8585125"/>
+<vertex x="2.42925625" y="-4.8585125"/>
+<vertex x="2.42925625" y="3.603396875"/>
+<vertex x="0.485853125" y="3.603396875"/>
+<vertex x="0.485853125" y="-4.8585125"/>
+<vertex x="-3.603396875" y="-4.8585125"/>
+<vertex x="-3.603396875" y="-0.404875"/>
+<vertex x="-7.73313125" y="-0.404875"/>
+</polygon>
+<polygon width="0.2" layer="1">
+<vertex x="-5.5468" y="1.336090625"/>
+<vertex x="-4.332171875" y="1.336090625"/>
+<vertex x="-4.332171875" y="5.789728125"/>
+<vertex x="-1.821940625" y="5.789728125"/>
+<vertex x="-1.821940625" y="-2.67218125"/>
+<vertex x="-1.052678125" y="-2.67218125"/>
+<vertex x="-1.052678125" y="5.789728125"/>
+<vertex x="4.3726625" y="5.789728125"/>
+<vertex x="4.3726625" y="1.336090625"/>
+<vertex x="5.546803125" y="1.336090625"/>
+<vertex x="5.546803125" y="5.3443625" curve="91.842494"/>
+<vertex x="-5.5468" y="5.3443625"/>
+</polygon>
+<polygon width="0.2" layer="1">
+<vertex x="5.5872875" y="-1.417065625"/>
+<vertex x="4.372659375" y="-1.417065625"/>
+<vertex x="4.372659375" y="-5.870703125"/>
+<vertex x="1.862428125" y="-5.870703125"/>
+<vertex x="1.862428125" y="2.59120625"/>
+<vertex x="1.093165625" y="2.59120625"/>
+<vertex x="1.093165625" y="-5.870703125"/>
+<vertex x="-4.332175" y="-5.870703125"/>
+<vertex x="-4.332175" y="-1.417065625"/>
+<vertex x="-5.506315625" y="-1.417065625"/>
+<vertex x="-5.506315625" y="-5.4253375" curve="91.842494"/>
+<vertex x="5.5872875" y="-5.4253375"/>
+</polygon>
+<polygon width="0.2" layer="1">
+<vertex x="-6.518503125" y="-1.376578125"/>
+<vertex x="-7.65215625" y="-1.376578125" curve="20.528744"/>
+<vertex x="-6.518503125" y="-4.170221875"/>
+</polygon>
+<polygon width="0.2" layer="1">
+<vertex x="6.558990625" y="1.336090625"/>
+<vertex x="7.69264375" y="1.336090625" curve="20.528744"/>
+<vertex x="6.558990625" y="4.129734375"/>
+</polygon>
+<polygon width="0.2" layer="1">
+<vertex x="6.558990625" y="-1.376578125"/>
+<vertex x="7.69264375" y="-1.376578125" curve="-20.528744"/>
+<vertex x="6.558990625" y="-4.170221875"/>
+</polygon>
+<polygon width="0.2" layer="1">
+<vertex x="-6.518503125" y="1.336090625"/>
+<vertex x="-7.65215625" y="1.336090625" curve="-20.528744"/>
+<vertex x="-6.518503125" y="4.129734375"/>
+</polygon>
+<smd name="2A" x="-7.57118125" y="0" dx="0.5" dy="0.5" layer="1" stop="no" cream="no"/>
+<smd name="2B" x="7.57118125" y="0" dx="0.5" dy="0.5" layer="1" stop="no" cream="no"/>
+<smd name="1" x="0" y="7.49020625" dx="0.5" dy="0.5" layer="1" stop="no" cream="no"/>
+<smd name="3" x="0.0404875" y="-7.57118125" dx="0.5" dy="0.5" layer="1" stop="no" cream="no"/>
+</package>
+</packages>
+<symbols>
+<symbol name="DOM-KEY">
+<wire x1="-2.54" y1="1.524" x2="-2.54" y2="0.508" width="0.254" layer="94"/>
+<wire x1="-2.54" y1="0.508" x2="-0.508" y2="0.508" width="0.254" layer="94"/>
+<wire x1="-2.54" y1="1.524" x2="-0.508" y2="1.524" width="0.254" layer="94"/>
+<text x="-2.286" y="3.81" size="0.8128" layer="95">&gt;NAME</text>
+<pin name="2" x="0" y="0" visible="off" length="point" direction="pas" swaplevel="1" rot="R180"/>
+<pin name="1" x="-2.54" y="2.54" visible="off" length="point" direction="pas" swaplevel="1"/>
+<wire x1="-2.032" y1="1.016" x2="0" y2="1.016" width="0.254" layer="94"/>
+<wire x1="0" y1="2.032" x2="0" y2="1.016" width="0.254" layer="94"/>
+<wire x1="0" y1="1.016" x2="0" y2="0" width="0.254" layer="94"/>
+<wire x1="-2.54" y1="1.524" x2="-2.54" y2="2.54" width="0.254" layer="94"/>
+<wire x1="-2.54" y1="2.54" x2="-0.508" y2="2.54" width="0.254" layer="94"/>
+<wire x1="-2.032" y1="2.032" x2="0" y2="2.032" width="0.254" layer="94"/>
+<wire x1="-2.032" y1="0" x2="0" y2="0" width="0.254" layer="94"/>
+<circle x="-2.54" y="2.54" radius="0.283978125" width="0" layer="94"/>
+<circle x="0" y="0" radius="0.283978125" width="0" layer="94"/>
+</symbol>
+<symbol name="FINGER">
+<pin name="1" x="-5.08" y="0" visible="off" length="short" direction="pas"/>
+<pin name="2" x="5.08" y="0" visible="off" length="short" direction="pas" rot="R180"/>
+<wire x1="-2.54" y1="0" x2="2.54" y2="1.27" width="0.254" layer="94"/>
+<wire x1="2.54" y1="0" x2="2.54" y2="0.254" width="0.254" layer="94"/>
+<text x="-2.54" y="2.54" size="1.778" layer="95" ratio="6">&gt;NAME</text>
+</symbol>
+<symbol name="FINGER-3">
+<pin name="1" x="-5.08" y="0" visible="off" length="short" direction="pas"/>
+<pin name="2" x="0" y="-2.54" visible="off" length="short" direction="pas" rot="R90"/>
+<wire x1="-2.54" y1="1.016" x2="0" y2="1.016" width="0.254" layer="94"/>
+<wire x1="0" y1="1.016" x2="2.54" y2="1.016" width="0.254" layer="94"/>
+<wire x1="2.54" y1="0" x2="2.54" y2="0.254" width="0.254" layer="94"/>
+<text x="-2.54" y="5.08" size="1.778" layer="95" ratio="6">&gt;NAME</text>
+<pin name="3" x="5.08" y="0" visible="off" length="short" direction="pas" rot="R180"/>
+<wire x1="0" y1="0" x2="0" y2="0.254" width="0.254" layer="94"/>
+<wire x1="-2.54" y1="0" x2="-2.54" y2="0.254" width="0.254" layer="94"/>
+<wire x1="0" y1="1.016" x2="0" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="-1.27" y1="2.54" x2="0" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="1.27" y1="2.54" x2="0" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="-0.508" y1="1.778" x2="0" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="0" y1="2.54" x2="0.508" y2="1.778" width="0.1524" layer="94"/>
+</symbol>
+</symbols>
+<devicesets>
+<deviceset name="DOM-KEY" prefix="DOMKEY">
+<description>PCB-DOM-Key</description>
+<gates>
+<gate name="G$1" symbol="DOM-KEY" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="DOM-KEY">
+<connects>
+<connect gate="G$1" pin="1" pad="1"/>
+<connect gate="G$1" pin="2" pad="2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="FINGERPAD-3" prefix="FINGERPAD">
+<description>Source:  http://www.polycase.com/uploads/14531129045666549.pdf</description>
+<gates>
+<gate name="G$1" symbol="FINGER-3" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="FINGERPAD-3">
+<connects>
+<connect gate="G$1" pin="1" pad="1"/>
+<connect gate="G$1" pin="2" pad="2A 2B" route="any"/>
+<connect gate="G$1" pin="3" pad="3"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="FINGERPAD-2A" prefix="FINGERPAD">
+<description>Source:  http://www.polycase.com/uploads/14531129045666549.pdf</description>
+<gates>
+<gate name="G$1" symbol="FINGER" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="FINGERPAD-2A">
+<connects>
+<connect gate="G$1" pin="1" pad="1"/>
+<connect gate="G$1" pin="2" pad="2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="FINGERPAD-2B" prefix="FINGERPAD">
+<description>Source:  http://www.polycase.com/uploads/14531129045666549.pdf</description>
+<gates>
+<gate name="G$1" symbol="FINGER" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="FINGERPAD-2B">
+<connects>
+<connect gate="G$1" pin="1" pad="1"/>
+<connect gate="G$1" pin="2" pad="2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+</devicesets>
+</library>
+</drawing>
+</eagle>

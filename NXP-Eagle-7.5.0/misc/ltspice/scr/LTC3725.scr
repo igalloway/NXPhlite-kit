@@ -1,0 +1,18 @@
+ Edit 'LTC3725.dev' ;
+ Prefix 'IC' ;
+ Description 'Single-Switch Forward Controller and Gate Driver' ;
+ Value off ;
+ Add LTC3725 'G$1' next 0 (0 0) ;
+ Package 'MSOP10(MSE)' 'MSE' ;
+ Technology '' ;
+ Connect 'G$1.VSLMT' '9' ;
+ Connect 'G$1.PGND' '6' ;
+ Connect 'G$1.NDRV' '3' ;
+ Connect 'G$1.SSFLT' '2' ;
+ Connect 'G$1.VCC' '8' ;
+ Connect 'G$1.GND' '11' ;
+ Connect 'G$1.FS/IN-' '5' ;
+ Connect 'G$1.UVLO' '1' ;
+ Connect 'G$1.IS' '10' ;
+ Connect 'G$1.GATE' '7' ;
+ Connect 'G$1.FB/IN+' '4' ;

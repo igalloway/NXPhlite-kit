@@ -1,0 +1,13 @@
+ Edit 'LTC3801B.dev' ;
+ Prefix 'IC' ;
+ Description 'Micropower Constant Frequency Step-Down DC/DC Controllers in ThinSOT' ;
+ Value off ;
+ Add LTC3801B 'G$1' next 0 (0 0) ;
+ Package 'SOT6(S6)' 'S6' ;
+ Technology '' ;
+ Connect 'G$1.ITH/RUN' '1' ;
+ Connect 'G$1.VIN' '5' ;
+ Connect 'G$1.GND' '2' ;
+ Connect 'G$1.FB' '3' ;
+ Connect 'G$1.SENSE-' '4' ;
+ Connect 'G$1.PGATE' '6' ;

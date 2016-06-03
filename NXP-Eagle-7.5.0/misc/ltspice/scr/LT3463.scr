@@ -1,0 +1,18 @@
+ Edit 'LT3463.dev' ;
+ Prefix 'IC' ;
+ Description 'Dual Micropower DC/DC Converters with Schottky Diodes' ;
+ Value off ;
+ Add LT3463 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.FB2' '6' ;
+ Connect 'G$1.VIN' '3' ;
+ Connect 'G$1.GND' '11' ;
+ Connect 'G$1.FB1' '10' ;
+ Connect 'G$1.SW1' '2' ;
+ Connect 'G$1.D2' '5' ;
+ Connect 'G$1.!SHDN1' '9' ;
+ Connect 'G$1.VREF' '7' ;
+ Connect 'G$1.SW2' '4' ;
+ Connect 'G$1.!SHDN2' '8' ;
+ Connect 'G$1.VOUT1' '1' ;

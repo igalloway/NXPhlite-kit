@@ -1,0 +1,16 @@
+ Edit 'LTM4604.dev' ;
+ Prefix 'IC' ;
+ Description 'Low Voltage, 4A DC/DC uModule Regulator with Tracking' ;
+ Value off ;
+ Add LTM4604 'G$1' next 0 (0 0) ;
+ Package 'LGA66-1807(V)' 'V' ;
+ Technology '' ;
+ Connect 'G$1.TRACK' 'E1' ;
+ Connect ALL 'G$1.VOUT' 'F9 F10 F11 G6 G7 G8 G9 G10 G11 F8 F7 D8 D9 D10 D11 E8 E9 E10 E11 F6' ;
+ Connect ALL 'G$1.VIN' 'E7 E6 D7 C7 C6 C5 C4 C3 C1 B1' ;
+ Connect ALL 'G$1.GND' 'B11 C8 C9 C10 C11 E4 E5 F3 F4 F5 G3 G4 G5 B10 B9 B8 A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 B6 B7' ;
+ Connect 'G$1.FB' 'G2' ;
+ Connect 'G$1.COMP' 'G1' ;
+ Connect 'G$1.PGOOD' 'F1' ;
+ Connect 'G$1.RUN/SS' 'D1' ;
+# Connect ALL 'G$1.NC' 'B3 B4' ;

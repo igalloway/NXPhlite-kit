@@ -1,0 +1,17 @@
+ Edit 'LT3585-0.dev' ;
+ Prefix 'IC' ;
+ Description 'Photoflash Chargers with Adjustable Input Current and IGBT Drivers' ;
+ Value off ;
+ Add LT3585-0 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DDB)' 'DDB' ;
+ Technology '' ;
+ Connect 'G$1.!DONE' '6' ;
+ Connect 'G$1.VBAT' '5' ;
+ Connect 'G$1.IBGTPU' '10' ;
+ Connect 'G$1.IBGTPWR' '2' ;
+ Connect 'G$1.IBGTPD' '9' ;
+ Connect 'G$1.VIN' '4' ;
+ Connect 'G$1.SW' '8' ;
+ Connect ALL 'G$1.GND' '3 11' ;
+ Connect 'G$1.CHRG/IADJ' '7' ;
+ Connect 'G$1.IBGTIN' '1' ;

@@ -1,0 +1,1369 @@
+#usage "Import PADS-POWERPCB-V5.0-BASIC! DESIGN DATABASE ASCII FILE 1.0<p>"
+       "RUN import-pads-powerpcb-v5.ulp<br>"
+       "<p>"
+       "<author>Author: alf@cadsoft.de</author>"
+
+#require 6.0500
+
+string Version = "1.0.4"; // 2011-10-26
+                          // 2012-06-25 option single-lbr to generate a library for each package
+                          // 2012-10-08 pad count corrected, polygon corrected
+                          // 2012-11-12 changed file handling
+                          // 2013-09-11 no message if no .cfg file exist
+
+int test = 0;
+
+string UlpDefCfg = filesetext(argv[0], ".cfg");
+string ImpPADSSym = "";
+string EaglePADSLbrDir = "";
+string DirPADSAsc = "";
+string EaglePADSSchDir = "";
+int    fn = 0;
+
+string LbrName;
+string FilePADSSym[];
+int    cntFilePADSSym = 0;
+
+int    Import_All_Symbols = 1;
+string ImportNames[];
+string ImportFNames[];
+int    CntImpAll = 0;  // In den Dateien kann es sein, dass der Name des Package
+                       // nicht gleich dem Namen der Datei ist, und evtl. somit
+                       // doppelt angelegt wird. 2011-11-08 alf
+
+int    SingleLbr = 0;  // Da es in der Definition der PADS-Dateien immer wieder den gleichen Namen
+                       // für ein Package mit unterchiedlichen Paramtern gibt, kann man mit dieser
+                       // Option für jedes Package eine eignen LBR anlagen, mit dem Namen der Quell-Datei.
+                       // 2012-06-25 alf@cadsoft.de
+
+string SymDevName;
+string CmdDev;
+int    CntPinname = 0;
+
+string PadsAscName;
+string FilePADSAsc[];
+int    cntFilePADSAsc = 0;
+
+char   Delimiter = '@';
+
+string ScriptFile = "";
+string ScriptExt = "~ltPADS~.scr";
+
+string PADS_Headerline;
+string Line[];
+int    Cntl;
+int    nline = 0;
+
+string Val[];
+int    CntV;
+
+string Cmd, h;
+
+string Unit;       // Grid-Einheit
+real   Devider = 100000;
+
+string LineWidth;
+string PacInfo = "";
+// PADS header line for a package
+string PADSname;    // PADS package name
+string PADSunits;   // Grid
+int    PADSx;       // Package Origin x
+int    PADSy;       // Package Origin y
+int    PADSpieces;  // Gehäuse-Kontur
+int    PADStermals; // PAD-Anzahl
+int    PADSstacks;
+string PADStext;
+string PADSlabels;  // Name + Value
+
+/*
+string UNITS;   // Grid
+string ORIX;    // Origin x
+string ORIY;    // Origin y
+string PIECES;  // Gehäuse-Kontur
+string TERMINALS;
+string STACKS;
+string TEXT;
+string LABELS;  // Name + Value
+*/
+
+int    Tcnt = 1;                    // Pad/Smd-Zähler
+string Tname[];
+real   Tx1[], Ty1[], TxName[], TyName[];  // PAD/SMD-Koordinaten, nur die ersten beiden sind relevant laut Hr. Preissner
+real   Tsizeidia[], Tsizelong[];              // Wird von PAD 0 vorgegeben,
+real   Tfinlength[];
+string Tshape[];
+real   Tangle[];
+int    Troundness[];
+real   Tdrill[];
+string Tplatet[];
+
+// Default PAD-Stack, wird durch Pad-Nummer 0 definiert
+int    Stacklines;        // Zähler für die Anzahl der Zeilen die den Pad-Stack definieren
+int    Padstack0_level;
+real   Padstack0_size;
+string Padstack0_shape;
+real   Padstack0_finori;
+real   Padstack0_idia;
+real   Padstack0_finlength;
+real   Padstack0_finoffset;
+int    Padstack0_corner;
+real   Padstack0_drill;
+int    Padstack0_slotori;
+int    Padstack0_slotlength;
+string Padstack0_plated;
+
+
+real   SCALE;   // SCALE        152.134          Scale of window expansion
+
+
+/*** ######## Functions ######## ***/
+void readconfig(void) {  // read configuration file of ULP
+  string line[];
+  string f[];
+  int fn = fileglob(f, UlpDefCfg);
+  if (!fn) {
+    return;
+  }
+  int lines = fileread(line, UlpDefCfg);
+  for (int cl = 0; cl < lines; cl++) {
+    string s[];
+    int cnt = strsplit(s, line[cl], Delimiter);
+    if (s[0]      == "EaglePADSLbrDir") EaglePADSLbrDir = s[1];  // "E:/EG/eg5 0/5.0_Projekte/LT-PADS/";
+    else if (s[0] == "EaglePADSSchDir") EaglePADSSchDir = s[1];  // "E:/EG/eg5 0/5.0_Projekte/LT-PADS/";
+    else if (s[0] == "ImpPADSSym") {
+      ImpPADSSym = s[1];       // "E:/Programme/LTC/LTPADSIV/lib/sym/";
+      FilePADSSym[0] = ImpPADSSym;
+    }
+    else if (s[0] == "DirPADSAsc") {
+      DirPADSAsc = s[1];       //"E:/Programme/LTC/LTPADSIV/"
+      FilePADSAsc[0] = DirPADSAsc;
+    }
+    else if (s[0] == "Import_All_Symbols") Import_All_Symbols = strtol(s[1]);
+    else if (s[0] == "SingleLbr") SingleLbr = strtol(s[1]); // 2012-06-25
+  }
+  return;
+}
+
+
+void saveconfig(void) {
+  output(UlpDefCfg, "wt") {
+    printf("EaglePADSLbrDir%c%s\n", Delimiter, EaglePADSLbrDir);
+    printf("ImpPADSSym%c%s\n", Delimiter, ImpPADSSym);
+    printf("EaglePADSSchDir%c%s\n", Delimiter, EaglePADSSchDir);
+    printf("DirPADSAsc%c%s\n", Delimiter, DirPADSAsc);
+    printf("Import_All_Symbols%c%d\n", Delimiter ,Import_All_Symbols);
+    printf("SingleLbr%c%d\n", Delimiter, SingleLbr);
+  }
+}
+
+
+int checkexist_pac(string name) {
+  if (library) {
+    library(L) {
+      L.packages(P) {
+        if (P.name == name) return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+
+int checkexist_sym(string name) {
+  if (library) {
+    library(L) {
+      L.symbols(S) {
+        if (S.name == name) return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+
+// wenn alle Dateien eines Verzeichnis eingelesen werden,
+// dann überprüfe ob das Package/Symbol schon angelegt wird.
+// In den Package-Dateien von LT-Spice werden einige Packages doppelt
+// angelegt. Der Dateiname entspricht nicht dem Namen der in der
+// Datei angegeben ist! 2011-11-07 alf@cadsoft.de
+int check_double_defined(string name, string fname) {
+  if(SingleLbr) return 0; // 2012-06-25
+  int found = 0;
+  for (int n = 0; n < CntImpAll; n++) {
+    if (ImportNames[n] == name) return 1;
+  }
+  ImportNames[CntImpAll] = name;
+  ImportFNames[CntImpAll] = name+ "\t" + fname;
+  CntImpAll++;
+  return 0;
+}
+
+
+string del_double_space(string l) {
+  string s[];
+  int cnt = strsplit(s,l, ' ');
+  string l1 = "";
+  for (int i = 0; i < cnt; i++) {
+    if (s[i]) l1+= s[i] + " ";
+  }
+  return l1;
+}
+
+/***
+void getunit(string l) {
+  if (l == "I") {
+    Unit = "MIL";
+    Devider = 100000;
+  }
+  else if (l == "M") {
+    Unit = "MM";
+    Devider = 100000;
+  }
+  return;
+}
+***/
+
+//LINEWIDTH    3810000         Width items will be created with
+void linewidth(string l) {
+  string s[];
+  int n = strsplit(s, l, ' ');
+  sprintf(LineWidth , "CHANGE WIDTH %.6f;\n", strtod(s[1]) / Devider);
+  return;
+}
+
+
+void imp_font(string l) {  // do nothing
+  return;
+}
+
+
+// MSOP08           I 22418040 18497550  1  8 1 0 2
+// MSOP08 == name         | User-defined decal name. The alphanumeric string can be
+//                          up to 40 characters long
+// I   == units           | Units used for this part decal. Valid values are:
+//                         I - Imperial units, given in mils
+//                         M - Metric units, given in mm
+// 22418040 18497550 == x y | kann im Package-Editor ignoriert werden
+//                            Coordinates where the symbol is placed when viewed in the Decal
+//                            Editor. You can ignore this data when reading in ASCII files. If
+//                            copying the data, simply preserve the values from the input field. Use
+//                            the values 1000, 1000 if you are creating this data.
+// 1 == pieces            | Number of drawing outline items that make up the part decal.
+//                          Valid values range from 0 to 32767. A definition follows each piece entry
+// 8 == terminals         | Number of terminals that make up the part decal. Valid values range
+//                          from 0 to 32767. A definition follows each entry.
+// 1 == stacks            | Number of unique pad stack descriptions that define the terminals
+//                          within the decal. A definition follows each entry
+// 0 == text (optional)   | Number of text strings associated with the decal item. Valid values
+//                          range from 0 to 32767.
+// 2 == labels (optional) | Number of attribute labels associated with the decal item.
+//
+//                          Valid values range from 0 to 32767
+
+//DFN(06)2MMX2MM   M 0     0      2  7 2 0 2
+//*REMARK* NAME UNITS ORIX ORIY PIECES TERMINALS STACKS TEXT LABELS
+/***
+Ppcb_ASCII.pdf : PADS Layout ASCII Format Specification : Seite 31
+
+name           | User-defined decal name. The alphanumeric string can be up to 40
+                 characters long.
+
+units          | Units used for this part decal. Valid values are:
+                 I - Imperial units, given in mils
+                 M - Metric units, given in mm
+
+x and y        | Coordinates where the symbol is placed when viewed in the Decal
+                 Editor. You can ignore this data when reading in ASCII files. If
+                 copying the data, simply preserve the values from the input field. Use
+                 the values 1000, 1000 if you are creating this data.
+
+pieces         | Number of drawing outline items that make up the part decal. Valid
+                 values range from 0 to 32767. A definition follows each piece entry.
+
+terminals      | Number of terminals that make up the part decal. Valid values range
+                 from 0 to 32767. A definition follows each entry.
+
+stacks           | Number of unique pad stack descriptions that define the terminals
+                 within the decal. A definition follows each entry.
+
+text (optional)  | Number of text strings associated with the decal item. Valid values
+                   range from 0 to 32767.
+
+labels(optional) | Number of attribute labels associated with the decal item. Valid values
+                   range from 0 to 32767.
+
+***/
+int imp_pac_name(string l) {  // start parsing
+  if (Tcnt > 1) { dlgMessageBox("Tcnt stimmt nicht!", "ok", "esc"); exit(-295); }
+  Tcnt = 1;  // reset Tcnt;
+  string s[];
+  int n = strsplit(s, l, ' ');
+  PADSname = s[0];
+  PADSunits = s[1];
+  PADSx = strtol(s[2]) / Devider;
+  PADSy = strtol(s[3]) / Devider;
+  PADSpieces = strtol(s[4]);
+  PADStermals = strtol(s[5]);
+  PADSstacks = strtol(s[6]);
+  PADStext = s[7];
+  PADSlabels = s[8];
+
+  sprintf(PacInfo, "%s\nname %s\nunits %s\nx %d\ny %d\npieces %d\ntermals %d\nstacks %d\ntext %s\nlabel %s",
+               l,
+               PADSname,
+               PADSunits,
+               PADSx,
+               PADSy,
+               PADSpieces,
+               PADStermals,
+               PADSstacks,
+               PADStext,
+               PADSlabels
+           );
+
+  if (test) {
+    if (dlgMessageBox(PacInfo, "ok", "esc") != 0) exit(-324);
+  }
+
+  if (checkexist_pac(strupr(s[0]))) {
+    sprintf(h, "! Package %s.PAC exist.\nDelete the package?", l);
+    if (dlgMessageBox(h, "YES", "NO") != 0) return 1;
+    sprintf(h, "SET CONFIRM YES;\nREMOVE %s.PAC;\nSET CONFIRM OFF;\n", s[0]);
+    Cmd += h;
+  }
+  if (check_double_defined(s[0], FilePADSSym[fn])) {
+    int sel;
+    int srt = 0;
+    sprintf(h, "second definition of %s in %s", s[0], filename(FilePADSSym[fn]));
+    dlgDialog("Import PADS library") {
+      dlgHBoxLayout dlgSpacing(400);
+      dlgStringEdit(h);
+      dlgHBoxLayout {
+        dlgVBoxLayout dlgSpacing(400);
+        dlgListView("Package\tFile", ImportFNames, sel, srt);
+      }
+      dlgHBoxLayout {
+        dlgPushButton("OK") dlgAccept();
+        dlgPushButton("CANCEL") { dlgReject(); exit(-346); }
+        dlgStretch(1);
+      }
+    };
+  }
+  //getunit(PADSunits); // Das Grid des Package
+  if (s[1] == "I") {
+    Unit = "MIL";  // das benutzte Grid
+    Devider = 100000;
+  }
+  else if (s[1] = "M") {
+    Unit = "MM";   // das benutzte Grid
+    Devider = 1000000;
+  }
+  sprintf(h, "EDIT %s.PaC;\nGRID %s;\n", s[0], Unit);   // der Package-Name und die Masseinheit
+  Cmd += h;
+  Cmd += "CHANGE STYLE Continuous;\n";
+  Cmd += LineWidth;
+  sprintf(h, "DESCRIPTION 'Package generated from: %s (%s)<p>\\n\\nwith :%s Version %s at %s';\n",
+             filename(FilePADSSym[fn]), Line[0], filename(argv[0]), Version, t2string(time())
+          );
+  Cmd+=h;
+  return 0;
+}
+
+
+/*****************************/
+string imp_arc(string l) {  // 2012-10-08
+  /*
+  *REMARK* XLOC YLOC BEGINANGLE DELTAANGLE
+
+  COPCLS 9   299850 1    28
+  -2250000 330000 1800 900 -2250000 180000 -1950000 480000
+  -2100000 180000
+  2100000 180000 2700 900 1950000 180000 2250000 480000
+  2250000 330000
+  2250000 2850000 0   900 1950000 2700000 2250000 3000000
+  2100000 3000000
+  -1800000 3000000 44  -900 -2776440 2473560 -1798560 3451440
+  -2250000 2475000
+  -2250000 330000
+
+  # COPCLS 9 ist ein Polygon mit 9 Teillinien bzw. Bögen
+  # 28 ist der 28. Pad von 0 gezählt Beispiel "QFN36(UHE).asc"
+
+  Definition des ARC:
+  Die Koordinaten e/f und g/h definieren die zwei diagonalen Ecken eines umschließenden
+  Rechteck um einen Kreis. Die Mitte dieses Rechteck ist der Mittelpunkt des Kreises,
+  und somit der Mittelpunkt des ARC.
+  Die Koordinate a/b ergibt den Startpunkt des Kreisbogen, und sollte dem Startwinkel c,
+  bezogen auf den Mittelpunkt des zuvor definierten Kreises entsprechen.
+  d ist der Bogenwinkel, also das Ende des ARC in Grad, bezogen auf den Startwinkel.
+  2011-11-14
+
+  Aus der PDF-Dokumentation: Ppcb_ASCII.pdf / PADS Layout ASCII Format Specification / PADS 9.0
+  Arc corner format:
+  x1 y1 ab aa ax1 ay1 ax2 ay2
+  Format Description:
+  x1 y1 Beginning of the arc
+  ab Beginning angle of the arc in tenths of a degree
+  aa Number of degrees in the arc in tenths of a degree
+  ax1, ay1 Lower left point of the rectangle around the circle of the arc
+  ax2, ay2 Upper right point of the rectangle around the circle of the arc
+  ax2 - ax1 = ay2 - ay1 Diameter of the circle of the arc
+  (ax1 + ax2)/2, (ay1 + ay2)/2 Coordinates of the center of the arc circle
+  */
+  string s[];
+  int n = strsplit(s, l, ' ');
+
+  real startcoordx = strtod(s[0]) / Devider;
+  real startcoordy = strtod(s[1]) / Devider;
+  real startangle = strtod(s[2]) * 0.1;
+  real diffangle = strtod(s[3])   * 0.1;
+  string arc;
+  sprintf(arc, " (%.8f %.8f) %+.1f ",
+            startcoordx, startcoordy,
+            diffangle
+         );
+  return arc;
+}
+
+/**************************************/
+string get_coordinat(string l) {
+  string s[];
+  string k, m;
+  int n = strsplit(s, l, ' ');
+  if (n > 2) {
+    k = imp_arc(l);
+  }
+  else {
+    sprintf(k, " (%.6f %.6f)", strtod(s[0]) / Devider, strtod(s[1]) / Devider);
+  }
+  k += "\\\n";
+  return k;
+}
+
+
+// CLOSED 9   304800 0
+// CLOSED == type
+// 9      == level
+//        == pinnum
+//        == restrictions
+void imp_closed_line(string l) {
+  string s[];
+  int cnt = strsplit(s, l, ' ');
+  sprintf(h, "# imp_closed_line %s \n", s[1]);
+  Cmd += h;
+  sprintf(h, "SET wIRE_BEND 2;\nCHANGE LAYER 21;\nWIRE %.4f \\\n", strtod(s[2]) / Devider);
+  Cmd += h;
+  for (int p = 1; p <= strtod(s[1]); p++) {
+    Cmd += get_coordinat(del_double_space(Line[++nline]));
+  }
+  Cmd += ";\n";
+  return;
+}
+
+
+// OPEN   3   381000 0
+// OPEN == type
+// 3    == level
+//      == pinnum
+//      == restrictions
+/*
+OPEN   6   304800 1
+-1500000 2250000
+-1500000 952500
+-1143000 952500
+-1143000 -952500
+-1500000 -952500
+-1500000 -2250000
+*/
+void imp_open_line(string l) {
+  string s[];
+  int n = strsplit(s, l, ' ');
+  sprintf(h, "# imp_open_line() %s \n", s[1]);
+  Cmd += h;
+  Cmd += "# LAYeR "+s[3]+"\n";
+  sprintf(h, "SET WiRE_BEND 2;\nCHANGE LAYER 21;\nWIRE %.4f \\\n", strtod(s[2]) / Devider);
+  Cmd += h;
+  for (int p = 1; p <= strtod(s[1]); p++) {
+    Cmd += get_coordinat(del_double_space(Line[++nline]));
+  }
+  Cmd += ";\n";
+  return;
+}
+
+/*
+COPCLS 9   381000 1    1
+-647700 -4000500
+-647700 -1219200
+-1276350 -1219200
+-1276350 2781300
+1276350 2781300
+1276350 -1219200
+647700 -1219200
+647700 -4000500
+-647700 -4000500
+*/
+void imp_copcls(string l) { // Copper Closed?
+  Cmd+="# imp_copcls()\n";
+  string s[];
+  int cnt = strsplit(s, l, ' ');
+  sprintf(h, "# imp_imp_copcls %s \n", s[1]);
+  Cmd += h;
+  sprintf(h, "SET WIrE_BEND 2;\nCHANGe LAYER 1;\nChange width %.6f;\n", strtod(s[2]) / Devider);
+  Cmd += h;
+  string cmdpol;
+  sprintf(cmdpol, "POLYGOn ");
+  for (int p = 1; p <= strtod(s[1]); p++) {
+    cmdpol += get_coordinat(del_double_space(Line[++nline]));
+  }
+  cmdpol += ";\n";
+  Cmd += cmdpol;      // Kupferpolygon = PAD-Erweiterung
+  sprintf(h, "CHANGE LAYER 29;\nCHANGE WIDTH %.6f;\n", strtod(s[2]) / Devider * 1.2); // Stop-Maske
+  Cmd += h;
+  Cmd += cmdpol;      // Kupferpolygon = PAD-Erweiterung
+  sprintf(h, "CHANGE LAYER 31;\nCHANGE WIDTH %.6f;\n", strtod(s[2]) / Devider / 2);      // Cream-Maske
+  Cmd += h;
+  Cmd += cmdpol;      // Kupferpolygon = PAD-Erweiterung
+  return;
+}
+
+
+/*
+CIRCLE 2   266700 1
+-3429000 -1333500
+-2476500 -1333500
+*/
+void imp_circle(string l) {
+  string s[];
+  int n = strsplit(s, l, ' ');
+  //int cntcircle = strtol(s[1]);
+  sprintf(h, ";\nCIRCLE %.6f ", strtod(s[2]) / Devider);
+  Cmd += h;
+  strsplit(s, Line[++nline], ' ');
+  sprintf(h, " (%.6f %.6f)", strtod(s[0]) / Devider, strtod(s[1]) / Devider);
+  Cmd += h;
+  strsplit(s, Line[++nline], ' ');
+  sprintf(h, " (%.6f %.6f);\n", strtod(s[0]) / Devider, strtod(s[1]) / Devider);
+  Cmd += h;
+  return;
+}
+
+
+void imp_copopn(string l) {
+  /*
+  COPOPN 2   190500 21
+  -41405025 3333750
+  -41405025 5333250
+  */
+  string s[];
+  real width, x1, x2, y1, y2, dx, dy;
+
+  int n = strsplit(s, l, ' ');
+
+  if (s[1] == "2") {
+    width = strtod(s[2]) / Devider;
+    if (s[3] == "21") {
+      Cmd += "CHa LAYER 1; # "+s[3]+"\n";
+    }
+    else if (s[3] == "28") {
+      Cmd += "CH LAYER 16; # "+s[3]+"\n";
+    }
+    else {
+     sprintf(h, "Layer unknown %s in line %d", s[3], nline);
+     if (dlgMessageBox(h, "ok", "esc") != 0) exit(-578);
+    }
+    strsplit(s, Line[++nline], ' ');
+    x1 = strtod(s[0]) / Devider;
+    y1 = strtod(s[1]) / Devider;
+
+    strsplit(s, Line[++nline], ' ');
+    x2 = strtod(s[0]) / Devider;
+    y2 = strtod(s[1]) / Devider;
+    sprintf(h, "# imp_copopn() 734\nSMD '%d' %.6f %.6f (%.6f %.6f);\n", Tcnt, x2-x1+width+2, y2-y1+width+2, (x1+x2) / 2, (y1+y2) / 2);
+    Cmd += h;
+    Tcnt++;  // Pad counter
+  }
+  else {
+    sprintf(h, "unklnown parameter counter %s in Line %d", s[2], nline);
+    if (dlgMessageBox(h, "ok", "esc") != 0) exit(-593);
+  }
+  return;
+}
+
+void imp_copcut(string l) {
+  Cmd += "# imp_copcut()\n";
+  dlgMessageBox(FilePADSSym[fn]+ "\n\nCUTCUP", "?");
+  exit(-601);
+  return;
+}
+
+void imp_copcco(string l) {
+  Cmd += "# copcco\n";
+  dlgMessageBox(FilePADSSym[fn]+ "\n\nCOPCCO", "?");
+  exit(-608);
+  return;
+}
+
+void imp_copcir(string l) { // Copper Circle?
+  Cmd += "# copcir\n";
+  dlgMessageBox(FilePADSSym[fn]+ "\n\nCOPCIR", "?");
+  exit(-615);
+  return;
+}
+
+void imp_kptcls(string l) {
+  Cmd += "# kptcls\n";
+  dlgMessageBox(FilePADSSym[fn]+ "\n\nKTPCLS", "?");
+  exit(-622);
+  return;
+}
+
+void imp_cptcir(string l) {
+  Cmd += "# cptcir\n";
+  dlgMessageBox(FilePADSSym[fn]+ "\n\nKPRCIR", "?");
+  exit(-629);
+  return;
+}
+
+void imp_tag(string l) {
+  Cmd += "# Tag\n";
+  dlgMessageBox(FilePADSSym[fn]+ "\n\nTAG", "?");
+  exit(-636);
+  return;
+}
+
+
+/*
+VALUE    -1800000     -450000   0.000  1     1905000      190500 N   LEFT   DOWN
+Ref.Des.
+*/
+void imp_ref_des(string l) {
+
+  real offsety;
+  if (Val[9] == "DOWN") offsety = 0.0;
+  else if (Val[9] == "UP") {
+    if (Unit == "MM") offsety = -1.778;
+    else if (Unit == "MIL") offsety = -70.0;
+  }
+
+  sprintf(h, ";\nCHANGE SIZE 70mil;\nCHANGE LAYER 27;\nTEXT '>NAME' R%.1f (%.6f %.6f);\n",
+                 strtod(Val[3]), strtod(Val[1]) / Devider, strtod(Val[2]) / Devider + offsety
+         );
+  Cmd += h;
+  return;
+}
+
+
+/*
+VALUE           0           0   0.000  1     1905000      190500 N   LEFT     UP
+Part Type
+VALUE    -1800000     -450000   0.000  1     1905000      190500 N   LEFT   DOWN
+Ref.Des.
+*/
+void imp_value(string l) {
+
+  //int cntv = 0;
+  string s[];
+  int n = strsplit(s, l, ' ');
+  CntV = 0;
+  for (int i = 0; i < n; i++) {
+    if(s[i]) {
+      Val[CntV++] = s[i];
+    }
+  }
+  return;
+}
+
+
+/*
+VALUE           0           0   0.000  1     1905000      190500 N   LEFT     UP
+Part Type
+*/
+void imp_part_type(string l) {
+
+  real offsety ;
+    if (Val[9] == "DOWN") offsety = 0.0;
+  else if (Val[9] == "UP") {
+    if (Unit == "MM") offsety = -1.778;
+    else if (Unit == "MIL") offsety = -70.0;
+  }
+  sprintf(h, ";\nCHANGE LAYER 25;\nCHANGE SIZE 70mil;\nTEXT '>VALUE' R%.1f (%.6f %.6f);\n",
+                 strtod(Val[3]), strtod(Val[1]) / Devider, strtod(Val[2]) / Devider + offsety
+         );
+  Cmd += h;
+  return;
+}
+
+
+/***
+T-1463040 -3257550 -1644015 -3333750
+T-487680 -3257550 -487680 -3257550
+T487680 -3257550 487680 -3257550
+T1463040 -3257550 1463040 -3257550
+T1463040 3257550 1463040 3257550
+T487680 3257550 487680 3257550
+T-487680 3257550 -487680 3257550
+T-1463040 3257550 -1463040 3257550
+PAD 0 3
+***/
+
+/*** !PADS-POWERPCB-V9.3-BASIC! DESIGN DATABASE ASCII FILE 1.0
+T-2625000 -3225000 -2625000 -3225000 1
+T-1875000 -3225000 -1875000 -3225000 2
+T-1125000 -3225000 -1125000 -3225000 3
+T-375000 -3225000 -375000 -3225000 4
+***/
+
+void imp_tcoord(string l) { // 2012-10-08 Tcnt ist der Zähler und Pointer selbst
+  l[0] = ' ';  // replace T with space
+  string s[];
+  int n = strsplit(s, l, ' ');
+  int padnum  = strtol(s[5]);  // PADS-Version 9 gibt auch Namen aus. 2012-05-25
+  Tx1[Tcnt] = strtod(s[1]) / Devider; // pad coodicnate
+  Ty1[Tcnt] = strtod(s[2]) / Devider; // pad coordinate
+  TxName[Tcnt] = strtod(s[3]) / Devider; // name coodinate
+  TyName[Tcnt] = strtod(s[4]) / Devider; // name coodinate
+  Tname[Tcnt] = s[5];
+  Tcnt++;
+  if (Tcnt-1 > PADStermals) {
+    string h;
+    sprintf(h, "%s\n%s:\n%s\n%d more then %d pads defined!", PacInfo, FilePADSSym[fn], l, Tcnt, PADStermals);
+    if (dlgMessageBox(h, "OK", "CANCEL") != 0) exit(-736);
+  }
+  return;
+}
+
+
+//PAD 0 3
+//-2 457200 RF  90.000 2286000 0   0
+//-1 0   R
+//0  0   R
+
+// PAD      == Keyword
+// 0        == pinno      | Terminal number to which the pad stack applies. A value of 0 indicates all
+//                          pads except those explicitly listed later
+// 3        == stacklines | Number of lines of information pertaining to the pin numbers. The
+//                          minimum number of entries is 3: top layer, inner layer, and bottom layer
+//
+// -2       == level      | Layer number being defined. Valid values are:
+//                          -2 - Top layer
+//                          -1 - Inner layer
+//                          0 - Bottom layer
+//                          1 to 250 - Specific layer number
+// 457200   == size       | Diameter of the pad for round, odd, and annular pads. Length of a side for
+//                          square pads. Width of oval or rectangular pads
+// RF       == shape      | Pad shape. Valid values are:
+//                          R - Round
+//                          S - Square
+//                          A - Annular
+//                          O - Odd
+//                          OF - Oval finger
+//                          RF - Rectangular finger (SMD)
+//                          RT - Thermal pad for a round pad shape
+//                          ST - Thermal pad for square pad shape
+// 90.000   == finori     | Orientation, in degrees, of oval or rectangular pads. Precision is three
+//                          digits after the decimal point. Valid values range from 0 to 179.999. If
+//                          the pad is not oval or rectangular, this field is omitted
+// 2286000  == idia       | Inner diameter of an annular pad. If the pad is not annular, this field is omitted.
+// 0        == finlength  | Finger length of oval or rectangular pads. Valid values range from +1 to
+//                          1000. If the pad is not oval or rectangular, this field is omitted.
+// 0        == finoffset  | Offset of the finger of oval or rectangular pads from the electrical center
+//                          (drill). For fingers with a 0 degree orientation, a positive offset shifts the
+//                          pad from the electrical center to the right. For fingers with a 90 degree
+//                          orientation, a positive offset shifts the pad from the electrical center up.
+//                          Offset values must lie within the pad, and may not be greater than 500. If
+//                          the pad is not oval or rectangular, this field is omitted.
+//
+//          == corner     | This field stores the numerical "corner radius" value and is used to
+//                          support pads with rounded and chamfered corners. It only exists for
+//                          square and rectangular finger pad shapes. Zero value is used for 90
+//                          degree (non-rounded) pad corners; positive value is used for pads with
+//                          rounded corners; negative value is used for pads with chamfered
+//                          corners.
+//          == drill      | Drill size. Valid values range from 0 to 1000. drill only appears on the
+//                          side where parts are mounted.
+//          == plated     | If this is N, the drill hole is unplated. If this is P or empty, the drill is
+//                          plated. plated only appears on the side where parts are mounted.
+//          == slotori    | Orientation, in degrees, of the slotted drill. Precision is three digits after
+//                          the decimal point. Valid values range from 0 to 179.999.
+//          == slotlength | Length of the slotted drill. Valid values range from +1 to 1000.
+
+/*
+PAD 7 3
+-2 915000 RF  0.000 2130000 0   0 N
+-1 0   R
+0  0   R
+
+PAD 0 4
+-2 1050000 RF  90.000 1350000 0   0
+-1 0   R
+0  0   R
+25 0   R
+
+PAD 0 4
+-2 2286000 R   1219200
+-1 2286000 R
+0  2286000 R
+25 3048000 R
+PAD 1 4
+-2 2286000 S   0   1219200
+-1 2286000 S   0
+0  2286000 S   0
+25 3048000 R
+*/
+int get_pad(string l) {
+  string s[];
+  int n = strsplit(s, l, ' ');
+  int pinno = strtol(s[1]);
+  Stacklines = strtod(s[2]);  // Anzahl der Zeilen die nach "PAD x n" noch folgen
+  return pinno;
+}
+
+
+void get_pad_size(string l, int pinnumber) {
+  string s[];
+  l = del_double_space(l);
+  int cnt = strsplit(s, l, ' ');
+
+  //if(dlgMessageBox(s[0] + " == 25?", "ok", "esc") != 0) exit(-825);
+
+
+  if (s[0] == "-2") {  // Pad/smd dimension Top layer
+      int  Padstack_level = strtol(s[0]);
+      real Padstack_size = strtod(s[1]) / Devider;
+      string Padstack_shape = s[2];
+      real Padstack_finori = strtod(s[3]);
+      real Padstack_idia = strtod(s[4]) / Devider;
+      real Padstack_finlength = strtol(s[5]);
+      real Padstack_finoffset = strtol(s[6]);
+      int  Padstack_corner = strtol(s[7]);
+      real Padstack_drill = strtod(s[8]) / Devider;
+      int  Padstack_slotori = strtol(s[9]);
+      int Padstack_slotlength = strtol(s[10]);
+      string Padstack_plated;
+      if (s[cnt-2] == "N" || s[cnt-2] == "P") {
+        Padstack_plated = s[cnt-2];
+      }
+
+      if (pinnumber == 0) { // alle Pads haben diese Größe, Rotation und Form
+
+        Padstack0_level = strtol(s[0]);
+        Padstack0_size = strtod(s[1]) / Devider;
+        Padstack0_shape = s[2];
+        Padstack0_finori = strtod(s[3]);
+        Padstack0_idia = strtod(s[4]) / Devider;
+        Padstack0_finlength = strtol(s[5]);
+        Padstack0_finoffset = strtol(s[6]);
+        Padstack0_corner = strtol(s[7]);
+        Padstack0_drill = strtod(s[8]) / Devider;
+        Padstack0_slotori = strtol(s[9]);
+        Padstack0_slotlength = strtol(s[10]);
+        if (s[cnt-2] == "N" || s[cnt-2] == "P") {
+          Padstack0_plated = s[cnt-2];
+        }
+        if (Padstack0_shape == "S" || Padstack0_shape == "R") {  //
+          Padstack0_idia = Padstack0_size;
+        }
+
+        for (int n = 1; n < Tcnt; n++) {    // vorsetzen der PAD/SMD-Grössen
+          Tsizelong[n] = Padstack0_size;    // size ist die Höhe
+          Tsizeidia[n] = Padstack0_idia;   // inner diameter ist die Breite
+          Tangle[n] = Padstack0_finori;
+          Tshape[n] = Padstack0_shape;      // Padform Finger = SMD / R = Rechteck | O = Oval = 100% Roundness
+          if (Padstack0_shape == "RF") Troundness[n] = 0;
+          else if (Padstack0_shape == "OF" || Padstack0_shape == "R") Troundness[n] = 100;
+          Tdrill[n] = Padstack0_drill;
+          Tplatet[n] = Padstack0_plated;
+        }
+      }
+      else {
+        Tsizelong[pinnumber] = Padstack_size;  // size ist die Höhe
+        Tsizeidia[pinnumber] = Padstack_idia;  // inner diameter ist die Breite
+        Tfinlength[pinnumber] = Padstack_finlength;
+        Tangle[pinnumber] = Padstack_finori;
+        Tshape[pinnumber] = Padstack_shape;
+        Tplatet[pinnumber] = Padstack_plated;
+      }
+      /*
+      string h2;
+      sprintf(h2, "Pinnumber =%d\nLänge %.f\nBreite %.f\nRotation %.f\nForm %s",
+                  pinnumber, Tsizelong[pinnumber], Tsizeidia[pinnumber], Tangle[pinnumber], Tshape[pinnumber]
+             );
+      if (dlgMessageBox(h2, "ok", "esc") != 0) exit(-902);
+      */
+  }
+  else if (s[0] == "-1") ;  // Eagle can not define innerlayer diameter
+  else if (s[0] == "0") ;   // bottom layer
+  else if (s[0] == "25") {  // drill
+      Padstack0_drill = strtod(s[1]) / Devider;
+      Padstack0_shape = s[2];
+      if (pinnumber == 0) { // alle Pads haben diesen Drilldurchmesser
+        for (int n = 1; n < Tcnt; n++) {    // vorsetzen des Drill und Form
+          Tdrill[n] = Padstack0_drill;
+          Tshape[n] = Padstack0_shape;
+        }
+        //if (dlgMessageBox("alle Drills gesetzt", "ok", "esc") != 0) exit(-902);
+      }
+      else {
+        Tshape[pinnumber] = Padstack0_shape;
+        Tdrill[pinnumber] = Padstack0_drill;
+      }
+  }
+  return;
+}
+
+
+void get_pad_option(string l) {
+  Cmd += "# get_pad_option\n";
+  return;
+}
+
+
+void get_pads(string pacname) {  //  PAD/SMD ausgeben
+  Cmd += "# get_pads()\nCHANGE LAYER 1;\nSMD '1' ;\n";  // Starte Namenvergabe mit 1, PADS-V5 gibt keine Namen vor!
+  real lastx = -100000.0, lasty = -100000.0;
+  for (int n = 1; n < Tcnt; n++) {
+    if (Tsizelong[n]) { // nur wenn Tsizelong (bei PAD der Drill) nicht 0 ist, dann wird der Pad erzeugt,
+                        // PADS kann SMDs mit Size 0 erzeugen, die dann aber nicht dargestellt werden!
+      if (Tdrill[n] && !Tsizeidia[n] && !Tsizelong[n]) {
+        sprintf(h, "# 951\nHOLE %.8f (%.8f %.8f);\n",
+                      Tdrill[n],
+                      Tx1[n], Ty1[n]
+                  );
+        Cmd += h;
+      }
+
+      else {
+        if(lastx == Tx1[n] && lasty == Ty1[n]) {
+          string error;
+          sprintf(error, "Package '%s'\nplace more as 1 PAD/SMD '%s' on coodinate %.8f %.8f",
+                    filename(pacname),
+                    Tname[n],
+                    Tx1[n], Ty1[n]
+                 );
+          dlgDialog("Error") {
+            dlgHBoxLayout dlgSpacing(600);
+            dlgTextView(error);
+            dlgHBoxLayout {
+              dlgPushButton("+OK") dlgAccept();
+              dlgPushButton("-CANCEL") { dlgReject(); exit(-945); }
+              dlgStretch(1);
+            }
+          };
+        }
+        if (Tname[n]) Tname[n] = "'" + Tname[n] + "'";  // PADS V9 gibt Namen vor, wenn der Name nicht leer ist, dann in ' '  einschliessen.
+
+        if (Tdrill[n]) { // bedrahtete Pads
+            string shape;
+            if (Tshape[n] == "S") shape = "SQUARE";
+            else if (Tshape[n] == "R") shape = "ROUND";
+            else if (Tshape[n] == "A") shape = "Round";
+            else if (Tshape[n] == "O") shape = "OCTAGON";
+
+            sprintf(h, "# 977\nCHange Dril %.8f;\nPAD %.8f %s R%.3f %s (%.8f %.8f);\n",
+                        Tsizeidia[n],
+                        Tsizelong[n],
+                        shape,
+                        Tangle[n],
+                        Tname[n],
+                        Tx1[n], Ty1[n]
+                    );
+            Cmd += h;
+        }
+
+        else { // 2012-10-08 siehe imp_tcoord()
+          //  hier wird nachträglich der Pad-Type und die Form geändert.
+          //if (Tshape[n] == "RF" || Tshape[n] == "OF") {   // finger ist ein SMD
+            if (Tshape[n] == "OF" || Tshape[n] == "R") Troundness[n] = 100;
+            else if (Tshape[n] == "RF" || Tshape[n] == "R") Troundness[n] = 0;
+            if (Tshape[n] == "S") {
+              if(!Tsizeidia[n] || !Tsizelong[n]) {
+                if (!Tsizeidia[n] && !Tsizelong[n]) {
+                  sprintf(h, "Package %s PAD %s has no dimension %.4f %.4f",
+                                filename(pacname), Tname[n],
+                                Tsizeidia[n] && !Tsizelong[n]
+                         );
+                  dlgMessageBox(h, "OK");
+                  exit(-975);
+                }
+                else if (!Tsizeidia[n]) Tsizeidia[n] = Tsizelong[n];
+                else if (!Tsizelong[n]) Tsizelong[n] = Tsizeidia[n];
+              }
+            }
+            sprintf(h, "# 967 %d von %d : %s\nSMD %.8f %.8f -%d R%.1f %s (%.8f %.8f);\n",
+                        n,
+                        Tcnt,
+                        Tname[n],
+                        Tsizeidia[n], Tsizelong[n],
+                        Troundness[n],
+                        Tangle[n],
+                        Tname[n],
+                        Tx1[n], Ty1[n]
+                    );
+            Cmd += h;
+        }
+      }
+      lastx = Tx1[n];
+      lasty = Ty1[n];
+    }
+  }
+  return;
+}
+
+void checktest(void) {
+  numeric string check[];
+  sprintf(check[0], "Num.\tTsizeidia\tTsizelong\tTfinlength\tTshape\tTroundness\tTangle\tTname\tTx1\tTy1\tTplatet");
+
+  ;
+  for (int n = 1; n < Tcnt; n++) {
+    sprintf(check[n], "%d\t%f\t%f\t%f\t%s\t%d\t%f\t%s\t%f\t%f\t%s",
+                    n,
+                    Tsizeidia[n],
+                    Tsizelong[n],
+                    Tfinlength[n],
+                    Tshape[n],
+                    Troundness[n],
+                    Tangle[n],
+                    Tname[n],
+                    Tx1[n], Ty1[n],
+                    Tplatet[n]
+           );
+
+  }
+
+  int sel;
+  if (test) dlgDialog("check") {
+    dlgListView("", check, sel);
+    dlgHBoxLayout {
+      dlgPushButton("+OK") dlgAccept();
+      dlgPushButton("-Cancel") { dlgReject(); exit(-1021); }
+    }
+  };
+  return;
+}
+
+
+/******** main ********/
+if (library || schematic);
+else {
+  dlgMessageBox("!Start this ULP in a schematic or library.", "OK");
+  exit(-1);
+}
+
+readconfig();
+
+// ### main menu ###
+//int editPADSsym = 0;
+int editPADSsch = 0;
+dlgDialog("PADS PowerPCB import") {
+  dlgHBoxLayout dlgSpacing(500);
+  if (library) {
+    //library(L) LbrName = L.name;
+    dlgLabel("<b>Import a PADS symbol/library</b>");
+    dlgHBoxLayout dlgSpacing(500);
+    dlgLabel("Directory of imported PADS libraries:");
+    dlgHBoxLayout {
+      dlgStringEdit(EaglePADSLbrDir);
+      dlgPushButton("&Browse") {
+        string mEaglePADSLbrDir = dlgDirectory("Directory: Translated Eagle-LBR from PADS", EaglePADSLbrDir);
+        if (mEaglePADSLbrDir) {
+          int len = strlen(mEaglePADSLbrDir);
+          if (mEaglePADSLbrDir[len-1] != '/') mEaglePADSLbrDir += "/";  // a directory has / on end
+          if (!mEaglePADSLbrDir) {
+            dlgMessageBox("!You must select a directory of translated libraryies.", "OK");
+          }
+          else EaglePADSLbrDir = mEaglePADSLbrDir;
+        }
+      }
+    }
+    dlgLabel("Import PADS symbol(s):");
+    dlgHBoxLayout {
+      dlgStringEdit(FilePADSSym[0]);
+      dlgPushButton("B&rowse") {
+        ImpPADSSym = filename(dlgFileOpen("Select a PADS symbol", EaglePADSLbrDir, "*.asc"));  // 2012-11-09
+        if (ImpPADSSym) {
+          FilePADSSym[0] = ImpPADSSym;
+          cntFilePADSSym = 1;
+        }
+      }
+    }
+    dlgCheckBox("Import &all symbols from directory", Import_All_Symbols);
+    dlgHBoxLayout {
+      dlgLabel("New library name ");
+      dlgStringEdit(LbrName);
+    }
+    dlgCheckBox("Generate a separate library for each package file", SingleLbr);
+  }
+  else if (schematic) {
+    dlgLabel("<b>Import a PADS schematic</b>");
+    dlgLabel("Directory of Eagle schematic path");
+    dlgHBoxLayout {
+      dlgStringEdit(EaglePADSSchDir);
+      dlgPushButton("&Browse") {
+        string mEaglePADSSchDir = dlgDirectory("Select a PADS schematic directory", EaglePADSSchDir);
+        if (mEaglePADSSchDir) EaglePADSSchDir = mEaglePADSSchDir;
+      }
+    }
+    dlgLabel("Directory of PADS &Schematic");
+    dlgHBoxLayout {
+      dlgStringEdit(FilePADSAsc[0]);
+      dlgPushButton("&Browse") {
+        FilePADSAsc[0] = dlgFileOpen("Select a PADS schematic", DirPADSAsc , "*.asc");
+        DirPADSAsc = filedir(FilePADSAsc[0]);
+        if (FilePADSAsc[0]) {
+          PadsAscName = filesetext(FilePADSAsc[0], ".sch");
+          cntFilePADSAsc = 1;
+          editPADSsch = 1;
+        }
+      }
+    }
+
+    dlgHBoxLayout {
+      dlgLabel("New schematic name ");
+      dlgStringEdit(PadsAscName);
+    }
+  }
+  dlgHBoxLayout {
+    dlgPushButton("+OK") {
+      if (fileext(FilePADSAsc[0]) == ".asc" || fileext(FilePADSSym[0]) == ".asc") {
+        if (schematic) {
+          if (!PadsAscName) PadsAscName = EaglePADSSchDir + filename(filesetext(FilePADSAsc[0], ".sch"));
+          ScriptFile = filesetext(PadsAscName, ScriptExt);
+          dlgAccept();
+        }
+        else if (library) dlgAccept();
+      }
+      else {
+        if (schematic) dlgMessageBox("First select as PADS schematic file (*.asc)!", "OK");
+        else if (library) {
+          if (fileext(FilePADSSym[0]) != ".asc" ) dlgMessageBox("First select as PADS symbol file (*.asc)!", "OK");
+        }
+      }
+    }
+    dlgPushButton("-CANCEL") { dlgReject(); exit(-2); }
+    dlgStretch(1);
+    dlgLabel(Version);
+    dlgStretch(1);
+    dlgPushButton("Save config") saveconfig();
+  }
+};
+if (!FilePADSSym[0] && !FilePADSAsc[0])  exit(-3);
+
+
+saveconfig();
+
+// # import a library #
+if (cntFilePADSSym) {
+
+  if (Import_All_Symbols) {
+    cntFilePADSSym = fileglob(FilePADSSym, EaglePADSLbrDir+"*.asc");  // alle .asc dateinamen einlesen
+  }
+  else {
+    FilePADSSym[0] = EaglePADSLbrDir+FilePADSSym[0]; // 2012-11-09 ergänze den Pfad
+  }
+  ScriptFile = EaglePADSLbrDir + ScriptExt;
+  if (ScriptFile && FilePADSSym[fn]) {
+    output(ScriptFile, "wtD") {  // Datei neu anlegen
+      printf("# This EAGLE script is generated with '%s'\n", argv[0]);
+    }
+    for (fn = 0; fn < cntFilePADSSym; fn++) {
+      Cmd = "";  // Reset command string for next package
+      CntPinname = 0;
+      int len = strlen(FilePADSSym[fn]);
+      if (FilePADSSym[fn] && FilePADSSym[fn][len-1] != '/') {  // can not use directorys
+        Cntl = fileread(Line, FilePADSSym[fn]);
+        status(FilePADSSym[fn]);
+        //SymDevName = strupr(filesetext(filename(FilePADSSym[fn]), ""));
+
+        int cntp;
+        int pars_on = 0;   // ein Flag ab wann geparsed werden soll
+        Tcnt = 1;          // Initialiesierung der Zähler
+        PADSname = "";
+        PADSunits = "";
+        PADSpieces = 0;
+        PADStermals = 0;
+        if (SingleLbr) {
+          sprintf(h, "OPEN '%s%s';\n", EaglePADSLbrDir, filesetext(filename(FilePADSSym[fn]), ".lbr"));
+          Cmd+=h;
+        }
+        for (nline = 0; nline < Cntl; nline++) {
+          if (strstr(Line[nline], "!PADS-") == 0) PADS_Headerline = Line[nline];
+          else if (!Line[nline]); // eine leere Zeile
+          else if (strstr(Line[nline], "*REMARK*") == 0);  // Kommentar
+          else if (strstr(Line[nline], "*PARTDECAL*") == 0) { // ab hier startet das eigentliche Parsen des Package
+            pars_on = 1;
+          }
+          else if (pars_on == 2) {
+            /* ab hier wird es interessant */
+            if (strstr(Line[nline], "OPEN")    == 0) imp_open_line(del_double_space(Line[nline]));
+            else if (strstr(Line[nline], "CLOSED")  == 0) imp_closed_line(del_double_space(Line[nline]));
+            else if (strstr(Line[nline], "CIRCLE")  == 0) imp_circle(del_double_space(Line[nline]));
+            else if (strstr(Line[nline], "COPCLS")  == 0) imp_copcls(del_double_space(Line[nline]));
+            else if (strstr(Line[nline], "COPOPN")  == 0) imp_copopn(del_double_space(Line[nline]));
+            else if (strstr(Line[nline], "COPCUT")  == 0) imp_copcut(del_double_space(Line[nline]));
+            else if (strstr(Line[nline], "COPCCO")  == 0) imp_copcco(del_double_space(Line[nline]));
+            else if (strstr(Line[nline], "COPCIR")  == 0) imp_copcir(del_double_space(Line[nline]));
+            else if (strstr(Line[nline], "KPTCLS")  == 0) imp_kptcls(del_double_space(Line[nline]));
+            else if (strstr(Line[nline], "KPTCIR")  == 0) imp_cptcir(del_double_space(Line[nline]));
+            else if (strstr(Line[nline], "TAG")     == 0) imp_tag(Line[nline]);
+            else if (strstr(Line[nline], "PAD") == 0) {
+              // PAD      == Keyword
+              // 0        == pinno      | Terminal number to which the pad stack applies. A value of 0 indicates all
+              //                          pads except those explicitly listed later
+              // 3        == stacklines | Number of lines of information pertaining to the pin numbers. The
+              //                          minimum number of entries is 3: top layer, inner layer, and bottom layer
+              //
+              // -2       == level      | Layer number being defined. Valid values are:
+              //                          -2 - Top layer
+              //                          -1 - Inner layer
+              //                          0 - Bottom layer
+              //                          1 to 250 - Specific layer number
+              // 457200   == size       | Diameter of the pad for round, odd, and annular pads. Length of a side for
+              //                          square pads. Width of oval or rectangular pads
+              // RF       == shape      | Pad shape. Valid values are:
+              //                          R - Round
+              //                          S - Square
+              //                          A - Annular
+              //                          O - Odd
+              //                          OF - Oval finger
+              //                          RF - Rectangular finger (SMD)
+              //                          RT - Thermal pad for a round pad shape
+              //                          ST - Thermal pad for square pad shape
+              // 90.000   == finori     | Orientation, in degrees, of oval or rectangular pads. Precision is three
+              //                          digits after the decimal point. Valid values range from 0 to 179.999. If
+              //                          the pad is not oval or rectangular, this field is omitted
+              // 2286000  == idia       | Inner diameter of an annular pad. If the pad is not annular, this field is omitted.
+              // 0        == finlength
+              // 0        == finoffset
+              //
+              //          == corner
+              //          == drill
+              //          == plated
+              //          == slotori
+              //          == slotlength
+
+              /*
+              PAD 7 3
+              -2 915000 RF  0.000 2130000 0   0 N
+              -1 0   R
+              0  0   R
+
+              PAD 0 4
+              -2 1050000 RF  90.000 1350000 0   0
+              -1 0   R
+              0  0   R
+              25 0   R
+              */
+              int pinnumber = get_pad(del_double_space(Line[nline]));
+              Cmd += "# 1257 " + Line[nline]+"\n";
+              get_pad_size(del_double_space(Line[nline]), pinnumber);
+              while(Stacklines) {  // get next x lines
+                nline++;
+                get_pad_size(del_double_space(Line[nline]), pinnumber);
+                Stacklines--;
+              }
+              //if (dlgMessageBox(Line[nline] + "\n die nächste Padzeile!?", "ok", "esc") != 0) exit(-1245);
+            }
+            else if (strstr(Line[nline], "VALUE") == 0) imp_value(del_double_space(Line[nline]));
+            else if (strstr(Line[nline], "Regular") == 0) imp_font(Line[nline]);  // <Romansim Stroke Font>
+            else if (strstr(Line[nline], "Part") == 0)    imp_part_type(Line[nline]);
+            else if (strstr(Line[nline], "Ref.Des.") == 0) imp_ref_des(Line[nline]);
+            else if (Line[nline][0] == 'T')    imp_tcoord(del_double_space(Line[nline]));
+            else if (strstr(Line[nline], "*PARTTYPE*") == 0 || strstr(Line[nline], "*END*") == 0) { // End of package definition
+              if (PADStermals != Tcnt-1) {
+                string e;
+                sprintf(e, "!Package %s.asc\n\nDifferent counts of PADs\nheader info = %d\nfound = %d", PADSname, PADStermals, Tcnt);
+                if (dlgMessageBox(e, "OK", "CANCEL") != 0) exit(-1256);;
+              }
+              checktest();
+              get_pads(FilePADSSym[fn]);
+              Cmd += "# End of Script\nWIN FIT;\n";
+              break; //n = Cntl;  // raus aus der Schleife, alle benötigten Parameter geparsed.
+            }
+          }
+          else if (pars_on == 1) {
+            pars_on++;
+            if (imp_pac_name(del_double_space(Line[nline]))) break; // Package exist, not delete
+            if (test) if (dlgMessageBox(PADSname, "Start new package", "Cancel") != 0) exit(-1267);
+          }
+        }
+        if (SingleLbr) { // 2012-06-25
+          sprintf(h, "WRITE '%s%s';\n", EaglePADSLbrDir, filesetext(filename(FilePADSSym[fn]), ".lbr"));
+          Cmd+=h;
+          //if (dlgMessageBox(h, "ok", "esc") != 0) exit(-1273);
+        }
+
+        if (test) {
+          dlgDialog("test") {
+            dlgHBoxLayout dlgSpacing(700);
+            dlgHBoxLayout {
+              dlgVBoxLayout dlgSpacing(700);
+              dlgTextEdit(Cmd);
+            }
+            dlgHBoxLayout {
+              dlgPushButton("ok") dlgAccept();
+              dlgPushButton("esc") { dlgReject(); exit(-1285); }
+              dlgPushButton("do not show next scipt") { test = 0; dlgAccept(); }
+            }
+          };
+        }
+        output(ScriptFile, "atD") {  // Erzeugtes Script an die Datei anhängen
+          printf("%s", Cmd);
+        }
+      }
+    }
+    exit ("SCRIPT '"+ ScriptFile + "'");
+  }
+}
+// # Ende Bibliothek #
+
+
+// # import a schematic #
+if (cntFilePADSAsc) {
+  int f = 0;
+  if (ScriptFile && FilePADSAsc[0]) {
+    for (f = 0; f < cntFilePADSAsc; f++) {
+
+      if (FilePADSAsc[f]) {
+        Cntl = fileread(Line, FilePADSAsc[f]);
+        status(FilePADSAsc[f]);
+        if (!checkexist_sym(PadsAscName)) {
+          string cmd;
+          sprintf(cmd, "EDIT '%s.SCH';\nCHANGE LAYER 96;\nGRID MIL 50 2 LINES ON;\nCHANGE WIDTH 10;\n", PadsAscName);
+          Cmd+=cmd;
+          Cmd+= "CHANGE STYLE Continuous;\n";
+          for (f = 0; f < Cntl; f++) {
+            if      (strstr(Line[f], "!PADS-POWERPCB") == 0) {
+              sprintf(h, "# %s\n", Line[f]);
+              cmd+= h;
+            }
+            else {
+              sprintf(h, "Line %d unknown:\n%s", f+1, Line[f]);
+              if (dlgMessageBox(h, "OK", "ESC") != 0) exit(-1322);
+            }
+          }
+          Cmd += CmdDev + "WIN FIT;\n";  // make a device and use generated symbol
+        }
+      }
+    }
+
+    if (test) {
+      dlgDialog("Das Rückgabe-SCRIPT") {
+        dlgHBoxLayout dlgSpacing(700);
+        dlgHBoxLayout {
+          dlgVBoxLayout dlgSpacing(700);
+          dlgTextEdit(Cmd);
+        }
+        dlgHBoxLayout {
+          dlgPushButton("ok") dlgAccept();
+          dlgPushButton("esc") { dlgReject(); exit(-1339); }
+        }
+      };
+    }
+    output(ScriptFile, "wtD") {
+      printf("%s", Cmd);
+    }
+    //if (dlgMessageBox(ScriptFile, "Ausführen", "Abbrechen") != 0) exit(-9);
+    exit ("SCRIPT '"+ ScriptFile + "'");
+  }
+}
+

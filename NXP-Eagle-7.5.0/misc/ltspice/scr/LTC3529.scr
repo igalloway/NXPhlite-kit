@@ -1,0 +1,15 @@
+ Edit 'LTC3529.dev' ;
+ Prefix 'IC' ;
+ Description '1.5A, 1.5MHz Step-Up DC/DC Converter in 2mm _ 3mm DFN' ;
+ Value off ;
+ Add LTC3529 'G$1' next 0 (0 0) ;
+ Package 'DFN8(DCB)' 'DCB' ;
+ Technology '' ;
+ Connect 'G$1.VOUT' '1' ;
+ Connect ALL 'G$1.PGND' '9 4' ;
+ Connect 'G$1.VIN' '8' ;
+ Connect 'G$1.SW' '2' ;
+ Connect 'G$1.!FAULT' '5' ;
+ Connect 'G$1.SNSGND' '6' ;
+ Connect 'G$1.!SHDN' '3' ;
+ Connect 'G$1.RST' '7' ;

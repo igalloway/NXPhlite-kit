@@ -1,0 +1,13 @@
+ Edit 'LTC3560.dev' ;
+ Prefix 'IC' ;
+ Description '2.25MHz, 800mA Synchronous Step-Down Regulator in ThinSOT' ;
+ Value off ;
+ Add LTC3560 'G$1' next 0 (0 0) ;
+ Package 'SOT6(S6)' 'S6' ;
+ Technology '' ;
+ Connect 'G$1.RUN' '1' ;
+ Connect 'G$1.VIN' '4' ;
+ Connect 'G$1.SW' '3' ;
+ Connect 'G$1.GND' '2' ;
+ Connect 'G$1.FB' '5' ;
+ Connect 'G$1.MODE' '6' ;

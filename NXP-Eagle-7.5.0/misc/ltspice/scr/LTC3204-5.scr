@@ -1,0 +1,13 @@
+ Edit 'LTC3204-5.dev' ;
+ Prefix 'IC' ;
+ Description 'Low Noise Regulated Charge Pump in 2 _ 2 DFN' ;
+ Value off ;
+ Add LTC3204-5 'G$1' next 0 (0 0) ;
+ Package 'DFN6(DC)' 'DC' ;
+ Technology '' ;
+ Connect 'G$1.VOUT' '3' ;
+ Connect 'G$1.VIN' '2' ;
+ Connect ALL 'G$1.GND' '1 7' ;
+ Connect 'G$1.!SHDN' '6' ;
+ Connect 'G$1.C+' '4' ;
+ Connect 'G$1.C-' '5' ;

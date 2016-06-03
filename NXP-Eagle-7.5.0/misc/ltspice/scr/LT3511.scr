@@ -1,0 +1,17 @@
+ Edit 'LT3511.dev' ;
+ Prefix 'IC' ;
+ Description 'Monolithic High Voltage Isolated Flyback Converter' ;
+ Value off ;
+ Add LT3511 'G$1' next 0 (0 0) ;
+ Package 'MSOP16-12(MS)' 'MS' ;
+ Technology '' ;
+ Connect 'G$1.VC' '10' ;
+ Connect 'G$1.RREF' '12' ;
+ Connect 'G$1.VIN' '3' ;
+ Connect 'G$1.SW' '16' ;
+ Connect ALL 'G$1.GND' '9 8 5' ;
+ Connect 'G$1.EN/UVLO' '1' ;
+ Connect 'G$1.BIAS' '6' ;
+ Connect 'G$1.TC' '11' ;
+ Connect 'G$1.RFB' '14' ;
+# Connect 'G$1.NC' '7' ;

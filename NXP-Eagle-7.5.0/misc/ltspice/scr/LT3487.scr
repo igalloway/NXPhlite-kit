@@ -1,0 +1,18 @@
+ Edit 'LT3487.dev' ;
+ Prefix 'IC' ;
+ Description 'Boost and Inverting Switching Regulator for CCD Bias' ;
+ Value off ;
+ Add LT3487 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.VBAT' '3' ;
+ Connect 'G$1.DN' '5' ;
+ Connect 'G$1.VIN' '6' ;
+ Connect 'G$1.GND' '11' ;
+ Connect 'G$1.VPOS' '10' ;
+ Connect 'G$1.RUN/SS' '8' ;
+ Connect 'G$1.FBP' '9' ;
+ Connect 'G$1.SWP' '2' ;
+ Connect 'G$1.FBN' '7' ;
+ Connect 'G$1.SWN' '4' ;
+ Connect 'G$1.CAP' '1' ;

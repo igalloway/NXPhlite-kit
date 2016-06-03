@@ -1,0 +1,15 @@
+ Edit 'LT3464.dev' ;
+ Prefix 'IC' ;
+ Description 'Micropower Boost Converter with Integrated Schottky and Output Disconnect in ThinSOT' ;
+ Value off ;
+ Add LT3464 'G$1' next 0 (0 0) ;
+ Package 'SOT8(TS8)' 'TS8' ;
+ Technology '' ;
+ Connect 'G$1.VIN' '7' ;
+ Connect 'G$1.SW' '6' ;
+ Connect 'G$1.GND' '4' ;
+ Connect 'G$1.FB' '2' ;
+ Connect 'G$1.OUT' '3' ;
+ Connect 'G$1.!SHDN' '8' ;
+ Connect 'G$1.CTRL' '1' ;
+ Connect 'G$1.CAP' '5' ;

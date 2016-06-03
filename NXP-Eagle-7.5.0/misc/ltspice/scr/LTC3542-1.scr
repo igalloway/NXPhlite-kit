@@ -1,0 +1,13 @@
+ Edit 'LTC3542-1.dev' ;
+ Prefix 'IC' ;
+ Description '500mA, 2.25MHz 500mA, 2.25MHz Step-Down DC/DC Converter' ;
+ Value off ;
+ Add LTC3542-1 'G$1' next 0 (0 0) ;
+ Package 'DFN6(DC)' 'DC' ;
+ Technology '' ;
+ Connect 'G$1.RUN' '6' ;
+ Connect 'G$1.VOUT' '1' ;
+ Connect 'G$1.VIN' '2' ;
+ Connect 'G$1.SW' '4' ;
+ Connect ALL 'G$1.GND' '3 7' ;
+ Connect 'G$1.MODE' '5' ;

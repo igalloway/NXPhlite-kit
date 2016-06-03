@@ -1,0 +1,4603 @@
+#usage "en:<b>Interface to the simulation software LTspice IV </b><br>"
+       "Export of EAGLE schematics and libraries into LTspice and import of schematics and symbols from LTspice<p>"
+       "RUN ltspice /E [/S][/G]<br>"
+       "RUN ltspice /I [/S][/G]<br>"
+       "RUN ltspice /?<br>"
+       " /E == Export<br>"
+       " /I == Import<br>"
+       " /? == System info<br>"
+       "Option /S opens the SETUP menu for default settings.<br>"
+       "Option /G exports a group previously created in the schematic with the GROUP command.<br>"
+       "RUN ltspice /I 'importfilename' [RELOAD]<p>"
+       "Start this ULP with the option /E from a Deviceset (Library), in order to export the current Deviceset. "
+       "Use the ULP without an option in order to export the whole library.<br>"
+       "For the import you can choose the option <i>Import all symbols from directory</i> in the dialog. Select a symbol file then, "
+       "and all symbols from the current directory will be imported into an EAGLE library."
+       "<p>"
+       "The option RELOAD is planned to check a schematic for modifications. "
+       "This option is not implemented yet! 2012-09<br>"
+       "<hr>"
+       "<b>SpiceOrder</b><br>"
+       "The so-called SpiceOrder will be defined in layer 99 'SpiceOrder' as a text. "
+       "It has to be placed exactly at the connection point (coordinate) of the pin. "
+       "While exporting an EAGLE schematic the ULP checks for SpiceOrder and SpiceModel. "
+       "If SpiceOrder is not defined, EAGLE loads the Deviceset and starts spiceorder.ulp.<br>"
+       "This ULP helps to assign pins of the symbol and its Spiceorder. This assignment will be written "
+       "as a text at the pin connection point in layer 99 automatically."
+       "<p>"
+       "<b>SpiceModel</b><br>"
+       "SpiceModel is the simulation model. It will be attached with the help of the attribute "
+       "<i>SPICEMODEL</i> in the device. Therefore the LTC icon in the device editor contains the entry <i>SpiceModel</i>."
+       "<p>"
+       "<b>Value2</b><br>"
+       "For some components you have to assign the additional <i>Value2</i>. It has to be created with an attribute, "
+       "as well. There is a further entry in the LTC icon's menu for this."
+       "<p>"
+       "For an error-free schematic import we need correctly and clearly defined libraries. "
+       "The library <b>lt-spice-simulation.lbr</b> has a special status:<br>"
+       "It should not appear in the list of USEd libraries. Otherwise the ADD dialog will open "
+       "for placing resistors while the import script is running.<br>"
+       "The simulation resistors \"Rload\" are treated like normal resistors in LTSpice. "
+       "Just the device name gets the extension \"_RLOAD\". "
+       "<p>"
+       "<b>lt-spice-simulation.lbr</b> contains only devices that are used for the simulation, like "
+       "power supply, voltage generator, loads, measurement equipment and so on.). "
+       "All those devices have an attribute with the name \"_EXTERNAL_\". So you don't have to "
+       "assign a package; such components are not transferred into the board and do not "
+       "appear in the bill of materials.<br>"
+       "<p>"
+       "A FLAG comming from LTspice results in EAGLE in a simple LABEL that is placed on the net line (FLAG 1248 176 BI_Port).<br>"
+       "There is no rotation given for FLAGs. The rotation has to be determined with the help of the orientation of the referring line! "
+       "It can happen that a FLAG is placed onto a pin directly. It's not possible to determine the rotation then. "
+       "In such a case you have to take care on this matter manually!<br>"
+       "<p>"
+       "An IOPIN is reflected as a cross-reference label in EAGLE. (IOPIN 1248 176 BiDir)<br>"
+       "There is no equivalent for IOPIN in EAGLE, so we use a cross-reference (XREF) label for BI_Port, In and Out."
+       "<p>"
+       "Supply symbols (FLAGs) like 0 or COM, are taken from <i>lt-supply.lbr</i> directly.<br>"
+       "If you have to use other supply symbols (not 0 and COM), you have to create them in LTspice as *.asy files "
+       "containing the spice symbols.<br>"
+       "Example:<br>"
+       "Version 4<br>"
+       "SymbolType CELL<br>"
+       "LINE Normal 0 11 0 16<br>"
+       "LINE Normal -11 14 0 0<br>"
+       "LINE Normal 0 0 11 14<br>"
+       "LINE Normal 0 11 -11 14<br>"
+       "LINE Normal 11 14 0 11<br>"
+       "TEXT 0 -4 Bottom 2 +3.3V<br>"
+       "SYMATTR Prefix X<br>"
+       "SYMATTR SpiceModel node.sub<br>"
+       "SYMATTR Value node<br>"
+       "SYMATTR Value2 node<br>"
+       "PIN 0 16 NONE 36<br>"
+       "PINATTR PinName +3.3V<br>"
+       "PINATTR SpiceOrder 1<br>"
+       "<p>"
+       "And the simulation model:<br>"
+       "* Copyright (C) Linear Technology Corp. 1998, 1999, 2000.  All rights reserved.<br>"
+       "*<br>"
+       ".subckt node 1<br>"
+       "R1 1 1 0<br>"
+       ".ends node<br>"
+       "<p>"
+       "In order to define a supply device in an EAGLE library, place a supply pin in a symbol and "
+       "define a device with <b>ATTRIBUTE 'SPICEMODEL' 'node.sub';</b> and <b>ATTRIBUTE 'VALUE2' 'node';</b> . "
+       "These two attributes make the device 'spice-usable'.<br>"
+       "In the transferred schematic you have to place a FLAG with all the neccessary information at the pin's position."
+       "<p>"
+       "When you start this ULP, EAGLE searches for the path of the LTspice executable in the file eaglerc.usr. If it "
+       "is not yet stored there, it searches in the default program folder and stores it in eaglerc.usr then."
+       "<br>"
+       "For the export of a schematic, EAGLE checks the availability of all necessary LTspice symbols .asy. "
+       "If there is one is missing, EAGLE opens the referring deviceset in the EAGLE library.<br>"
+       "<p>"
+       "There is a check for the SpiceOrder texts in layer 99 <i>SpiceOrder</i>. "
+       "In devices EAGLE searches for the attribute 'SPICEMODEL'. If one of these items is missing, "
+       "EAGLE opens the library editor. Please add the missing definitions. "
+       "For the SpiceOrder there will be called an ULP automatically."
+       "<p>"
+       "<b>The names of the symbols in EAGLE must be different compared to the names of the LTspice symbols.</b><br>"
+       "Example: If you export a symbol/device with name 'DIODE' from EAGLE, LTspice takes its own "
+       "symbol with name 'diode'. To insure that the EAGLE symbol is taken it has to have a unique name. "
+       "You can also combine device name and library name. The library name then reflects a subfolder in the "
+       "LTspice folder  /sym . 2012-10-09"
+       "<p>"
+       "The SPICEMODEL attribute can be created through an entry in the LTC icon menu."
+       "<br>"
+       "This icon is created through the file eagle.scr. It will be executed automatically when you are "
+       "creating a new device or symbol. The icon images (PNG files) should be in "
+       "the subfolder <i>bin</i> of the EAGLE folder."
+       "<p>"
+       "Export/import Libraries:<br>"
+       "Libraries imported from LTspice have to be created in the subfolder ./lbr/ltspice/... "
+       "So the export function recognizes that the libary file comes from LTspice.<br>"
+       "When you start the ULP for the first time it copies some files to LTspice. <br>"
+       "They have to be copied into the following folder structure:<br>"
+       "./eagle-x.x.x/<br>"
+       " - /misc/<br>"
+       " - - /ltspice/<br>"
+       " - - - /lib/<br>"
+       " - - - - /sub/ note.sub and other .sub files<br>"
+       " - - - - /sym/<br>"
+       " - - - - - /eagle/<br>"
+       " - - - - - - /lbrname/  exported symbols from the EAGLE libraries<br>"
+       " - - - /scr/  Connect scripts (provided by LT)<br>"
+       "<br>"
+       "EAGLE libraries will be created/copied in(to) the following folders:<br>"
+       "./LTC/LTspiceIV/lib/sym/eagle/<br>"
+       "Each library exported results in a subfolder with the library name.<br>"
+       "<p>"
+       "<author>Author: alf@cadsoft.de</author>"
+       ,
+
+       "de:<b>Schnittstelle zur Simulationssoftware LTspiceIV </b><br>"
+       "Export von EAGLE-Schaltplänen und Bibliothekssymbolen nach LTspiceIV und Import von Schaltplänen und Symbolen aus LTspiceIV<p>"
+       "RUN ltspice /E [/S][/G]<br>"
+       "RUN ltspice /I [/S][/G]<br>"
+       "RUN ltspice /?<br>"
+       " /E == Export<br>"
+       " /I == Import<br>"
+       " /? == Systeminfo<br>"
+       "Option /S öffnet das SETUP-Menü für Grundeinstellungen.<br>"
+       "Option /G exportiert eine Gruppe, die vorher im Schaltplan mit GROUP definiert wurde.<br>"
+       "RUN ltspice /I 'importfilename' [RELOAD]<p>"
+       "Startet man das ULP mit der Option /E aus einem Deviceset (Bibliothek), wird dieses eine Deviceset exportiert. "
+       "Gibt man keine Option an, wird die gesamte Bibliothek exportiert.<br>"
+       "Beim Import kann man im Dialog die Option <i>Import all symbols from directory</i> aktivieren. Wählen Sie dann eine Symboldatei aus, "
+       "werden alle Symbole aus dem Verzeichnis in die EAGLE-Bibliothek importiert."
+       "<p>"
+       "Die Option RELOAD soll in Zukunft den Schaltplan auf Änderungen prüfen. "
+       "Diese Option ist noch nicht implementiert! 2012-09<br>"
+       "<hr>"
+       "<b>SpiceOrder</b><br>"
+       "Die sogenannte SpiceOrder wird im Layer 99 'SpiceOrder' als Text abgelegt. Dieser muss exakt auf dem Kontaktpunkt (Koordinate) des Pins liegen. "
+       "Beim Export eines EAGLE-Schaltplans wird geprüft, ob SpiceOrder und SpiceModel definiert sind. "
+       "Fehlt die SpiceOrder, lädt EAGLE das entsprechende Deviceset und startet spiceorder.ulp.<br>"
+       "Mit Hilfe dieses ULPs ordnet man den Symbolpins die SpiceOrder zu. Diese Zuordnung wird automatisch an "
+       "den Pins als Text im Layer 99 platziert."
+       "<p>"
+       "<b>SpiceModel</b><br>"
+       "Das SpiceModel ist das Simulationsmodell. Es wird in EAGLE im Device "
+       "als Attribut <i>SPICEMODEL</i> hinterlegt. Das LTC-Icon im Device-Editor enthält dazu den Eintrag <i>SpiceModel</i>."
+       "<p>"
+       "<b>Value2</b><br>"
+       "Für manche Bauteile benötigt man zusätzlich <i>Value2</i>. Dieser kann ebenfalls als Attribut "
+       "angelegt werden. Auch hierzu gibt es eine Option im Menü des LTC-Icons."
+       "<p>"
+       "Für einen fehlerfreien Schaltplan-Import benötigt man passende und eindeutige Bibliotheken. "
+       "Die Bibliothek <b>lt-spice-simulation.lbr</b> hat einen Sonderstatus:<br>"
+       "Sie darf nicht in der USE-Liste enthalten sein, da ansonsten beim Ausführen des Scripts "
+       "und Einfügen von Widerständen das ADD-Menu geöffnet wird.<br>"
+       "Die Simulationswiderstände \"Rload\" werden in LTSpice wie normale Widerstände behandelt, "
+       "nur der Devicename wird mit dem Anhang \"_RLOAD\" erweitert. "
+       "<p>"
+       "<b>lt-spice-simulation.lbr</b> enthält nur Devices, die für die Simulation benötigt werden, wie "
+       "z.B. (Stromquellen, Spannungsquellen, Lasten, Messgeräte etc.). "
+       "In diesen Devices ist jeweils ein Attribut mit dem Namen \"_EXTERNAL_\" angelegt. Dadurch muss kein Package "
+       "zugeordnet werden; es handelt sich hierbei um Bauteile, die nicht in das Board übertragen "
+       "und auch nicht in die Stückliste aufgenommen werden.<br>"
+       "<p>"
+       "Ein FLAG aus LTspice wird in EAGLE als einfaches LABEL dargestellt und auf der Netzlinie platziert (FLAG 1248 176 BI_Port).<br>"
+       "Bei FLAGs wird keine Rotation angegeben. Die Rotation muss anhand der Ausrichtung der letzten zugehörigen Linie "
+       "ermittelt werden! Es kann auch vorkommen dass FLAGs direkt auf Pins gesetzt werden. Dann ist es nicht möglich die "
+       "Rotation zu ermitteln. In diesem Fall muss man sich manuell um die korrekte Ausrichtung des Labels anhand des  "
+       "Pins im Symbol kümmern!<br>"
+       "<p>"
+       "Ein IOPIN wird in EAGLE als LABEL mit Querverweis dargestellt. (IOPIN 1248 176 BiDir)<br>"
+       "Da es in EAGLE keine Pendant für IOPIN gibt, wird für BI_Port, In und Out ein Label mit Querverweis (XREF) platziert."
+       "<p>"
+       "Supply-Symbole (FLAG) wie 0 oder COM, werden direkt aus der lt-supply.lbr genommen.<br>"
+       "Werden andere Supply-Symbole (ausser 0 und COM) benutzt, müssen diese in LTspice als *.asy-Datei "
+       "mit dem entsprechenden Spicemodel angelegt werden.<br>"
+       "Beispiel:<br>"
+       "Version 4<br>"
+       "SymbolType CELL<br>"
+       "LINE Normal 0 11 0 16<br>"
+       "LINE Normal -11 14 0 0<br>"
+       "LINE Normal 0 0 11 14<br>"
+       "LINE Normal 0 11 -11 14<br>"
+       "LINE Normal 11 14 0 11<br>"
+       "TEXT 0 -4 Bottom 2 +3.3V<br>"
+       "SYMATTR Prefix X<br>"
+       "SYMATTR SpiceModel node.sub<br>"
+       "SYMATTR Value node<br>"
+       "SYMATTR Value2 node<br>"
+       "PIN 0 16 NONE 36<br>"
+       "PINATTR PinName +3.3V<br>"
+       "PINATTR SpiceOrder 1<br>"
+       "<p>"
+       "Dazu das Simulationsmodell:<br>"
+       "* Copyright (C) Linear Technology Corp. 1998, 1999, 2000.  All rights reserved.<br>"
+       "*<br>"
+       ".subckt node 1<br>"
+       "R1 1 1 0<br>"
+       ".ends node<br>"
+       "<p>"
+       "Um ein Supply-Device in einer EAGLE-Bibliothek anzulegen, platziert man im Symbol einen Supply-Pin und "
+       "legt dann ein Device mit <b>ATTRIBUTE 'SPICEMODEL' 'node.sub';</b> und <b>ATTRIBUTE 'VALUE2' 'node';</b> an. "
+       "Diese beiden Attribute machen das Device 'spicetauglich'.<br>"
+       "Im übertragenen Schaltplan, muß an der Position des Pins ein FLAG mit entsprechenden Informationen platziert werden."
+       "<p>"
+       "Beim Sart des ULPs wird in der Datei eaglerc.usr nach dem Pfad zur Programmdatei von Ltspice gesucht. Ist dieser "
+       "noch nicht hinterlegt, wird im Default-Programme-Ordner gesucht und in eaglerc.usr eingetragen."
+       "<br>"
+       "Das ULP überprüft beim Export des Schaltplan die Verfügbarkeit der benötigten LTspice-Symbole .asy. "
+       "Fehlt eines, öffnet EAGLE das Deviceset in der entsprechenden Bibliothek.<br>"
+       "<p>"
+       "Geprüft wird, ob in den Symbolen die SpiceOrder-Texte im Layer 99 <i>SpiceOrder</i> vorhanden sind. "
+       "In Devices wird nach dem Attribut 'SPICEMODEL' gesucht. Fehlt eines dieser Merkmale, wird "
+       "die Bibliothek mit dem entsprechenden Symbol bzw. Device geöffnet. Machen Sie dann die nötigen "
+       "Ergänzungen. Für die SpiceOrder ist ein ULP verfügbar, das automatisch aufgerufen wird."
+       "<p>"
+       "<b>Die Symbolnamen von EAGLE-Symbolen müssen sich von denen in LTspice unterscheiden.</b><br>"
+       "Beispiel: Exportiert man aus EAGLE ein Symbol/Devic 'DIODE', verwendet LTspice sein eigenes "
+       "Symbol mit Namen 'diode'. Damit das EAGLE-Symbol verwendet wird, muss es einen eigenen Namen haben. "
+       "Man kann auchden Namen mit dem LBR-Namen zusammen angegeben. Der LBR-Name entspricht dann einem "
+       "Unterordner im LTspice-Ordner /sym . 2012-10-09"
+       "<p>"
+       "Das Attribut SPICEMODEL kann über den Menü-Eintrag des LTC-Icons angelegt werden."
+       "<br>"
+       "Dieses Icon wird durch die Datei eagle.scr angelegt. Diese wird beim Anlegen eines neuen "
+       "Devices bzw. Symbols automatisch ausgeführt. Die benötigten Icons (PNG-Dateien) müssen im "
+       "Unterordner <i>bin</i> des EAGLE-Verzeichnisses abgelegt werden."
+       "<p>"
+       "Bibliotheken importieren/exportieren:<br>"
+       "Die importierten LTspice-Bilbiotheken müssen im Unterordner  ./lbr/ltspice/.. angelegt werden, "
+       "damit die Export-Funktion erkennen kann, dass es sich um eine LTspice-Bibliothek handelt.<br>"
+       "Beim ersten Start des ULPs werden entsprechende Dateien nach LTspice kopiert. <br>"
+       "Die zu kopierenden Dateien müssen in folgender Ordnerstruktur abgelegt sein:<br>"
+       "./eagle-x.x.x/<br>"
+       " - /misc/<br>"
+       " - - /ltspice/<br>"
+       " - - - /lib/<br>"
+       " - - - - /sub/ note.sub und sonstige .sub Dateien<br>"
+       " - - - - /sym/<br>"
+       " - - - - - /eagle/<br>"
+       " - - - - - - /lbrname/  die exportierten Symbole der entsprechenden EAGLE-Bibliotheken<br>"
+       " - - - /scr/ die Connect-Scripte von LT (werden von LT geliefert)<br>"
+       "<br>"
+       "EAGLE-Bibliotheken werden in den folgenden Ordner kopiert/erzeugt:<br>"
+       "./LTC/LTspiceIV/lib/sym/eagle/<br>"
+       "Dabei wird für jede Bibliothek ein Ordner mit dem Namen der exportierten Bibliothek angelegt.<br>"
+       "<p>"
+       "<author>Author: alf@cadsoft.de</author>"
+
+
+string LTspiceFormatInfo = "<nobr>" +
+  "Das Koordinatensystem von LTspice ist entsprechend der BitMap einer Grafikkarte organisiert.<br>" +
+  "Der Nullpunkt ist links oben, und die Vorzeichen der Y-Achse sind invertiert!<br>" +
+  "Positiv nach unten, negativ nach oben.<br>" +
+  "LTspice benutzt ein 16er Grid, das die Auflösung für Symbole etwas einschränkt.<br>" +
+  "Das Raster in LTspice wird ohne Einheit angegeben und ist auf (100) mil umgerechnet.<br>" +
+  "In Device-Namen darf kein Schrägstrich (Slash) oder Rückstrich (Backslash) vorkommen.<br>" +
+  "Der Name des Symbols in LTspice definiert den Device-Namen, der gleichzeitig der Name der .asy-Datei ist.<br>" +
+  "Unter Windows ist der 'Schrägstrich' in Dateinamen nicht erlaubt.<br>" +
+  "Unter Linux würde das einen weiteren Unterordner bedeuten!" +
+  "</nobr>" +
+  "<p>" +
+  "alf@cadsoft.de";
+
+if (language() != "de") LTspiceFormatInfo = "<nobr>" +
+  "The coordinates system of LTspice is similar to the BitMap of a graphics adapter.<br>" +
+  "The origin is located in the upper left corner. The coordinates direction of the y axis is inverted.<br>" +
+  "Positive coodinates down, negative up.<br>" +
+  "LTspice works with a multiple of 16 grid, which limits the resolution for symbols a bit.<br>" +
+  "LTspice uses an inch based grid (units not visible) converted to (100) mil.<br>" +
+  "Device names may not contain slash / or backslash \.<br>" +
+  "The symbol name in LTspice defines the device name. This name is used for the .asy file, as well.<br>" +
+  "Windows does not tolerate a slash in file names. Linux would create a subfolder." +
+  "</nobr>" +
+  "<p>" +
+  "alf@cadsoft.de";
+
+#require 6.0500
+string ULP_Version = "1.0.4";   // 1.0.2 - 2013-10-01 alf erweitert mit Option /? Systeminfo für Diagnose
+                                // 1.0.3 - 2014-01-23 R C L braucht kein SpiceModel (Attribute)
+                                // 1.0.4 - 2014-04-03 Pfadauswertung zur importierten LTspice-Lbr berichtigt
+int    Test = 0;
+
+
+/* *** export vaiable **** */
+string LTSpiceExecute = "";        // Pfad-Dateiname zum LTspice-Programm
+string EagleExecute = EAGLE_PATH;  // 2012-11-23
+
+string LTSpiceLibDir = "";        // das Directory der LTspice-Symbole .asy
+string ExpEagleSpiceSymDir = "";  // das Directory der exportierten Eagle Library-Symbole
+string ImpSpiceSchematicAsc = ""; // der ausgewählte LTspice-Schaltplan zum importieren
+string SpiceSymbol = "";
+string ExpSchematic2LTpice = "";  // der Eagle-Schaltplan der exportiert wird
+
+string SpiceSimulationLbr = "";   // die LBR für die Generatoren, Messinstrumente, Lastwiderstände etc.
+                                  // wird mit USE benutzt.
+string SpiceDefaultSymLbr = "";   // die LBR für die default Symbole wie R, C, L, D, T ....
+                                  // wird ebenfalls mit USE benutzt, damit es keine Konflikte zwischen EAGLE-LBRs
+                                  // und LTspice-LBRs gibt.
+string EagleSpiceLbrDir = "";     // Das Verzeichnis für die importierten Spice-Bibliotheken (*.asy -> .lbr)
+
+string LbrName;                   // current eagle lbr name
+string NewLbrName;                // new eagle lbr name
+
+
+string FileSpiceSym[];            // file names of spice symbols of a directory
+int    CntFileSpiceSym        = 0;
+string Import_All_Symbols     = "1";
+
+string Imp_SpiceSchematicAsc  = "";
+string Imp_SpiceSymbol = "";
+string Imp_SpiceSimulationLbr = ""; // die LBR für die Generatoren, Messinstrumente, Lastwiderstände etc.
+string Imp_SpiceDefaultSymLbr = ""; // die LBR für die default Symbole wie R, C, L, D, T ....
+string Imp_EagleSpiceSchDir   = "";
+string Imp_LbrName;                 // current eagle lbr name
+
+string Imp_FileSpiceSym[];          // file names of spice symbols of a directory
+int    Imp_CntFileSpiceSym    = 0;
+string Imp_ConnectScriptDir  = "";
+
+
+string Ex_AsyName;
+string Ex_SpiceAscDir;
+
+int    ExportAll          = 1;  // 0 to export only a GROUP
+int    Ex_cntFileSpiceAsc = 0;
+int    CntOutput          = 0;  // exported devices/technologies as *.asy
+
+int    Ex_WaitOnHandShake = 0;  // flag for response of external executable (LTspice)
+
+int    Ex_PinDirSup       = 0;  // Flag to generate Supply-Symbols for LTspice as library
+string Ex_SpiceOrder      = "SpiceOrder";
+string Ex_AttributeSPICEMODEL = "SPICEMODEL";
+string Ex_AttributeSPICEPREFIX = "SPICEPREFIX";
+
+string Ex_SpiceOrderNum[];
+int    Ex_PinX[], Ex_PinY[];
+int    Ex_LayerSpiceOrder = 99;    // Die Zuordnung der Pins zu der SpiceOrder geschieht über den Text "SpiceOrder XX"
+                                   // und wird als Text in diesem Layer abgelegt!
+int    Ex_CntSymText = 0;
+int    ExOnceLib = 0;
+
+string FileNewTemp = "wtD";     // option for function output() for generate temporary file (script).
+string FileAppend = "at";   // option for function output() append data to existing file.
+
+
+/***** import variable ******/
+
+int    RELOAD = 0;  // Flag zum vergleichen bzw. nachladen nach beenden von export ltspice.ulp
+
+string Imp_InfoExternalSymbol = "<b>In EAGLE besteht jedes reguläre Bauteil aus ein oder mehreren Symbolen "
+                                "und ein oder mehreren Package-Varianten!</b><p>" +
+                                "Simulationssymbole für LTspice (Stromquellen, Spannungsquellen, " +
+                                "Generatoren, Messgeräte, Lasten etc.), dürfen nicht in das Board oder in die " +
+                                "Stück- Netz- Pin-Listen übernommen werden.<br>" +
+                                "Um das zu bewerkstelligen, und alle Pin-Directions in Symbolen " +
+                                "nutzen zu können, muß in den Devices für Simulations-Symbole ein " +
+                                "Attribute \"_EXTERNAL_\" definiert werden." +
+                                "Dieses Attribute veranlasst Eagle (ab Version 6.2), die Überprüfung " +
+                                "des Device bezüglich der CONNECT-Liste und Vorhandensein eines " +
+                                "Packages zu unterdrücken.<br>";
+
+if (language() != "de") {
+    Imp_InfoExternalSymbol = "In EAGLE every component definition consists of one or more symbols assigned to " +
+                             "one or more package variants<p>." +
+                             "Simulation symbols in LTSpice (like power supply, voltage supply, generators, " +
+                             "measurment tools, loads and so on...) do not appear in the board nor in a " +
+                             "bill of materials, pin list or  net list.<br>" +
+                             "In order to have all pin directions available for such symbols, a device for " +
+                             "a simulation symbol must have defined an attribute named \"_EXTERNAL_\". " +
+                             "This attribute suppresses the connection check and the package check (from " +
+                             "EAGLE version 6.2.0 on).<br>";
+}
+
+string LTspicePrefix[], LTspicePrefixDescript[];
+       LTspicePrefix[ 0] = "none"; LTspicePrefixDescript[0]  = "Device used not spice prefix";
+       LTspicePrefix[ 1] = "A"; LTspicePrefixDescript[ 1] = "Special functions";
+       LTspicePrefix[ 2] = "B"; LTspicePrefixDescript[ 2] = "Arbitrary behavioral source";
+       LTspicePrefix[ 3] = "C"; LTspicePrefixDescript[ 3] = "Capacitor";
+       LTspicePrefix[ 4] = "D"; LTspicePrefixDescript[ 4] = "Diode";
+       LTspicePrefix[ 5] = "E"; LTspicePrefixDescript[ 5] = "Voltage dependent voltage";
+       LTspicePrefix[ 6] = "F"; LTspicePrefixDescript[ 6] = "Current dependent current";
+       LTspicePrefix[ 7] = "G"; LTspicePrefixDescript[ 7] = "Voltage dependent current";
+       LTspicePrefix[ 8] = "H"; LTspicePrefixDescript[ 8] = "Current dependent voltage";
+       LTspicePrefix[ 9] = "I"; LTspicePrefixDescript[ 9] = "Independent current source";
+       LTspicePrefix[10] = "J"; LTspicePrefixDescript[10] = "JFET transistor";
+       LTspicePrefix[11] = "K"; LTspicePrefixDescript[11] = "Mutual inductance";
+       LTspicePrefix[12] = "L"; LTspicePrefixDescript[12] = "Inductance";
+       LTspicePrefix[13] = "M"; LTspicePrefixDescript[13] = "MOSFET transistor";
+       LTspicePrefix[14] = "O"; LTspicePrefixDescript[14] = "Lossy transmission line";
+       LTspicePrefix[15] = "Q"; LTspicePrefixDescript[15] = "Bipolar transistor";
+       LTspicePrefix[16] = "R"; LTspicePrefixDescript[16] = "Resistor";
+       LTspicePrefix[17] = "S"; LTspicePrefixDescript[17] = "Voltage controlled switch";
+       LTspicePrefix[18] = "T"; LTspicePrefixDescript[18] = "Lossless transmission line";
+       LTspicePrefix[19] = "U"; LTspicePrefixDescript[19] = "Uniform RC-line";
+       LTspicePrefix[20] = "V"; LTspicePrefixDescript[20] = "Independent voltage source";
+       LTspicePrefix[21] = "W"; LTspicePrefixDescript[21] = "Current controlled switch";
+       LTspicePrefix[22] = "X"; LTspicePrefixDescript[22] = "Subcircuit";
+       LTspicePrefix[23] = "Z"; LTspicePrefixDescript[23] = "MESFET transistor";
+
+string ExternalAttributeName = "_EXTERNAL_";  // Attribute in order to define a device without package in eagle
+string ExternalSymbol = "";
+
+int    LayerSpiceOrder = 99;    // Die Zuordnung der Pins zu der SpiceOrder geschieht über den Text SpiceOrderXX
+                                // und wird als Text in diesem Layer abgelegt!
+int    ColorViolett    = 5;
+
+string SchName;
+int    Imp_CntFileSpiceAsc = 0;
+
+char   Delimiter = '@';
+
+int    Imp_SetWireStyle = 0;  // setze WireStyle auf continuous für den NET-Befehl
+
+string Imp_Coords[];      // LT-Spice rotiert ein FLAG (Supplypin/Label) automatisch
+                          // anhand der Ausrichtung des Wire, an dessen Ende das FLAG sitzt.
+                          // Dazu muss man alle Wires sammeln, um dann später die Rotation
+                          // des FLAGs zu bestimmen.
+int    Imp_CntCo = 0;
+
+int    Imp_WireX1[], Imp_WireY1[], Imp_WireX2[], Imp_WireY2[];
+int    Imp_CntW  = 0;
+int    Imp_WireSeg[];       // Da ein NET sehr verzweigt, und später mit einem BUSTAB zu einem BUS deklariert werden kann,
+                            // werden die Wire, Segmenten zugeordnet.
+int    Imp_WireType[];      // Der Index des WireType entspricht der Segmentnummer.
+                            // Der Inhalt wird zunächst auf NET gesetzt, wird später im Segment eine Koordinate eines BUSTAB
+                            // gefunden, so wird das Segment auf BUS gesetzt.
+int    Imp_CntSeg = 0;      // Anzahl der Segmente
+int    Imp_WireChecked = 0; // Flag ob zusammenhängenden Wire-Segmente schon ermittelt wurden.
+enum   { Null, BUS, NET }
+int    Imp_DrawNetBus = 0;  // Flag ob NET und BUS schon gezeichnet wurde.
+
+string Imp_LineView[];  // nur zum Test
+
+       // Eine Besonderheit beim Simulieren in LTspice sind Lastwiderstände.
+       // Lastwiderständer werden mit Rload benannt.
+string Imp_RloadExtention = "_RLOAD"; // Namenserweiterung innerhalb Eagle, um Simulations-/Last-Widerstände von "Res" zu unterscheiden
+
+string Imp_InstanceName = "";
+
+string Imp_Winattrib[];
+real   Imp_InstCoordX, Imp_InstCoordY;  // remember coordinate from last instance in schematic
+real   Imp_InstNameSmashX, Imp_InstNameSmashY;
+real   Imp_InstNameOffset;
+real   Imp_InstValueSmashX, Imp_InstValueSmashY;
+real   Imp_InstValueOffset;
+real   Imp_SpiceModelSmashX, Imp_SpiceModelSmashY;
+real   Imp_InstValue2SmashX, Imp_InstValue2SmashY;
+real   Imp_InstValue2Offset;
+real   Imp_SpiceLineSmashX, Imp_SpiceLineSmashY;
+real   Imp_SpiceLine2SmashX, Imp_SpiceLine2SmashY;
+
+real Imp_FlagRotate = 0.0;      // used to rotate Label (Flag) on NET-Wire
+
+string Add;
+string AddPart;
+string AddPartLib;
+string AddPartOrientation;
+string TextAlign;            // die Textausrichtung für Text allgemein
+string TextAlignRotation;    // die Rotation für algemeinen Text
+string TextAlignName;        // die Textausrichtung für >NAME
+string TextAlignValue;       // die Textausrichtung für >VALUE
+string TextAlignValue2;      // die Textausrichtung für Value2
+string TextAlignSpiceLine;   // die Textasurichtung für die Spiceline
+string TextAlignSpiceLine2;  // die Textasurichtung für die Spiceline2
+
+string ScriptFile = "";
+string CmdNameLabel = "";
+string RememberFlag = "";    // Ein Flag kann ein Label oder ein IOPIN sein,
+                             // die Entscheidung fällt erst eine Zeile später
+                             // mit IOPIN. Dazu muß man sich das Flag merken
+                             // und die Koordinaten mit dem IOPIN vergleichen.
+
+string Lines[];
+int    CntLines;
+int    n;                    // Global line counter
+
+string h;
+
+string Imp_Cmd = "";
+string Imp_CmdValueV = "";
+string Imp_CmdPartValue = "";
+string Imp_CmdValue2 = "";   // Das Teilscript für den Wert von Value2, wenn der Instance name erst später zugewiesen wird.
+                             // LTspice kann Value2 schon zuweisen, bevor die Instance den Namen erhält.
+                             // Im Script darf ein Attribute erst nach bestehen des Part erfolgen.
+string Imp_MemSpiceline = "";
+string Imp_MemSpiceline2 = "";
+
+string Imp_DefaultGateName = "G$1";
+string Imp_SymDevName;
+string Imp_CmdDev;
+string Imp_SymPinName;
+
+// für die Symbolbearbeitung
+real   Imp_SpiceLineSymX, Imp_SpiceLineSymY, Imp_SpiceLineSymOffset;
+string Imp_SpiceLineSymAlign;
+real   Imp_SpiceLine2SymX, Imp_SpiceLine2SymY, Imp_SpiceLine2SymOffset;
+string Imp_SpiceLine2SymAlign;
+real   Imp_SpiceModelSymX, Imp_SpiceModelSymY, Imp_SpiceModelSymOffset;
+string Imp_SpiceModelSymAlign;
+
+string Imp_ScriptExt = "~ltspice~.scr";
+
+string Imp_SpicePinName[];
+int    Imp_CntPinname = 0;
+
+string Imp_UsedLbrs[];
+int    Imp_CntUsedLbrs = 0;
+
+int    LTTextSize = 112;    // default zum importieren von LTspice symbolen
+                            // in mil bei Font: Arial, Size: 28, unter LT_Spice-Control-Panel / Drafting Options
+                            // die Texte können nicht exakt berechnet werden, da die Programme unterschiedliche Fonts,
+                            // und innerhalb der Fonts die Zeichen wiederum unterschiedlich definert sind!
+/*
+
+// ********************************
+Syntax Definition Symbol
+// ********************************
+
+// *
+Coordinate System
+
+Anchor Point 0 0 -------> grid 16
+               |
+               |
+               |
+               V grid 16
+// *
+
+// * Generics *
+<digit> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+<number> ::= <digit>
+      | <number> <digit>
+<alphanum> ::= [a-zA-Z0-9_]
+<string> ::= <alphanum>
+    | <string> <alphanum>
+<filename> ::= <string> '.' <string>
+// * Coordinates *
+<coordinate_x> ::= <number>
+<coordinate_y> ::= <number>
+<point> ::= <coordinate_x> <coordinate_y>
+<offset> ::= <number>
+<spiceprefix> ::= [A-MOQ-XZ]
+
+// * Line Styles
+  solid no
+  dash 1
+  dott 2
+  dash dot 3
+  dash dot dot 4
+// *
+
+<linestyle> ::= 1 | 2 | 3 | 4
+
+// /* Justification *
+
+<jhorizontal> ::= Left | Right | Center | Top | Bottom
+<jvertical> ::= VLeft | VRight | VCenter | VTop | VBottom
+<justification> ::= <jhorizontal> | <jvertical>
+
+// * Symbol Type *
+
+<symboltype> ::= CELL | BLOCK
+
+<symboltype_def> ::= SymbolType <symboltype>
+
+// * Drawings *
+
+<text> ::= TEXT <point> <justification> <offset> <string>
+
+<line> ::= LINE Normal <point> <point>
+         | LINE Normal <point> <point> <linestyle>
+
+<circle> ::= CIRCLE Normal <point> <point>
+           | CIRCLE Normal <point> <point> <linestyle>
+
+<arc> ::= ARC Normal <point> <point> <point> <point>
+        | ARC Normal <point> <point> <point> <point> <linestyle>
+
+<rectangle> ::= RECTANGLE Normal <point> <point>
+              | RECTANGLE Normal <point> <point> <linestyle>
+
+<drawing> ::= <text> | <line> | <circle> | <arc> | <rectangle>
+
+<drawing_list> ::= <drawing>
+                 | <drawing_list> '\n' <drawing>
+
+// * Attribute Window *
+  Type        1   -
+  SpiceModel  38  +SYMATTR
+  Value         3   -
+  Value2      123 -
+  SpiceLine    39  -
+  SpiceLine2  40  -
+// *
+
+<windowattr> ::= 0 | 1 | 3 | 39 | 40 | 123
+
+<windowsymattr> ::= 38
+
+<window> ::= WINDOW <windowattr> <point> <justification> <offset>
+           | WINDOW <windowsymattr> <point> <justification> <offset> '\n' SYMATTR <spicemodel>
+
+<window_list> ::= <window>
+                | <window_list> '\n' <window>
+
+// * Symbol Attributes *
+
+<prefix> ::= Prefix <spiceprefix>
+<spicemodel> ::= SpiceModel <string>
+<value> ::= Value <string>
+<value2> ::= Value2 <string>
+<spiceline> ::= SpiceLine <string>
+<spiceline2> ::= SpiceLine2 <string>
+<description> ::= Description <string>
+<modelfile> ::= ModelFile <filename>
+
+<symattribute> ::= <prefix> | <spicemodel> | <value> | <value2> | <spiceline> | <spiceline2> | <description> | <modelfile>
+<symattribute_def> ::= SYMATTR <symattribute>
+<symattribute_list> ::= <symattribute_def>
+                      | <symattribute_list> '\n' <symattribute_def>
+// * Pin Definition *
+<pinjustification> ::= NONE | <justification>
+<pin_def> ::= PIN <point> <pinjustification> <offset>
+<pinname> ::= PinName <string>
+<apiceorder> ::= SpiceOrder <number>
+<pinattribute> ::= <pinname> | <apiceorder>
+<pinattribute_def> ::= PINATTR <pinattribute>
+<pin> ::= <pin_def> '\n' PINATTR <pinname> '\n' PINATTR <apiceorder>
+<pin_list> ::= <pin>
+             | <pin_list> '\n' <pin>
+// * File *
+<header> ::= Version <number>
+// *
+<body> ::= <symboltype_def> <drawing_list> <window_list> <symattribute_list> <pin_list>
+// *
+<body> ::= SymbolType BLOCK '\n' <drawing_list> <pin_list>
+         | SymbolType CELL '\n' <drawing_list> <window_list> <symattribute_list> <pin_list>
+<file> ::= <header> <body>
+*/
+
+int showtest = 1;
+
+
+void testsyscommand(string cmdexe, string s) {
+  dlgDialog("DOS comand check") {
+    dlgHBoxLayout dlgSpacing(600);
+    dlgLabel(s);
+    dlgTextEdit(cmdexe);
+    dlgHBoxLayout {
+      dlgPushButton("OK") dlgAccept();
+      dlgPushButton("ESC") { dlgReject(); exit(-666); }
+    }
+  };
+  return;
+}
+
+
+char   SearchStartDrive = 'C';  // *** erstes Windowslaufwerk  ***
+string StartFolder;     // der Grundpfad
+char   SearchLastDrive = 'Z';   // 'Z' *** letztes Windowslaufwerk ***
+
+int    SearchnRoot;
+string SearchRoot[];
+//string SearchRootfound;
+string SearchFiles[];
+int    SearchStart, SearchEnd;
+string a[];
+int    SearchIs_UNC;
+int    CntSubDir = 4;  // maximal bis in den 4. Unterordner suchen
+
+int OS = strstr(OS_SIGNATURE, "Windows");
+if (OS < 0) {
+  dlgMessageBox("This ULP runs only on Windows", "OK");
+  exit(-1);
+}
+
+
+/* *************** file functions *************** */
+int check_files(string path, string file_ext) {
+  return fileglob(SearchFiles, path + file_ext);
+}
+
+
+// ein Windows-Laufwerk beginnt mit "Buchstabe:\"
+// suche nach ":/" hinter dem Laufwerksbuchstaben
+void check_windows_root(void) {
+  string drv;
+  for(int d = SearchStartDrive; d <= SearchLastDrive; d++) {
+    sprintf(drv, "%c:/", d);
+    if (check_files(drv, "/")) {
+      SearchRoot[SearchnRoot] = drv;
+      SearchnRoot++;
+    }
+  }
+  return;
+}
+
+
+string cut_path(string s) {
+  int pos = strrchr(s, '/', -1);
+  if (pos > 0) return strsub(s, 0, pos);
+  return "";
+}
+
+/*
+void check_UNC(string s) {
+  int unc = strstr(s, "//", 0);  // windows beginnt UNC Namen mit zweimal Slash // bzw. Backslash \\
+  string last_unc = s;
+  if (unc == 0) {
+    SearchIs_UNC = 1;
+    do {
+      string akt_unc = cut_path(last_unc);
+      unc = check_files(akt_unc, "");
+      if (unc) last_unc = akt_unc;
+    } while (unc);
+    SearchRootfound += last_unc;
+    SearchRoot[SearchnRoot] = last_unc;
+    SearchnRoot++;
+  }
+  return;
+}
+*/
+
+/************************ die Suchschleife *******************************************************/
+// searchfile   = die zu suchende Datei
+// root         = der Start-Pfad ab dem gesucht werden soll, inkl. Laufwerkbuchstabe unter Windows
+// maxiteration = die Tiefe, Anzahl der Verzweigung (Unterordner) ab dem root Pfad.
+/*************************************************************************************************/
+string file_search(string searchfile, string root, int maxiteration, string debugnum) {
+  if (!root) {
+    if (debugnum == "init") {
+      dlgMessageBox("RUN ltspice.ulp with option Setup: "+searchfile, "CANCEL");
+    }
+    else {
+      if (dlgMessageBox(debugnum + "\nUnknown path of file : "+searchfile, "OK", "CANCEL") == 0) return "";
+    }
+    exit(-752);
+  }
+  int len = strlen(root);
+  if (root[len-1] != '/') root += "/"; // root muß mit Slash enden!
+  if (!check_files(root, "")) {  // den Pfad prüfen
+    return "";
+  }
+  // *** Betriebsystem feststellen ***
+  // ******* Windows Laufwerke *******
+  if (root) {
+    SearchRoot[0] = root;
+    SearchnRoot = 1;
+  }
+  else {
+    check_windows_root();   // unter Windows die Laufwerke ermitteln
+    //if (SearchnRoot) {
+    //  sprintf(SearchRootfound, "Betriebssystem WINDOWS");
+    //  for (int d = 0; d < SearchnRoot; d++) {
+    //   SearchRootfound += SearchRoot[d] + "\n";
+    //  }
+    //}
+    //int pos;
+    // ************* Windows UNC-Pfad *****************
+    //pos = strstr(root, "//", 0);  // windows hat bei UNC Namen zweimal Slash // am Anfang
+    //check_UNC(root);
+    //if (!SearchIs_UNC) if (project.board) project.board(B) check_UNC(B.name);
+    //if (!SearchIs_UNC) if (project.schematic) project.schematic(S) check_UNC(S.name);
+    //if (!SearchIs_UNC) if (library) library(L) check_UNC(L.name);
+
+    // ************* LINUX File system ****************
+    //if (!SearchRootfound) {
+    //  pos = strstr(root, "/", 0);
+    //  if (pos == 0) {
+    //    sprintf(SearchRootfound, "Betriebsystem LINUX");
+    //    if (check_files("/", "/")) {
+    //      SearchRoot[SearchnRoot] = "/";
+    //      SearchnRoot = 1;
+    //    }
+    //  }
+    //}
+  }
+
+  int n, r;
+  SearchStart = 0;
+  SearchEnd = SearchnRoot;
+  int iteration = 1;
+  int finish = 0;
+  int cntf;
+  string searchfoundfile[];
+
+  do {
+    // 1. die Root-Ordner nach der Datei durchsuchen
+    for (r = SearchStart; r < SearchEnd; r++) {
+      status(SearchRoot[r]);                   // Anzeige des aktuellen Verzeichnisnamen
+      n = check_files(SearchRoot[r], searchfile); // suche im Verzeichnis nach Datei
+      if (n) {
+        for (int f=0; f<n; f++) {
+          searchfoundfile[cntf] = SearchFiles[f];
+          return searchfoundfile[cntf]; // das erst gefunden File zurückgeben
+          cntf++;
+        }
+      }
+    }
+    if (finish || (maxiteration && iteration == maxiteration)) break;
+
+    // 2. die Root-Ordner nach Ordnern durchsuchen
+    for (r = SearchStart; r < SearchEnd; r++) {
+      sprintf(h, "%d %d %s", iteration, SearchnRoot, SearchRoot[r]);
+      status(h);               // Anzeige des aktuellen Verzeichnisnamen
+      n = fileglob(a, SearchRoot[r] + "/");      // lesen der Dateien
+      if (n) {
+        for (int xl = 0; xl < n; xl++) {
+          sprintf(h, "%s\n", a[xl]);
+          if (a[xl][strlen(a[xl])-1] == '/') { // nach Verzeichnis suchen
+            SearchRoot[SearchnRoot] = a[xl];
+            sprintf(h, "%d %d %s", iteration, SearchnRoot, SearchRoot[SearchnRoot]);
+            status(h);             // Anzeige des aktuellen Verzeichnisnamen
+            SearchnRoot++;
+          }
+          else {
+            break;
+          }
+        }
+      }
+    }
+    SearchStart = r;
+    SearchEnd = SearchnRoot; // Suchende erweitern
+    if (SearchStart == SearchEnd) {
+      finish = 1;
+    }
+    iteration++;
+  } while(SearchnRoot);
+  return searchfoundfile[0];
+}
+
+/************* export import functions ****************/
+
+// change Eagle slash in path names to backslash for windows
+string lash2backslash(string s) {
+  int pos;
+  do {
+    pos = strchr(s, '/');
+    if (pos >= 0) s[pos] = '\\';
+  } while(pos >= 0);
+  return s;
+}
+
+
+// change backslash in windows path names to Eagle slash
+string backslash2lash(string s) {
+  int pos;
+  do {
+    pos = strchr(s, '\\');
+    if (pos >= 0) s[pos] = '/';
+  } while(pos >= 0);
+  return s;
+}
+
+string checkapostroph(string s) {  // da der ganze String in ' eingeschlossen wird,
+                                   // müssen die Apostrophen verdoppelt werden.
+  string t[];
+  int cnt;
+  cnt = strsplit(t, s, '\''); // check Apostroph
+  if (cnt > 1) {
+    s = "";
+    for (int i = 0; i < cnt; i++) {
+      if (i == 0) {
+        if (t[i]) s += t[i];
+      }
+      else if (i) s += "''" + t[i];
+    }
+  }
+ return s;
+}
+
+/********* export functions ***********/
+void looptest(string fname) {
+  string text;
+  int cnttext = fileread(text, fname);
+  if (showtest) {
+    dlgDialog("Export to LTspice : "+ fname) {
+      dlgLabel("Die Datei, siehe Kopfzeile, wurde aktuell gelesen.");
+      dlgLabel(fname);
+      dlgHBoxLayout dlgSpacing(500);
+      dlgHBoxLayout {
+        dlgVBoxLayout dlgSpacing(500);
+        dlgTextEdit(text);
+      }
+      dlgHBoxLayout {
+       dlgPushButton("+OK") dlgAccept();
+       dlgPushButton("Cancel") { dlgReject(); exit(-9); }
+       dlgPushButton("Dieses Menu nicht mehr anzeigen") { showtest = 0; dlgAccept(); }
+       dlgStretch(1);
+      }
+    };
+  }
+  return;
+}
+
+
+string ex_checkbackslash(string s) { // für die Anzeige des Windows-Pfad mit Slash statt Backslash
+  int pos;
+  do {
+    pos = strchr(s, '\\');
+    if (pos >= 0) s[pos] = '/';
+  } while(pos >= 0);
+  return s;
+}
+
+
+string ex_check_text(string text) {  // Eagle gibt Backslash doppelt aus, also halbieren!
+  string t[];
+  int cnt = strsplit(t, text, '\n');
+  if (cnt == 1) return text;
+  string t2 = "";
+  for (int n = 0; n < cnt-1; n++) {
+    t2 += t[n] + "\\n";
+  }
+  t2 += t[n];
+  return t2;
+}
+
+
+string ex_checktextangle(int talign, int tangle, string name, int iangle) {
+  /* Wenn das Symbol gedreht ist, und der Text nicht, dann muß der Text vertikal ausgegeben werden.
+     Wenn der Text gedreht ist und das Symbo nicht, dann muß der Text auch vertikal ausgegeben werden,
+     in allen anderen Fällen horizontal.
+  */
+  string v = "";
+
+  if (iangle == 0 || iangle == 180) {
+    if ((tangle == 90 || tangle == 270 || iangle == 90 || iangle == 270)) v = "V";
+  }
+  else if (iangle == 90 || iangle == 270) {
+    if ((tangle == 0 || tangle == 180 || iangle == 0 || iangle == 180)) v = "V";
+  }
+  switch(talign) {
+    case ALIGN_BOTTOM_LEFT   : return v+"Left";
+         break;
+    case ALIGN_BOTTOM_CENTER : return v+"Bottom";
+         break;
+    case ALIGN_BOTTOM_RIGHT  : return v+"Right";
+         break;
+    case ALIGN_CENTER_LEFT   : return v+"Left";
+         break;
+    case ALIGN_CENTER        : return v+"Center";
+         break;
+    case ALIGN_CENTER_RIGHT  : return v+"Right";
+         break;
+    case ALIGN_TOP_LEFT      : return v+"Left";
+         break;
+    case ALIGN_TOP_CENTER    : return v+"Top";
+         break;
+    case ALIGN_TOP_RIGHT     : return v+"Right";
+         break;
+    default : return "Left";
+  }
+}
+
+
+real ex_spicegrid(real v) {
+  return v / 100 * 16;
+}
+
+
+string ex_spicetextcoord(UL_TEXT T, UL_INSTANCE I) {
+  string s;
+  int ang = I.angle;
+  real x;
+  real y;
+  switch(ang) {
+    case   0  : x = ex_spicegrid(u2mil(T.x - I.x));
+                y = ex_spicegrid(u2mil(T.y - I.y)*-1.0); // checked ok
+                break;
+    case  90  : if (I.mirror) {
+                  y = ex_spicegrid(u2mil(T.x - I.x)*-1.0);
+                  x = ex_spicegrid(u2mil(T.y - I.y)); // checked ok
+                }
+                else {
+                  y = ex_spicegrid(u2mil(T.x - I.x));
+                  x = ex_spicegrid(u2mil(T.y - I.y)); // checked ok
+                }
+                break;
+    case 180  : if (I.mirror) {
+                  x = ex_spicegrid(u2mil(T.x - I.x));
+                  y = ex_spicegrid(u2mil(T.y - I.y)); // checked ok
+                }
+                else {
+                  x = ex_spicegrid(u2mil(I.x - T.x));
+                  y = ex_spicegrid(u2mil(I.y - T.y)*-1.0); // checked ok
+                }
+                break;
+    case 270  : if (I.mirror) {
+                  y = ex_spicegrid(u2mil(T.x - I.x));
+                  x = ex_spicegrid(u2mil(T.y - I.y)*-1.0); // checked ok
+                }
+                else {
+                  y = ex_spicegrid(u2mil(I.x - T.x));
+                  x = ex_spicegrid(u2mil(I.y - T.y)); // checked ok
+                }
+                break;
+  }
+  sprintf(s, "%.0f %.0f", x, y);
+  return s;
+}
+
+
+void ex_draw_wire(UL_WIRE W) {
+  if (W.curve) {
+    /* ARC Normal 32 -32 0 0 27 -27 5 -27
+       die ersten vier Zahlen sind die umschließende Box,
+       die nächsten 2 die Start-Koordinate,
+       und die letzten beiden die End-Koordinate des ARC
+    */
+    printf("ARC Normal %.0f %.0f %.0f %.0f %.0f %.0f %.0f %.0f\n",
+            ex_spicegrid(u2mil(W.arc.xc - W.arc.radius)), ex_spicegrid(u2mil(W.arc.yc + W.arc.radius)*-1.0),
+            ex_spicegrid(u2mil(W.arc.xc + W.arc.radius)), ex_spicegrid(u2mil(W.arc.yc - W.arc.radius)*-1.0),
+            ex_spicegrid(u2mil(W.arc.x1)), ex_spicegrid(u2mil(W.arc.y1)*-1.0),
+            ex_spicegrid(u2mil(W.arc.x2)), ex_spicegrid(u2mil(W.arc.y2)*-1.0)
+        );
+  }
+  else {
+    printf("LINE Normal %.0f %.0f %.0f %.0f\n",
+            ex_spicegrid(u2mil(W.x1)), ex_spicegrid(u2mil(W.y1)*-1.0),
+            ex_spicegrid(u2mil(W.x2)), ex_spicegrid(u2mil(W.y2)*-1.0)
+          );
+  }
+  return;
+}
+
+
+void ex_draw_rect(UL_RECTANGLE R) {
+    printf("LINE Normal %.0f %.0f %.0f %.0f\nLINE Normal %.0f %.0f %.0f %.0f\nLINE Normal %.0f %.0f %.0f %.0f\nLINE Normal %.0f %.0f %.0f %.0f\n",
+            ex_spicegrid(u2mil(R.x1)), ex_spicegrid(u2mil(R.y1)*-1.0),
+            ex_spicegrid(u2mil(R.x2)), ex_spicegrid(u2mil(R.y1)*-1.0),
+            ex_spicegrid(u2mil(R.x2)), ex_spicegrid(u2mil(R.y1)*-1.0),
+            ex_spicegrid(u2mil(R.x2)), ex_spicegrid(u2mil(R.y2)*-1.0),
+            ex_spicegrid(u2mil(R.x2)), ex_spicegrid(u2mil(R.y2)*-1.0),
+            ex_spicegrid(u2mil(R.x1)), ex_spicegrid(u2mil(R.y2)*-1.0),
+            ex_spicegrid(u2mil(R.x1)), ex_spicegrid(u2mil(R.y2)*-1.0),
+            ex_spicegrid(u2mil(R.x1)), ex_spicegrid(u2mil(R.y1)*-1.0)
+          );
+  return ;
+}
+
+
+void ex_draw_poly(UL_POLYGON P) {
+  P.contours(W) ex_draw_wire(W);
+  return;
+}
+
+
+void ex_draw_net_wire(UL_WIRE W) {
+  printf("WIRE %.0f %.0f %.0f %.0f\n",
+          ex_spicegrid(u2mil(W.x1)), ex_spicegrid(u2mil(W.y1)*-1.0),
+          ex_spicegrid(u2mil(W.x2)), ex_spicegrid(u2mil(W.y2)*-1.0)
+        );
+  return;
+}
+
+
+/* CIRCLE Normal 64 0 48 -16 */
+void ex_draw_circle(UL_CIRCLE C) {
+  printf("CIRCLE Normal %.0f %.0f %.0f %.0f\n", // 64 0 48 -16
+            ex_spicegrid(u2mil(C.x - C.radius)), ex_spicegrid(u2mil(C.y + C.radius)*-1.0),
+            ex_spicegrid(u2mil(C.x + C.radius)), ex_spicegrid(u2mil(C.y - C.radius)*-1.0)
+        );
+  return;
+}
+
+
+/* LTspice directiven beginnen mit ! */
+void ex_draw_text(UL_TEXT T, string option, string supply) {
+  string t = strupr(T.value);
+  real tx = ex_spicegrid(u2mil(T.x));
+  real ty = ex_spicegrid(u2mil(T.y)*-1.0);
+  switch(T.align) {
+    case ALIGN_BOTTOM_LEFT   : if (T.angle == 0) {
+                                 ty -= ex_spicegrid(u2mil(T.size/2));
+                               }
+                               else if (T.angle == 90) {
+                                 tx += ex_spicegrid(u2mil(T.size/2));
+                               }
+                               break;
+    case ALIGN_BOTTOM_CENTER : ;
+                               break;
+    case ALIGN_BOTTOM_RIGHT  : ty -= ex_spicegrid(u2mil(T.size/2));
+                               break;
+    case ALIGN_CENTER_LEFT   : ty -= ex_spicegrid(u2mil(T.size/2));
+                               break;
+    case ALIGN_CENTER        : ty -= ex_spicegrid(u2mil(T.size/2));
+                               break;
+    case ALIGN_CENTER_RIGHT  : ty -= ex_spicegrid(u2mil(T.size/2));
+                               break;
+    case ALIGN_TOP_LEFT      : ;
+                               break;
+    case ALIGN_TOP_CENTER    : ;
+                               break;
+    case ALIGN_TOP_RIGHT     : ;
+                               break;
+  }
+
+
+  // TEXT 0 0 Bottom 2 +3.3V  : example of supply pin name
+  if (Ex_PinDirSup && supply) {
+    if (T.layer != Ex_LayerSpiceOrder) {
+      printf("TEXT %.0f %.0f %s 0 %s\n",
+              tx, ty,
+              ex_checktextangle(T.align, T.angle, "", 0),
+              ex_check_text(supply)
+            );
+    }
+    return;
+  }
+  if (t == ">NAME" || option == ">NAME") {
+    // WINDOW 0 36 40 Left 0  // Textplatzhalter für >NAME
+    if(option == ">NAME") printf("WINDOW 0 %.0f %.0f %s 0\n", tx, ty, ex_checktextangle(T.align, T.angle, "", 0));
+    return;
+  }
+  if (t == ">VALUE" || option == ">VALUE") {
+    // WINDOW 3 36 76 Left 0  // platzhalter für >VALUE
+    if (option == ">VALUE") printf("WINDOW 3 %.0f %.0f %s 0\n", tx, ty, ex_checktextangle(T.align, T.angle, "", 0));
+    return;
+  }
+//  if (strstr(T.value, "SpiceOrder") == 0) return; // nur vorübergehender Text im Symbol zum überprüfen
+  if (option == "*") {
+    // TEXT 0 0 Center 0 LT
+    printf("TEXT %.0f %.0f %s 0 %s\n", tx, ty, ex_checktextangle(T.align, T.angle, "", 0), ex_check_text(T.value));
+    return;
+  }
+  t = T.value;
+  if (t[0] == '\\' && t[1] == '!') { // damit Eagle den Text nicht Überstreicht, muß ein Backslash vorangestellt werden.
+    t =  strsub(t, 1);               // schneide das Backslash (Escapezeichen) vor dem ! wieder ab.
+  }
+
+  printf("TEXT %.0f %.0f %s 0 %s\n",
+              tx, ty,
+              ex_checktextangle(T.align, T.angle, "", 0),
+              ex_check_text(t)
+        );
+
+  return;
+}
+
+
+void ex_collectordertext(UL_SYMBOL S) {
+  Ex_CntSymText = 0;   // reinitialization
+  S.texts(T) {
+    if (T.layer == Ex_LayerSpiceOrder) {
+      string s[];
+      strsplit(s, T.value, ' ');
+      if (s[0] == Ex_SpiceOrder) {
+        Ex_PinX[Ex_CntSymText] = T.x;
+        Ex_PinY[Ex_CntSymText] = T.y;
+        Ex_SpiceOrderNum[Ex_CntSymText] = s[1];
+        Ex_CntSymText++;
+      }
+    }
+  }
+}
+
+
+string ex_getspiceorder(int x, int y) {
+  for (int n = 0; n < Ex_CntSymText; n++ ) {
+    if (x == Ex_PinX[n] && y == Ex_PinY[n]) return Ex_SpiceOrderNum[n];
+  }
+  return "";
+}
+
+
+string ex_checkinverted(string pinname) {   // LTspice benutzt Underline als Einleitungszeichen für den Negierungsüberstrich,
+  if (pinname[0] == '!') pinname[0] = '_';  // Eagle beginnt mit Ausrufezeichen.
+  return pinname;
+}
+
+
+void ex_draw_pin(UL_PIN P, int pcnt) {
+  int pinlength;
+  int x2, y2;
+  if (P.direction == PIN_DIRECTION_SUP) Ex_PinDirSup = 1;
+  if (pcnt) {  // draw line and pin it self
+    switch(P.length) {    // Grid unit = mil
+      case (PIN_LENGTH_POINT)  : pinlength = 0;   // kein Wire
+                                 break;
+      case (PIN_LENGTH_SHORT)  : pinlength = 100; // 0.1-Inch-Wire
+                                 break;
+      case (PIN_LENGTH_MIDDLE) : pinlength = 200; // 0.2-Inch-Wire
+                                 break;
+      case (PIN_LENGTH_LONG)   : pinlength = 300; // 0.3-Inch-Wire
+                                 break;
+    }
+    int ang = P.angle;
+    switch(ang) {
+      case (0)   : x2 = pinlength;
+                   y2 = 0;
+                   break;
+      case (90)  : x2 = 0;
+                   y2 = pinlength;
+                   break;
+      case (180) : x2 = pinlength * -1;
+                   y2 = 0;
+                   break;
+      case (270) : x2 = 0;
+                   y2 = pinlength * -1;
+                   break;
+    }
+    if (pinlength) {
+      printf("LINE Normal %.0f %.0f %.0f %.0f\n",             // Linie des PIN
+                              ex_spicegrid(u2mil(P.x)),    ex_spicegrid(u2mil(P.y)*-1.0),  // Das Vorzeichen der Y-Achse ist bei LT-Spice vertauscht
+                              ex_spicegrid(u2mil(P.x)+x2), ex_spicegrid((u2mil(P.y)+y2)*-1.0)
+           );
+    }
+
+
+    //if (!Ex_PinDirSup) {
+      printf("PIN %.0f %.0f NONE 0\n", ex_spicegrid(u2mil(P.x)), ex_spicegrid(u2mil(P.y)*-1.0 ));
+      printf("PINATTR PinName %s\n", ex_checkinverted(P.name));
+      printf("PINATTR SpiceOrder %s\n", ex_getspiceorder(P.x, P.y));
+    //}
+    //else {
+      /* ****************************************************************
+      if (Ex_PinDirSup) {  // a supply symbol is generated
+        sprintf(acmd, "EDIT %s.DEV; ATTRIBUTE %s 'node.sub'; ATTRIBUT 'VALUE2' 'node';",
+              DEV.name, Ex_AttributeSPICEMODEL
+             );
+        exit(acmd);
+      }
+      * ****************************************************************/
+    //}
+  }
+  return;
+}
+
+
+void readconfig(void) {  // read configuration file of ULP
+  SpiceDefaultSymLbr = cfgget("ULP:ltspice.SpiceDefaultSymLbr");
+  SpiceSimulationLbr = cfgget("ULP:ltspice.SpiceSimulationLbr");
+  EagleSpiceLbrDir = cfgget("ULP:ltspice.EagleSpiceLbrDir");
+  LTSpiceLibDir = cfgget("ULP:ltspice.LTSpiceLibDir");
+  ImpSpiceSchematicAsc = cfgget("ULP:ltspice.ImpSpiceSchematicAsc");
+  LTSpiceExecute = cfgget("ULP:ltspice.LTSpiceExecute");
+  SpiceSymbol = cfgget("ULP:ltspice.SpiceSymbol");
+  ExpSchematic2LTpice = cfgget("ULP:ltspice.ExpSchematic2LTpice");
+  SchName = cfgget("ULP:ltspice.SchName");
+  Import_All_Symbols = cfgget("ULP:ltspice.Import_All_Symbols");
+  ExternalSymbol = cfgget("ULP:ltspice.ExternalSymbol");
+  Imp_ConnectScriptDir = cfgget("ULP:ltspice.Imp_ConnectScriptDir");
+  ExpEagleSpiceSymDir = cfgget("ULP:ltspice.ExpEagleSpiceSymDir");
+  Ex_SpiceAscDir = cfgget("ULP:ltspice.SpiceAscDir");
+  return;
+}
+
+
+void saveconfig(void) {
+  cfgset("ULP:ltspice.SpiceDefaultSymLbr", SpiceDefaultSymLbr);
+  cfgset("ULP:ltspice.SpiceSimulationLbr", SpiceSimulationLbr);
+  cfgset("ULP:ltspice.EagleSpiceLbrDir", EagleSpiceLbrDir);
+  cfgset("ULP:ltspice.LTSpiceLibDir", LTSpiceLibDir);
+  cfgset("ULP:ltspice.ImpSpiceSchematicAsc", ImpSpiceSchematicAsc);
+  cfgset("ULP:ltspice.LTSpiceExecute", LTSpiceExecute);
+  cfgset("ULP:ltspice.SpiceSymbol", SpiceSymbol);
+  cfgset("ULP:ltspice.ExpSchematic2LTpice", ExpSchematic2LTpice);
+  cfgset("ULP:ltspice.SchName", SchName);
+  cfgset("ULP:ltspice.Import_All_Symbols", Import_All_Symbols);
+  cfgset("ULP:ltspice.ExternalSymbol", ExternalSymbol);
+  cfgset("ULP:ltspice.Imp_ConnectScriptDir", Imp_ConnectScriptDir);
+  cfgset("ULP:ltspice.ExpEagleSpiceSymDir", ExpEagleSpiceSymDir);
+  cfgset("ULP:ltspice.SpiceAscDir", Ex_SpiceAscDir);
+  return;
+}
+
+
+int ex_check_slash(string name) {
+  string s[];
+  return strsplit(s, name, '/') -1;
+}
+
+
+string ex_check_dev_name(string dev) { // wenn Package-Variante "leer" dann gib auch leeren string zurück
+  if (dev == "''") return "";
+  int pos;
+  do {
+    pos = strchr(dev, '/');       // Slash ist in Device-Namen (Packagevariant) verboten, da unter Linux sonst ein Unterordner angesprichen wird.
+    if (pos >= 0) dev[pos] = '_';
+  } while(pos >= 0);
+  return dev;
+}
+
+
+string ex_check_devset_name(string devset, string pac, string tech) { // * ist in Dateinamen Deviceset verboten,
+  if (pac == "''") pac = "";                                          // da es sich hier um ein Wildcard-Zeichen handelt
+  if (tech == "''") tech = "";                                        // wie auch das ? muß es durch Pacvariante und Technology ersetzt werden.
+  string s[];
+  int np = strsplit(s, devset, '*'); // Technologie
+  if (np > 1) {
+    if (tech == "''") tech = ""; // ein leeres Device wird intern mit '' angegeben, und muß "" (leer) werden!
+    devset = s[0]+tech+s[1];
+  }
+  else {
+    devset = s[0]+tech;
+  }
+  int nt = strsplit(s, devset, '?'); // Packagevariante
+  if (nt > 1) {
+    if (pac == "''") pac = ""; // ein leeres Device wird intern mit '' angegeben, und muß "" (leer) werden!
+    devset = s[0]+pac+s[1];
+  }
+  else {
+    devset = s[0]+pac;
+  }
+//if (dlgMessageBox(">"+devset+"<", "okpactech1189", "escpactech1189") != 0) exit(-1321);
+  return devset;
+}
+
+
+string check_dev_description(string descript) {
+  if(descript[0] == '<') return ""; // Description beginnt mit HTML-Tag, dann nur leeren String zurückgeben.
+  string s[];
+  int cnt = strsplit(s, descript, '\n');  // nur die Kopfzeile zurückgeben, da LTspice bei der Description
+  descript = s[0];                        // keine mehrzeiligen Texte benutzen kann.
+  return descript;
+}
+
+
+string check_exist_asy(string symname, string sympath, string debugnum) { // müssen bestimmte symbole in bestimmten Pfaden abgelegt sein?
+  return file_search( symname, sympath, CntSubDir, debugnum);
+}
+
+
+int makedir(string root1, string subdir) {  /*** generate DOS command MKDIR ***/
+  string DOScommand;
+  sprintf(DOScommand, "CMD.EXE  /C MKDIR \"%s%s\"",  lash2backslash(root1), lash2backslash(subdir));
+  system(DOScommand);
+  string f[];
+  int n = fileglob(f, root1 + subdir); // prüfe ob das Verzeichnis angelegt werden konnte.
+  return n;
+}
+
+
+void check_exist_directory(string fname) {  // überprüfe die Existenz des Verzeichneis, und wenn nicht vorhanden, anlegen!
+  string fdir = filedir(fname);
+  string fd[];
+  int n = fileglob(fd, fdir);
+  int len =strlen(fdir);
+  if (fdir[len-1] == '/') fdir[len-1] = 0; // für MKDIR darf kein Backslash (Slash) am Ende sein.
+  if (!n) {
+    if (!makedir("", fdir)) { // Returnwert 0 wenn das Verzeichnis nicht angelegt werden konnte
+      dlgMessageBox("!Can't build:\n" + fdir, "ok", "esc");
+      exit(-1359);
+    }
+  }
+  return;
+}
+
+
+void ex_draw_device(UL_DEVICE D, UL_DEVICESET DEV) {
+  string error;
+  int cntgate = 0;
+  D.gates(G) {
+    cntgate++;
+  }
+  if (ex_check_slash(DEV.name)) {
+    dlgMessageBox("!Do not use character / in device name!\n"+ DEV.name + ".DEV\nPlease change to '_' !", "OK");
+    sprintf(error, "EDIT %s.DEV;", DEV.name);
+    exit(error);
+  }
+  // check attribute SPICEMODEL
+  string acmd = "";
+  int cntnoattspicemodel = 0;
+  int cntnoattspiceprefix = 0;
+  string devnoattmodel[];
+  string technoattmodel[];
+  string devnoattprefix[];
+  string technoattprefix[];
+  int cntde = 0;
+  DEV.devices(DE) {
+    cntde++;
+    string t[];
+    int    nt = strsplit(t, DE.technologies, ' ');
+    int spicemodelexist = 0;
+    int spiceprefixexist = 0;
+//if (dlgMessageBox(DEV.name + DE.name, "ok", "esc") !=0) exit(-1392);
+    // prüfe erst die Existenz der Spicemodelle
+    for (int i = 0; i < nt; i++) {
+      spicemodelexist = 0;
+      spiceprefixexist = 0;
+      DE.attributes(A, t[i]) {
+        if (A.name == "SPICEMODEL") { spicemodelexist++;  // 1 = Attribute existiert
+          if (A.value) spicemodelexist++; // 2 = Wert gesetzt
+        }
+        if (A.name == "SPICEPREFIX") { spiceprefixexist++; // 1 = Attribute existiert
+          if (A.value) spiceprefixexist++; // 2 = Wert gesetzt
+        }
+      }
+      if (DEV.prefix == "C" || DEV.prefix == "L"  || DEV.prefix == "R") { // 2014-01-23
+        // C braucht kein Spicemodel
+        // L braucht kein Spicemodel
+        // R braucht kein Spicemodel
+      }
+      else {
+        if (spicemodelexist < 2) {
+          devnoattmodel[cntnoattspicemodel] = DE.name;
+          technoattmodel[cntnoattspicemodel] = t[i];
+          cntnoattspicemodel++;
+        }
+      }
+      if (spiceprefixexist < 2) {  // 2012-11-30
+        devnoattprefix[cntnoattspiceprefix] = DE.name;
+        technoattprefix[cntnoattspiceprefix] = t[i];
+        cntnoattspiceprefix++;
+      }
+    }
+  }
+  // check all devices of this deviceset, of attribute SPICEMODEL
+  string attvalspicemodel;
+  string attvalspiceprefix;
+  if (cntnoattspicemodel || cntnoattspiceprefix) {
+      if (cntnoattspicemodel) {  // 2012-12-05
+        int result = dlgDialog("Set Attributes") {
+          dlgHBoxLayout dlgSpacing(300);
+          if (cntnoattspicemodel) {
+            dlgLabel("<b>" + DEV.name + "</b>.DEV<p>MISSING SpiceModel<br>Type in the name of spicemodel for this device!");
+            dlgStringEdit(attvalspicemodel);
+          }
+          dlgHBoxLayout {
+            dlgPushButton("OK") if (attvalspicemodel) dlgAccept();
+                                else dlgMessageBox("First type in the name of spicemodel for this device!", "OK");
+            dlgPushButton("CANCEL") dlgReject();
+          }
+        };
+        if(!result) exit(-1441);
+      }
+
+    if (cntnoattspiceprefix) {  // 2012-12-05
+      string prefixlist[];
+      for (int l = 0; LTspicePrefix[l]; l++) prefixlist[l] = LTspicePrefix[l] + "\t" + LTspicePrefixDescript[l];
+      int prefsel = -1;
+      int result = dlgDialog("Set Attributes") {
+        dlgHBoxLayout dlgSpacing(300);
+        if (cntnoattspiceprefix) {
+          dlgLabel("<b>" + DEV.name + "</b>.DEV<p>MISSING SpicePrefix<br>Select a spiceprefix for this device!");
+          dlgListBox(prefixlist, prefsel) { attvalspiceprefix = LTspicePrefix[prefsel]; dlgAccept(); }
+        }
+        dlgHBoxLayout {
+          dlgPushButton("OK") if (attvalspiceprefix) dlgAccept();
+                              else {
+                                if (prefsel >= 0) {
+                                  attvalspiceprefix = LTspicePrefix[prefsel];
+                                  dlgAccept();
+                                }
+                                else dlgMessageBox("First select a Spice prefix for this device.", "OK");
+                              }
+          dlgPushButton("CANCEL") dlgReject();
+        }
+      };
+      if(!result) exit(-1466);
+    }
+    //        if (!spicemodelexist) dlgMessageBox("Missing attribute SPICEMODEL of technology '"+ ex_check_dev_name(actualtechno) + "' of package variant " + D.name, "OK");
+    //        else dlgMessageBox("Attribute SPICEMODEL of technologie '"+ ex_check_dev_name(actualtechno) + "' of package variante " + D.name + " has no value!", "OK");
+    string as;
+    int i;
+    for (i = 0; i < cntnoattspicemodel; i++) {
+      sprintf(as, "EDIT %s.DEV;\n", DEV.name);
+      acmd += as;
+      /*** in Device und Technologie darf kein Schrägstrich, oder Backslash vorkommen,
+           denn das gibt ein Proglem bei Pfad und Dateinamen in Linux/MAX-OS bzw. Windows!
+           Hier muß ein Unterstrich benutzt werden!
+      ***/
+      string chkdevname =  ex_check_dev_name(devnoattmodel[i]);
+      if (devnoattmodel[i] != chkdevname && chkdevname) {  // Supply-Devices haben kein Package, nicht mal ''
+        sprintf(as, "PACKAGE -%s %s;\n", devnoattmodel[i], chkdevname);  // 2012-10-04 benenne die Packagevariante um, mit "_" als "/".
+        acmd += as;
+      }
+      // 2012-09-17 Attribute-Befehl zweimal aufrufen! Fehler in Dialog-Menu.
+      // Wenn kein Wert angegeben wird, wird es nicht als geändert erkannt, und das Attribute wird nicht angelegt!
+      sprintf(as, "PACkage '%s'; TECHNOLOGY %s; ATTRIBUTE %s '%s';\n",
+                    checkapostroph(ex_check_dev_name(devnoattmodel[i])), technoattmodel[i], Ex_AttributeSPICEMODEL, attvalspicemodel // 2012-12-10
+                   );
+      acmd += as; // if(dlgMessageBox(acmd, "acmd ok", "acmd esc") != 0) exit(-1489); ;
+    }
+    // 2012-11-30 setze den Wert für das Attribute SPICEPREFIX
+    for (i = 0; i < cntnoattspiceprefix; i++) {
+      sprintf(as, "EDIT %s.DEV;\n", DEV.name);
+      acmd += as;
+      /* ** in Device und Technologie darf kein Schrägstrich, oder Backslash vorkommen,
+           denn das gibt ein Proglem bei Pfad und Dateinamen in Linux/MAX-OS bzw. Windows!
+           Hier muß ein Unterstrich benutzt werden!
+      ** */
+      string chkdevname =  ex_check_dev_name(devnoattprefix[i]);
+      if (devnoattprefix[i] != chkdevname && chkdevname) {  // Supply-Devices haben kein Package, nicht mal ''
+        sprintf(as, "PACKAGE -%s %s;\n", devnoattprefix[i], chkdevname);  // 2012-10-04 benenne die Packagevariante um, mit "_" als "/".
+        acmd += as;
+      }
+      // 2012-09-17 Attribute-Befehl zweimal aufrufen! Fehler in Dialog-Menu.
+      // Wenn kein Wert angegeben wird, wird es nicht als geändert erkannt, und das Attribute wird nicht angelegt!
+      sprintf(as, "PACkagE '%s'; TECHNOLOGY %s; ATTRIBUTE %s '%s';\n",
+                    checkapostroph(ex_check_dev_name(devnoattprefix[i])), technoattprefix[i], Ex_AttributeSPICEPREFIX, attvalspiceprefix // 2012-12-10
+                   );
+      acmd += as; // if(dlgMessageBox(acmd, "acmd ok", "acmd esc") != 0) exit(-1509); ;
+    }
+
+    if (acmd) {
+if (dlgMessageBox("ex_draw_device() : exit " + acmd , "ok", "esc") != 0) exit(-1513);
+      exit(acmd);
+    }
+  }
+//if (dlgMessageBox("ex_draw_device() : symbole ausgeben" , "ok", "esc") != 0) exit(-1517);
+
+  Ex_PinDirSup = 0;
+  DEV.gates(G) {
+    library(L) {
+      L.symbols(SYM) {
+        if (SYM.name == G.symbol.name) {  // prüfe nur die zum Device gehörenden Symbole
+          if (ex_check_slash(SYM.name)) {
+            dlgMessageBox("!Do not use character / in symbol name!\n"+SYM.name+".SYM\nPlease change to '_' !", "OK");
+            sprintf(error, "EDIT %s.SYM;", SYM.name);
+            exit(error);
+          }
+          // check exist SpiceOrder
+          int cnttext = 0;
+          int cntpin = 0;
+          string h;
+          SYM.texts(T) {
+            if (T.layer == Ex_LayerSpiceOrder) {
+              if (strstr(T.value, "SpiceOrder") == 0) cnttext++;
+            }
+          }
+          SYM.pins(P) {
+            if (P.direction == PIN_DIRECTION_SUP) Ex_PinDirSup = 1;  // ein Supply-Pin ist beteiligt, also ist es ein Supply-symbol
+            cntpin++;
+          }
+          if (!cnttext) {
+            sprintf(h, "!Symbol %s can not be exported, missing SpiceOder for PINs!", SYM.name);
+            dlgMessageBox(h, "OK");
+            sprintf(h, "EDIT %s.SYM;RUN spiceorder.ulp", SYM.name);
+            exit(h);
+          }
+          if (cnttext != cntpin) {
+            dlgMessageBox("!Different counts of SpiceOrder and PINs.", "OK");
+            sprintf(h, "EDIT %s.SYM;RUN spiceorder.ulp", SYM.name);  // run spiceordr.ulp to define the missing spiceorder in device
+            exit(h);
+          }
+          ex_collectordertext(SYM);
+
+          string actgatename = G.name;
+          if (cntgate < 2) actgatename = "";   // wenn Deviceset nur aus 1 Gate besteht,
+                                               // dann den Gatenamen nicht benutzen!
+                                               // keine leere '' Package-Variante angeben
+          int ltspicelbr = strstr(L.name, "/ltspice/");
+          string tech[];
+          int n = strsplit(tech, D.technologies, ' ');
+          for (int i = 0; i < n; i++) {
+            if (ltspicelbr > 0) { // eine LTspice importierte LBR ist geladen
+              Ex_AsyName = LTSpiceLibDir + "sym/" + DEV.library + "/" + ex_check_devset_name(DEV.name, D.name, "") + actgatename + ".asy";  // keine leere '' Package-Variante angeben
+            }
+            // eine Eagle-Lbr ist geladen
+            else Ex_AsyName = ExpEagleSpiceSymDir + DEV.library + "/" + ex_check_devset_name(DEV.name, D.name, tech[i]) + actgatename + ".asy";  // 2012-12-10 Technologie
+            // für jede technologie ein symbol anlegen 2012-10-02
+            check_exist_directory(Ex_AsyName); // 2012-12-10 bevor das Symbol angelegt werden kann, muß das Verzeicnis existieren!
+            output(Ex_AsyName, "wt") {
+//if (dlgMessageBox(Ex_AsyName, "ok", "esc") != 0) exit(-1571);
+              CntOutput++;
+              printf("Version 4\n");
+              printf("SymbolType CELL\n");
+              int pcnt = 0;
+              SYM.wires(W) ex_draw_wire(W);         // Symbollinien zeichnen.
+              SYM.polygons(POL) ex_draw_poly(POL);  // Die Kontur des Polygon zeichen (werden nicht gefüllt).
+              SYM.rectangles(R) ex_draw_rect(R);    // Rechteck als Linien zeichnen.
+              SYM.circles(C) ex_draw_circle(C);
+              SYM.texts(T) {
+                if (T.layer != Ex_LayerSpiceOrder && T.layer != 93) {  // Spiceorder nicht als Text ausgeben! Zusätzliche Doku im Layer 93 Pins nicht ausgeben.
+                  if (strupr(T.value) != ">NAME" && strupr(T.value) != ">VALUE") ex_draw_text(T, "*", SYM.name);  // beliebiger Text
+                  else if (strupr(T.value) == ">NAME") ex_draw_text(T, ">NAME", "");     // der Textplatzhalter >NAME
+                  else if (strupr(T.value) == ">VALUE") ex_draw_text(T, ">VALUE", "");  // der Textplatzhalter >VALUE
+                }
+              }
+              /*
+              SYMATTR Value LT6231
+              SYMATTR Prefix X
+              */
+              printf("SYMATTR Value %s\n", DEV.name); // nicht der Device-Prefix, sondern der Device-Name
+
+              string t[];
+              int n = strsplit(t, D.technologies, ' ');
+              // check exist Spice Attribute for Spice Model
+              //int spicemodelexist = 0;
+              //int spiceprefixexist = 0;
+              string actualtechno = "";
+              /*
+              SYMATTR Value LT3518
+              SYMATTR Prefix X
+              SYMATTR SpiceModel LT3518.sub
+              SYMATTR Value2 LT3518
+              */
+
+              string aspiceprefix;
+              string aspicemodel;
+              string avalue2;
+              string aspiceline;
+              string aspiceline2;
+              string aspicetype;
+              DEV.devices(DE) {
+                if (DE.name == D.name) {
+                  for (int i = 0; i < n; i++) {
+                    D.attributes(A, t[i]) {
+                      actualtechno = t[i];
+                      if (A.name == "SPICEPREFIX") {
+                        sprintf(aspiceprefix, "SYMATTR Prefix %s\n",  A.value); //
+                      }
+                      else if (A.name == "SPICEMODEL") {
+                        //spicemodelexist++;  // 1 = Attribute existiert
+                        if (A.value != "NONE") {
+                          sprintf(aspicemodel, "SYMATTR SpiceModel %s\n",  A.value);
+
+                        }
+                        else {
+                          //if (dlgMessageBox(A.name + " : " + A.value, "NONE ok", "NONE esc") != 0) exit(-1627);
+                        }
+                      }
+                      /* Der Value im LTspice-Symbol ist der Devicesetname
+                      else if (A.name == "VALUE") {
+                        sprintf(avalue, "SYMATTR Value %s\n",  A.value);
+                      }
+                      */
+                      else if (A.name == "VALUE2") {
+                        sprintf(avalue2, "SYMATTR Value2 %s\n",  A.value);
+                      }
+                      else if (A.name == "SPICELINE") {
+                        sprintf(aspiceline, "SYMATTR Spiceline %s\n",  A.value);
+                      }
+                      else if (A.name == "SPICELINE2") {
+                        sprintf(aspiceline2, "SYMATTR Spiceline2 %s\n",  A.value);
+                      }
+                      else if (A.name == "SPICETYPE") {
+                        sprintf(aspicetype, "SYMATTR Type %s\n",  A.value);
+                      }
+                    }
+                  }
+                  printf("%s", aspiceprefix);
+                  printf("%s", aspicemodel);
+                  if (avalue2) printf("%s", avalue2);
+                  if (aspiceline) printf("%s", avalue2);
+                  if (aspicetype) {
+                    printf("%s", aspicetype);
+                  }
+                }
+              }
+              printf("SYMATTR Description %s\n", check_dev_description(DEV.description));
+              SYM.pins(P) ex_draw_pin(P, 1);        // die Linien der Pins plus die PINs selbst zeichnen.
+              /*  export no description
+              string descript = DEV.description;
+              if (!descript) descript = DEV.prefix;
+              printf("SYMATTR Description : %s Export with %s\n", descript,  argv[0]);
+              SYM.pins(P) ex_draw_pin(P, ++pcnt);  // die Pinkontakte selbst
+              */
+            } // end output()
+          }
+        }
+      }
+    }
+  }
+  if (Test) looptest(Ex_AsyName);
+  return;
+}
+
+
+void ex_draw_label(UL_LABEL L) {
+  // ein Flag ist ein Supply-Symbol, wobei nur zwischen 0 == GND und COM == Common unterschieden wird.
+  return;
+}
+
+
+void ex_draw_line(UL_WIRE W) {
+  return;
+}
+
+
+void ex_draw_rectangle(UL_RECTANGLE R) {
+  // RECTANGLE Normal 352 336 288 304
+      printf("RECTANGLE Normal %.0f %.0f %.0f %.0f\n",
+            ex_spicegrid(u2mil(R.x1)), ex_spicegrid(u2mil(R.y1)*-1.0),
+            ex_spicegrid(u2mil(R.x2)), ex_spicegrid(u2mil(R.y2)*-1.0)
+          );
+  return;
+}
+
+
+string ex_check_gate_name(UL_PART P, string igatename) {
+  // wenn Device aus nur 1 Gate besteht, dann keine Gate-Namen verwenden
+  int gcnt = 0;
+  P.deviceset.gates(G) {
+    gcnt++;
+  }
+  //string h;
+  //sprintf(h, "%s (%s) has %d gates!", P.name, P.deviceset.name, gcnt);
+  if (gcnt == 1) return "";
+  return igatename;
+}
+
+
+void ex_draw_instance(UL_INSTANCE I, UL_PART P) {
+  int cnttext = 0;
+  int cntpin = 0;
+  string h;
+  string currentgatename = ex_check_gate_name(P, I.gate.name);
+  string libpath;
+
+  I.gate.symbol.texts(T) {
+    if (T.layer == Ex_LayerSpiceOrder) {
+      if (strstr(T.value, "SpiceOrder") == 0) cnttext++;
+    }
+  }
+  I.gate.symbol.pins(P) {
+    cntpin++;
+  }
+  if (cnttext != cntpin || !cnttext) {
+    if (!cnttext) {
+      sprintf(h, "!No SpiceOrder in symbol %s of Part %s,\nplease define the SpiceOder for PINs first!", I.gate.symbol.name, P.name);
+    }
+    if (cnttext != cntpin) {
+      sprintf(h, "!Different quantity of SpiceOrder and PINs in symbol %s of part %s (%s).\nPlease check symbol!",
+                  I.gate.symbol.name, P.name, P.device.name
+             );
+    }
+    dlgMessageBox(h, "OK");
+    libpath = file_search(P.deviceset.library+".lbr", EAGLE_DIR, 4, "1733");
+    if (strstr(libpath, P.deviceset.library) < 0) {
+      dlgMessageBox("Library " + P.deviceset.library + ".lbr not found in path:\n"+ EAGLE_DIR, "OK");
+      if (dlgMessageBox("Export from schematic ?", "YES", "CANCEL") != 0) exit(-1739);
+      exit("RUN exp-project-lbr");
+    }
+    sprintf(h, "OPEN '%s';\nEDIT %s.DEV;RUN spiceorder.ulp", libpath, P.deviceset.name);
+    //if (dlgMessageBox(h, "ok", "esc1740") != 0) exit(-1743);
+    exit(h);
+  }
+  if (P.deviceset.library == "lt-supply") { // LTspice-Versorgungssymbole bzw. LABEL müssen in der lt-supply.lbr angelegt sein!
+    // FLAG(s) haben keine Rotation, sie werden anhand der Richtung des angelegten WIRE ausgerichtet!
+    if (P.device.name == "0") {  // FLAG 144 -416 0
+      printf("FLAG %.0f %.0f 0\n", ex_spicegrid(u2mil(I.x)), ex_spicegrid(u2mil(I.y)*-1.0));
+      return;
+    }
+    else if (P.device.name =="COM")  { // FLAG -128 288 COM
+      printf("FLAG %.0f %.0f COM\n", ex_spicegrid(u2mil(I.x)), ex_spicegrid(u2mil(I.y)*-1.0));
+      return;
+    }
+    else {
+      printf("FLAG %.0f %.0f %s\n", ex_spicegrid(u2mil(I.x)), ex_spicegrid(u2mil(I.y)*-1.0), P.device.name);
+      return;
+    }
+  }
+
+  string devicename = P.device.name;
+  if (P.deviceset.library == "lt-spice-simulation") {   // Spezielle Behandlung von Bauteilen aus der Simulations-LBR
+    if (devicename == "RES_RLOAD") devicename = "res";  // Konvertiere einen LOAD-Resistor wieder zurück zu "res"
+    else if (devicename == "VOLTAGE");
+    else if (devicename == "CURRENT");
+    else if (devicename == "BV");
+    else if (devicename == "E");
+    else if (devicename == "LOAD");  // ein LOAD (veränderbarer Widerstand) als Last aus der lt-spice-simulation.lbr
+    else {
+      dlgMessageBox("Unknown simulation part <b>" +P.name+ "</b> (Device:"+ devicename + "), please check :<br><b>" + P.deviceset.library + ".lbr</b>", "OK");
+      exit(-1772);
+    }
+  }
+  // Prüfe das Vorhandensein des benötigten Symbol in der LTspice-Datenstruktur.
+  // Müssen bestimmte Symbole in bestimmten Verzeichissen abgelegt sein?
+  string asyfile;
+  if (P.deviceset.library == "lt-spice-simulation") {
+    asyfile = check_exist_asy(ex_check_dev_name(devicename+currentgatename+".asy"), LTSpiceLibDir, "init");
+  }
+  else if (P.deviceset.library == "lt-supply") {
+    if (dlgMessageBox(devicename+currentgatename+".asy" + ":" + LTSpiceLibDir , "ok1779", "esc1779") != 0) exit(-1782);
+  }
+  else {
+    asyfile = check_exist_asy(ex_check_dev_name(devicename+currentgatename+".asy"), LTSpiceLibDir, "1782"); // evtl. einen Ordner weiter unten beginnen, ExpEagleSpiceSymDir);
+  }
+  if (!asyfile) { // 2014-01-23
+    if (dlgMessageBox(LTSpiceLibDir + "\n" + devicename+currentgatename + ".asy\ndoes not exist as LTspice symbol.\nOpen library and deviceset, and export device (symbols).", "OK", "CANCEL") != 0) exit(-1788);
+    libpath = file_search(P.deviceset.library+".lbr", EAGLE_DIR, 4, "1786");
+    sprintf(h, "OPEN '%s';\nEDIT %s.DEV;", libpath, P.deviceset.name);
+    exit(h);
+  }
+
+  /* *** Lastwiderstände "Rload" benutzen das selbe Symbol wie R (res.asy) beim    ****
+   **** importieren wird dem Devicenamen (Instance) der Zusatz "_RLOAD" vergeben. *** */
+  if (devicename == "RES_RLOAD") devicename = "res";   // hier ohne den expliziten Hinweis auf die Herkunft (LBR)
+
+  string rotation;
+  sprintf(rotation, "R%.0f", I.angle);  // ok 2012-05-11
+  if (rotation == "R0" && I.mirror) rotation = "M0";
+  else if (rotation == "R180" && I.mirror) rotation = "M180";
+  else if (rotation == "R180") rotation = "R180";
+  else if (rotation == "R90" && I.mirror) rotation = "M270";
+  else if (rotation == "R90") rotation = "R270";
+  else if(rotation == "R270" && I.mirror) rotation = "M90";
+  else if(rotation == "R270") rotation = "R90";
+
+  printf("SYMBOL %s %.0f %.0f %s\n",
+         // Device- und Gate-Namen dürfen keine Slash enthalten, siehe LTspiceFormatInfo.
+         ex_check_dev_name(devicename+currentgatename),  // aktueller Gatename, wenn Device aus mehr als 1 Gate besteht
+                                                /*** hier fehlt evtl. noch die Technologie ***/
+         ex_spicegrid(u2mil(I.x)),
+         ex_spicegrid(u2mil(I.y)*-1.0),
+         rotation
+        );
+  string iname = I.name;
+  if (strstr(iname, "RLOAD") == 0) {
+    // iname = "Rload"; Kleinschreibung muß nicht sein!
+  }
+  printf("SYMATTR InstName %s\n", iname);
+  printf("SYMATTR Value %s\n", I.value);
+  string SPICEMODEL = "", VALUE2 = "", SPICELINE = "", SPICELINE2 = "", SPICETYPE = "", NAME = "",  VALUE = "";
+
+  /* nur in der LBR für das Symbol ausgeben
+  if (P.attribute["SPICEMODEL"]) {
+    SPICEMODEL = P.attribute["SPICEMODEL"];
+  } */
+  if (P.attribute["VALUE2"]) {
+    VALUE2 = P.attribute["VALUE2"];
+    if (VALUE2) printf("SYMATTR Value2 %s\n", VALUE2);
+  }
+  if (P.attribute["SPICELINE"]) {
+    SPICELINE = P.attribute["SPICELINE"];
+    if(SPICELINE) printf("SYMATTR SpiceLine %s\n", SPICELINE);
+  }
+  if (P.attribute["SPICELINE2"]) {
+    SPICELINE2 = P.attribute["SPICELINE2"];
+    if(SPICELINE2) printf("SYMATTR SpiceLine2 %s\n", SPICELINE2);
+  }
+  if (P.attribute["SPICETYPE"]) {
+    SPICETYPE = P.attribute["SPICETYPE"];
+    if (SPICETYPE) {
+      printf("SYMATTR Type %s\n", SPICETYPE);
+    }
+  }
+
+  I.gate.symbol.texts(T) {
+    if (strupr(T.value) == ">VALUE") VALUE = T.value;
+  }
+
+  I.texts(T) {
+    int windowattrib = -1;
+    int textoffset = 0;
+    if (I.name == T.value) windowattrib = 0;
+    else if (I.value == T.value)    windowattrib = 3;
+    else if (SPICETYPE == T.value)       windowattrib = 1;
+    else if (SPICEMODEL == T.value) windowattrib = 38;
+    else if (SPICELINE == T.value)  windowattrib = 39;
+    else if (SPICELINE2 == T.value) windowattrib = 40;
+    else if (VALUE2 == T.value)     windowattrib = 123;
+    if (windowattrib >=0) {
+      printf("WINDOW %d %s %s %.0f\n",
+                     windowattrib,
+                     ex_spicetextcoord(T, I),
+                     ex_checktextangle(T.align, T.angle, P.name, I.angle),
+                     u2mil(textoffset)
+            );
+    }
+  }
+
+  return;
+}
+
+
+/****************** Import functions *********************/
+void imp_Testview(string head) {
+  int sel = 0;
+  int srt = 0;
+  for (int n = 0; n < Imp_CntW; n++) {
+    sprintf(Imp_LineView[n], "%d\t%d\t%d\t%d\t%d\t%d\t%d", n, Imp_WireX1[n], Imp_WireY1[n], Imp_WireX2[n], Imp_WireY2[n], Imp_WireSeg[n], Imp_WireType[Imp_WireSeg[n]]);
+  }
+  dlgDialog(head) {
+    dlgHBoxLayout dlgSpacing(500);
+    dlgHBoxLayout {
+      dlgVBoxLayout dlgSpacing(400);
+      dlgListView("Nr.\tx1\ty1\tx2\ty2\tSegnr\t1 BUS/2 NET", Imp_LineView, sel, srt);
+    }
+    dlgHBoxLayout {
+      dlgPushButton("OK") dlgAccept();
+      dlgPushButton("esc") { dlgReject(); exit(-1890); }
+      dlgStretch(1);
+    }
+  };
+  return;
+}
+
+
+void imp_helpSimulationSymbols(void) {
+  dlgDialog("HELP import-LTspice") {
+    dlgHBoxLayout dlgSpacing(400);
+    dlgLabel(Imp_InfoExternalSymbol);
+    dlgHBoxLayout {
+      dlgStretch(1);
+      dlgPushButton("OK") dlgAccept();
+      dlgStretch(1);
+    }
+  };
+  return;
+}
+
+
+string imp_dirname(string name) {  // ermittle den letzen Verzeichnisnamen
+  string s[];
+  int cntd = strsplit(s, name, '/');
+  if (cntd > 1) return s[cntd-2];
+  return s[0];
+}
+
+
+string imp_check_use(string lname) {  // check exist lbr in library path
+  if (!lname) return "";
+
+  for (int n = 0; n < Imp_CntUsedLbrs; n++) {  // check lbr in used list?
+    if (Imp_UsedLbrs[n] == lname) return "";  // LBR are in use
+  }
+  int nl = 0;
+  int exist = 0;
+  string lb[];
+  string dir = filedir(lname);  // prüfe auf kompletten Pfad-Datei-Namen
+  if (dir) {  // mit Pfad zur Lib
+    if (fileglob(lb, lname)) {
+      Imp_Cmd += "USE '" + lname + "'; #1933\n";
+      Imp_UsedLbrs[Imp_CntUsedLbrs] = lname;  // set lbr on used list
+      Imp_CntUsedLbrs++;
+      return "@"+lname;
+    }
+    else {
+      do {
+        if (fileglob(lb, path_lbr[nl] + "/" + lname + "*.lbr")) {
+          Imp_Cmd += "USE '" + path_lbr[nl] + "/" + lname + ".lbr'; #1941\n";
+          Imp_UsedLbrs[Imp_CntUsedLbrs] = lname;                    // set lbr on used list
+          Imp_CntUsedLbrs++;
+          return "@"+path_lbr[nl] + "/" + lname + ".lbr";
+        }
+        nl++;
+      } while(path_lbr[nl]);
+
+      dlgMessageBox("!Library does not exist:\n\n\"" + lname + "\"\n\nULP aborted.", "OK");
+      //return "lbr not found";
+      exit(-1951);
+    }
+  }
+  else { // Ohne Pfad zur Lib, suche in allen Verzeichnissen die im Control-Panel angegeben sind.
+    do {
+      if (fileglob(lb, path_lbr[nl] + "/" + lname + "*.lbr")) {
+        Imp_Cmd += "USE '" + path_lbr[nl] + "/" + lname + ".lbr'; #1957\n";
+        Imp_UsedLbrs[Imp_CntUsedLbrs] = lname;                    // set lbr on used list
+        Imp_CntUsedLbrs++;
+        return "@"+path_lbr[nl] + "/" + lname + ".lbr";
+      }
+      nl++;
+    } while(path_lbr[nl]);
+    dlgMessageBox("!Library <b>" + lname + "</b>.lbr can't be found in path!<br>Please check: Control Panel - Options - Directories - Libraries.<br>Add path of : " + lname + ".lbr.<br>" +
+                  "Are you sure, you have imported this lbr from LTspice?", "OK");
+    exit(-3);
+  }
+}
+
+
+int check_exist_packname(string pacname) {
+  int len = strlen(pacname);
+  if (!len) {
+    dlgMessageBox("! No package name : Error 1674", "CANCEL"); exit(-1962);
+  }
+  if (pacname[len-1] == '\'') pacname[len-1] =0;
+  if (pacname[0] == '\'') pacname = strsub(pacname, 1);
+
+  library(L) L.packages(PAC) {
+    if (PAC.name == pacname) return 1;
+  }
+  return 0;
+}
+
+
+string get_pac_from_script(string scriptname) {  // lade existierendes script und suche nach der Packagebezeichnung
+  string scrlines[];
+  int cntsline = fileread(scrlines, scriptname);
+  string s[];
+  int cnt;
+  int pacexist = 0;
+  int paccnt = 0;
+  string pacname = "";
+  for ( int n = 0; n < cntsline; n++) {
+    cnt = strsplit(s, scrlines[n], ' ');
+    if (s[0] == "Package") {
+      paccnt++;
+      if (check_exist_packname(s[1])) {
+        pacname = s[1];
+        pacexist++;
+      }
+      else {
+        dlgMessageBox("!Script:" + scriptname + "\nPackage " + s[1] + " not found in lbr.", "OK");
+        exit(-1992);
+      }
+    }
+    else if (s[1] == "Package") {   // Die Zeile beginnt mit einem SPACE
+      paccnt++;
+      if (check_exist_packname(s[2])) {
+        pacname = s[2];
+        pacexist++;
+      }
+      else {
+        dlgMessageBox("!Script:\n" + scriptname + "\nPackage " + s[2] + " not found in lbr.", "OK");
+        exit(-2003);
+      }
+    }
+  }
+  if (paccnt == pacexist) return pacname;  // das zuletzt gefundene Package wird zurückgegeben
+  return "";
+}
+
+
+string imp_checkpinname(string pname) {
+  /*
+  LTspice läßt gleichen Pin-Namen mehrfach zu,
+  in Eagle muß der Pinname eindeutig sein,
+  hier wird geprüft ob der Pinname einzigartig ist.
+  Wenn nein, dann wird "@n" hinzugefügt, wobei im SCH
+  das Zeichen @ und alle dahinter vorkommenden Zeichen
+  nicht angezeigt werden.  n wird hochgezählt.
+  */
+  if (pname[0] == '_') pname[0] = '!'; // LTspice benutzt das Underlinezeichen als Einleitung des Negierungsüberstrich,
+  string name = pname;                 // Eagle benutzt das Ausrufezeichen, also tauschen.
+  int cnt = 0;
+  do {
+    int found = 0;
+    for(int n = 0; n < Imp_CntPinname; n++) {
+      if (name == Imp_SpicePinName[n]) {
+        found = 1;
+        break;
+      }
+    }
+    if (!found) {
+      Imp_SpicePinName[Imp_CntPinname] = name;
+      Imp_CntPinname++;
+      return name;
+    }
+    else {
+      sprintf(name, "%s@%d", pname, ++cnt);
+    }
+  } while(pname);
+}
+
+
+real imp_eagle_coordvalue(real v) {  // calculate LT_SPice-16-Grid to Eagle-100-mil-Grid
+  return (v / 16) * 100;
+}
+
+
+void imp_add_wire(int x1, int y1, int x2, int y2) {
+  Imp_WireX1[Imp_CntW] = x1;  // für die spätere Untersuchung wegen des BUS-Flags
+  Imp_WireY1[Imp_CntW] = y1;
+  Imp_WireX2[Imp_CntW] = x2;
+  Imp_WireY2[Imp_CntW] = y2;
+  Imp_CntW++;
+
+  // LT-Spice rotiert ein FLAG (Supplypin/Label) automatisch
+  // anhand der Ausrichtung des Wire, an dessen Ende das FLAG sitzt.
+  // Dazu muß man alle Wire sammeln, um dann später die Rotation
+  // des FLAG zu bestimmen.
+  // Hier wird die Tabelle aufgebaut, für die Funktion lookup().
+  sprintf(Imp_Coords[Imp_CntCo], "%d %d;%d %d", x1, y1, x2, y2);  // erstellen der Tabelle für lookup()
+  Imp_CntCo++;
+  sprintf(Imp_Coords[Imp_CntCo], "%d %d;%d %d", x2, y2, x1, y1);
+  Imp_CntCo++;
+  return;
+}
+
+
+int imp_getflagrotate(string coord, string l) {
+  string xy2[];
+  strsplit(xy2, lookup(Imp_Coords, coord, 1, ';'), ' ');  // prüfe auf übereinstimmung der Wire-Koordinaten
+  if (!xy2[0]) {                                          // Rückgabewert ist leer, wenn keine Wire-Koordinate gefunden wurde.
+    strsplit(xy2, coord, ' ');
+    sprintf(h, "Import line: %s\nCould not find wire's coordinates in order to place a supply symbol.\n(%.4fmil %.4fmil)",
+               l,
+               imp_eagle_coordvalue(strtod(xy2[0])),    // als Eagle-Koordinate anzeigen
+               imp_eagle_coordvalue(strtod(xy2[1]))*-1.0
+           );
+    if (dlgMessageBox(h, "OK", "CANCEL") != 0) exit(-2079);
+    return 0;
+  }
+  real r;
+  string xy1[];
+  strsplit(xy1, coord, ' ' );
+  int x1 = strtol(xy1[0]);
+  int y1 = strtol(xy1[1]);
+  int x2 = strtol(xy2[0]);
+  int y2 = strtol(xy2[1]);
+  if (x1 == x2) { // vertical
+    if (y1 < y2) Imp_FlagRotate = 180.0;  // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+    else Imp_FlagRotate = 0.0;
+  }
+  else if (y1 == y2) { // horizontal
+    if (x1 < x2) Imp_FlagRotate = 270.0;   // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+    else Imp_FlagRotate = 90.0;
+  }
+  else Imp_FlagRotate = 0.0;
+  return 1;
+}
+
+
+void imp_get_net_segment(void) {
+  /*
+  LT-Spice zeichnet WIRE immer von rechts nach links, und von unten nach oben!
+  Ein BUS wird erst am Ende durch ein BUSTAP markiert.
+  In Eagle wird NET und BUS unterschieden, sowohl als Befehl als auch als Objekt.
+  Hier müssen zuerst die Segmente zugeordnet werden, und dann als NET oder BUS
+  gezeichnet werden.
+
+  WireSeg[];    // Da ein NET sehr verzweigt, und später mit einem BUSTAB zu einem BUS deklariert werden kann,
+                // werden die Wire, Segmenten zugeordnet.
+  WireType[];   // Der Index des WireType entspricht der Segmentnummer.
+                // Der Inhalt wird zunächst auf NET gesetzt, wird im Segment eine Koordinate eines BUSTAB
+                // gefunden, so wird das Segment auf BUS gesetzt.
+  CntSeg = 0;   // Anzahl der Segmente
+
+  */
+  int found = 0;
+  Imp_CntSeg = 0;
+  int fx1 = Imp_WireX1[0];
+  int fy1 = Imp_WireY1[0];
+  int fx2 = Imp_WireX2[0];
+  int fy2 = Imp_WireY2[0];
+
+  for (int n = 0; n < Imp_CntW; n++) {
+    if (!Imp_WireSeg[n]) {
+      Imp_WireSeg[n] = ++Imp_CntSeg;
+      Imp_WireType[Imp_CntSeg] = NET;  // setze Segment-Type NET als Default
+    }
+    fx1 = Imp_WireX1[n];
+    fy1 = Imp_WireY1[n];
+    fx2 = Imp_WireX2[n];
+    fy2 = Imp_WireY2[n];
+
+    do {
+      found = 0;
+      for(int i = n+1; i < Imp_CntW; i++) {
+        if (!Imp_WireSeg[i]) {
+          if ( Imp_WireX1[i] == fx1 && Imp_WireY1[i] == fy1 ||  Imp_WireX2[i] == fx2 && Imp_WireY2[i] == fy2 ||
+               Imp_WireX1[i] == fx2 && Imp_WireY1[i] == fy2 ||  Imp_WireX2[i] == fx1 && Imp_WireY2[i] == fy1 ) {
+            Imp_WireSeg[i] = Imp_CntSeg;
+            found = i;
+            fx1 = Imp_WireX1[i];
+            fy1 = Imp_WireY1[i];
+            fx2 = Imp_WireX2[i];
+            fy2 = Imp_WireY2[i];
+          }
+        }
+      }
+    } while (found > 0);
+  }
+  Imp_WireChecked = 1;  // Segmente ermittelt
+  return;
+}
+
+
+void imp_check_bus(int x, int y) {  // check Koordinate auf BUSTAB
+  for (int n = 0; n < Imp_CntW; n++) {
+    if ( Imp_WireX1[n] == x && Imp_WireY1[n] == y || Imp_WireX2[n] == x && Imp_WireY2[n] == y) {
+      Imp_WireType[Imp_WireSeg[n]] = BUS;
+      break;
+    }
+  }
+  return;
+}
+
+
+void imp_draw_net(void) { // zeichne alle NETze und BUSse
+  Imp_Cmd += "SET CONFIRM YES;\n";
+  string commandtype = "NET";
+  for (int n = 0; n < Imp_CntW; n++ ) {
+    commandtype = "NET";
+    if (Imp_WireType[Imp_WireSeg[n]] == BUS) {
+      sprintf(commandtype, "BUS 'B_$%d' ", Imp_WireSeg[n]);
+    }
+    sprintf(h, "%s (%.4f %.4f) (%.4f %.4f);\n",
+                  commandtype,
+                  imp_eagle_coordvalue(Imp_WireX1[n]),
+                  imp_eagle_coordvalue(Imp_WireY1[n])*-1.0,
+                  imp_eagle_coordvalue(Imp_WireX2[n]),
+                  imp_eagle_coordvalue(Imp_WireY2[n])*-1.0
+           );
+    Imp_Cmd+= h;
+  }
+  Imp_Cmd += "SET CONFIRM OFF;\n";
+  Imp_DrawNetBus = 1;  // Flag NET/BUS gezeichnet
+  return;
+}
+
+
+void imp_version(string l) {
+  // Version 4
+  string s[];
+  int n = strsplit(s, l, ' ');
+  int versionnumber = strtol(s[1]);
+  sprintf(h, "# Spice version %d\n", versionnumber);
+  Imp_Cmd += h;
+  return;
+}
+
+
+// calculate angle from a pair of coordinates
+real imp_wire_angle(int x1, int y1, int x2, int y2) {
+  real xe = imp_eagle_coordvalue(x1);
+  real ye = imp_eagle_coordvalue(y1);
+  real xa = imp_eagle_coordvalue(x2);
+  real ya = imp_eagle_coordvalue(y2);
+  real RADIUS = sqrt(((xa - xe) * (xa - xe)) + ((ya - ye) * (ya - ye)));
+
+  if ((xa > xe) && (ya >= ye))   {               /* Quadrant 1 */
+    return acos((xa - xe) / RADIUS) * 57.29578;
+  }
+  if ((xa < xe) && (ya >= ye))   {               /* Quadrant 2 */
+    return acos((xa - xe) / RADIUS) * 57.29578;
+  }
+  if ((xa < xe) && (ya < ye))    {               /* Quadrant 3 */
+    return 360 - acos((xa - xe) / RADIUS) * 57.29578;
+  }
+  if ((xa > xe) && (ya < ye))    {               /* Quadrant 4 */
+    return 360 - acos((xa - xe) / RADIUS) * 57.29578;
+  }
+  if ((xa == xe) && (ya == ye))  {               /* Ursprung   */
+    return (xa - xe);
+  }
+  if ((xa == xe) && (ya > ye))   {               /* 90°      */
+    return (xa - xe + 90);
+  }
+  if ((xa == xe) && (ya < ye))   {               /* 270°     */
+    return (xa - xe + 270);
+  }
+}
+
+
+/******************************************************
+                parse library lines
+******************************************************/
+void imp_symboltype(string l){
+  // SymbolType CELL
+  // SymbolType BLOCK
+  string s[];
+  int n = strsplit(s, l, ' ');
+  string symboltype = s[1];
+
+  if (symboltype == "CELL") {
+  }
+  else if (symboltype == "BLOCK") {
+  }
+  else {
+    dlgMessageBox("Unknown symbol type:\n" + l, "CANCEL");
+    exit(-2250);
+  }
+  sprintf(h, "# Symbol Type %s\n", symboltype);
+  Imp_Cmd += h;
+  sprintf(h, "CHAnge Align Left Center; # Symbol\n");
+  Imp_Cmd += h;
+  return;
+}
+
+
+void imp_line(string l) {
+  string s[];
+  int n = strsplit(s, l, ' ');
+  if (s[1] == "Normal") {
+    Imp_Cmd+="CHANGE WIDTH 6 ;\n";
+  }
+  else if (s[1] == "Bold") {
+    Imp_Cmd+="CHANGE WIDTH 10;\n";
+  }
+  else {
+    string e;
+    sprintf(e, "Unknown LINE " + s[1]);
+    dlgMessageBox(e, "OK");
+    exit(-2273);
+  }
+  if (s[6]) {
+    if (s[6] == "0") {
+      Imp_Cmd += "CHANGE STYLE Continuous;\n";
+    }
+    else if (s[6] == "1") {
+      Imp_Cmd += "CHANGE STYLE LongDash;\n";
+    }
+    else if (s[6] == "2") {
+      Imp_Cmd += "CHANGE STYLE ShortDash;\n";
+    }
+    else if (s[6] == "3") {
+      Imp_Cmd += "CHANGE STYLE DashDot;\n";
+    }
+    else  {
+      Imp_Cmd += "CHANGE STYLE Continuous;\n";
+    }
+  }
+  sprintf(h, "SET WIRE_BEND 2;\nLAYER 94;\nWIRE (%.4f %.4f) (%.4f %.4f);\n",
+                 imp_eagle_coordvalue(strtod(s[2])),
+                 imp_eagle_coordvalue(strtod(s[3])*-1.0),  // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+                 imp_eagle_coordvalue(strtod(s[4])),
+                 imp_eagle_coordvalue(strtod(s[5])*-1.0)   // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+         );
+  Imp_Cmd+=h;
+  return;
+}
+
+
+void imp_rectangle(string l) {
+  string s[];
+  int n = strsplit(s, l, ' ');
+  if (s[1] == "Normal") {
+    Imp_Cmd+="CHANGE WIDTH 6;\n";
+  }
+  else if (s[1] == "Bold") {
+    Imp_Cmd+="CHANGE WIDTH 10;\n";
+  }
+  sprintf(h, "SET WIRE_BEND 2;\nLAYER 94;\nWIRE (%.4f %.4f) (%.4f %.4f) (%.4f %.4f) (%.4f %.4f) (%.4f %.4f);\n",
+             imp_eagle_coordvalue(strtod(s[2])), imp_eagle_coordvalue(strtod(s[3])*-1.0),  // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+             imp_eagle_coordvalue(strtod(s[4])), imp_eagle_coordvalue(strtod(s[3])*-1.0),  // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+             imp_eagle_coordvalue(strtod(s[4])), imp_eagle_coordvalue(strtod(s[5])*-1.0),  // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+             imp_eagle_coordvalue(strtod(s[2])), imp_eagle_coordvalue(strtod(s[5])*-1.0),  // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+             imp_eagle_coordvalue(strtod(s[2])), imp_eagle_coordvalue(strtod(s[3])*-1.0)   // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+         );
+  Imp_Cmd+=h;
+  return;
+}
+
+
+void imp_circle(string l) {
+  /*
+  Definition eines CIRCLE:
+  Die ersten zwei Koordinaten definieren mit den zwei diagonalen Ecken ein umschliesendes
+  Rechteck um den Kreis. Innerhalb dieses Rechteck befindet sich der Kreis, also
+  ist Breite und Länge des Rechteck zugleich der Durchmesser.
+  */
+  string s[];
+  int n = strsplit(s, l, ' ');
+  if (s[1] == "Normal") {
+    Imp_Cmd+="CHANGE WIDTH 6 ;\n";
+  }
+  else if (s[1] == "Bold") {
+    Imp_Cmd+="CHANGE WIDTH 10;\n";
+  }
+  sprintf(h, "LAYER 94;\nCIRCLE (%.4f %.4f) (%.4f %.4f);\n",
+                (imp_eagle_coordvalue(strtod(s[2])) + imp_eagle_coordvalue(strtod(s[4]))) / 2,
+                (imp_eagle_coordvalue(strtod(s[3])*-1.0) + imp_eagle_coordvalue(strtod(s[5])*-1.0)) / 2,  // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+                (imp_eagle_coordvalue(strtod(s[2])) + imp_eagle_coordvalue(strtod(s[4]))) / 2,
+                imp_eagle_coordvalue(strtod(s[5])*-1.0)                                                  // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+         );
+  Imp_Cmd+=h;
+  return;
+}
+
+
+void imp_arc(string l) {
+  // ARC Normal -20 -124 4 -100 -20 -112 -8 -100
+  /*
+    Definition des ARC:
+    Die ersten zwei Koordinaten definieren die zwei diagonalen Ecken eines umschließenden
+    Rechteck um einen Kreis. Die Mitte dieses Rechteck ist der Mittelpunkt des Kreises,
+    und somit der Mittelpunkt des ARC.
+    Die 3. und 4. Koordinate ergibt vom Mittelpunkt des zuvor definierten Kreises
+    den Anfangswinkel und die 7. und 8. Koordinate den Endwinkel.
+    Die Genauigkeit der Zeichnungen bezüglich der Enden eines ARC in LT-Spice, ist beschränkt
+    durch die relativ geringe Auflösung von 16 (Einheiten), siehe ARC in Optokoppler PC817D.
+    2011-10-12
+  */
+  string s[];
+  int n = strsplit(s, l, ' ');
+  if (s[1] == "Normal") {
+    Imp_Cmd+="CHANGE WIDTH 6 ;\n";
+  }
+  else if (s[1] == "Bold") {
+    Imp_Cmd+="CHANGE WIDTH 10;\n";
+  }
+
+  if (n > 10) {
+    sprintf(h, "# %d Parameter in line:\n# %s\n", n, l);
+    Imp_Cmd+=h;
+  }
+  int centerx = (strtod(s[2]) + strtod(s[4])) / 2;
+  int centery = (strtod(s[3])*-1.0 + strtod(s[5])*-1.0) / 2;
+  int aax = strtod(s[6]);
+  int aay = strtod(s[7]) * -1;
+  int aex = strtod(s[8]);
+  int aey = strtod(s[9]) * -1;
+  int radius = strtod(s[4])- centerx;
+  if (radius < 0) radius *= -1;      // Radius darf nie negativ sein.
+  real startangle = imp_wire_angle(centerx, centery, strtod(s[6]), strtod(s[7])*-1.0);
+  real endangle = imp_wire_angle(centerx, centery, strtod(s[8]), strtod(s[9])*-1.0);
+
+  /* P   Polar-Koordinaten (relativ zur Marke, x = Radius, y = Winkel in Grad, gegen den Uhrzeigersinn) */
+  sprintf(h, "LAYER 94;\nMARK (%.4f %.4f);\nARC CCW (P%.4f %.4f) (P%.4f %.4f) (P%.4f %.4f);\nMARK;\n",
+               imp_eagle_coordvalue(centerx), imp_eagle_coordvalue(centery),  // setze Marke ins Zentrum des ARC
+               imp_eagle_coordvalue(radius), startangle,
+               imp_eagle_coordvalue(radius), startangle + 180.0,
+               imp_eagle_coordvalue(radius), endangle
+         );
+  Imp_Cmd+=h;
+  return;
+}
+
+
+void imp_print_text(real thigh, char leading, string text, real tx, real ty) {  // damit Eagle Directiven-Texte nicht überstreicht,
+                                                                                // muss das Einleitende ! mit einem Escapezeichen markiert werden.
+  string t[];
+  int cnt;
+
+  cnt = strsplit(t, text, '\''); // check Apostroph
+  /*
+  Text ''''      == '
+  Text ''''''    == ''
+  Text ''''''''  == '''
+  Text '''ein Apostroph am Anfang'
+  Text 'ein Apostroph am Ende'''
+  Text 'ein Apostroph '' in der Mitte'
+  Text ''' vier '' Apostrophen '' verteilt'''
+  Text '''\\'''
+  */
+  if (cnt > 1) {
+    text = "";
+    for (int i = 0; i < cnt; i++) {
+      // da der ganze String in ' eingeschlossen wird,
+      // müssen die Apostrophen verdoppelt werden.
+      if (i == 0) {
+        if (t[i]) text += t[i];
+      }
+      else if (i) text += "''" + t[i];
+    }
+  }
+  if (leading) sprintf(h, "CHANGE SIZE %.0f;\nTEXT '%c%s' %s (%.4f %.4f);\n", thigh, leading, text, TextAlignRotation, tx, ty);
+  else sprintf(h, "CHANGE SIZE %.0f;\nTEXT '%s' %s (%.4f %.4f);\n", thigh, text, TextAlignRotation, tx, ty);
+  Imp_Cmd+=h;
+  return;
+}
+
+
+string imp_secondstr(string line, string w) { // return the rest of string after word
+  int pos = strstr(line, w) + strlen(w)+1;
+  return strsub(line, pos);
+}
+
+
+void imp_text(string l) {
+  string s[];
+  int cnt = strsplit(s, l, ' ');
+  // berechne den wirklichen Anfang des "Textes"
+  //              TEXT          -16           512           Left          2                A A  A   A
+  int textbegin = strlen(s[0]) + strlen(s[1]) + strlen(s[2]) + strlen(s[3]) + strlen(s[4]) + 5; // 5 = 5 Spaces
+  string text = strsub(l, textbegin);
+
+  TextAlignRotation = "R0";
+  if (s[3] == "Center") {
+    sprintf(TextAlign, "change align Center;\n");
+  }
+  else if(s[3] == "Left") {
+    sprintf(TextAlign, "change align Center Left;\n");
+  }
+  else if(s[3] == "Right") {
+    sprintf(TextAlign, "change align Center Right;\n");
+  }
+  else if(s[3] == "Top") {
+    sprintf(TextAlign, "change align Center Top;\n");
+  }
+  else if(s[3] == "Bottom") {
+    sprintf(TextAlign, "change align Center Bottom;\n");
+  }
+  else if(s[3] == "VLeft") {  // 90°gedreht
+    sprintf(TextAlign, "change align Center Left;\n");
+    TextAlignRotation = "R90";
+ }
+  else if(s[3] == "VRight") {  // 90°gedreht
+    sprintf(TextAlign, "change align Center Right;\n");
+    TextAlignRotation = "R90";
+  }
+  else if (s[3] == "VCenter") {  // 90°gedreht
+    sprintf(TextAlign, "change align Center;\n");
+    TextAlignRotation = "R90";
+  }
+  else if(s[3] == "VTop") {  // 90°gedreht
+    sprintf(TextAlign, "change align Center Top;\n");
+    TextAlignRotation = "R90";
+  }
+  else if(s[3] == "VBottom") { // 90! gedreht
+    sprintf(TextAlign, "change align Center Bottom;\n");
+    TextAlignRotation = "R90";
+  }
+  else {
+    dlgMessageBox("Unknown Text justification:" + s[3] + "\n" + Imp_SymDevName + "\n" + l, "ok", "esc");
+    exit(-2485);
+  }
+  Imp_Cmd+=TextAlign;
+  real texthigh = LTTextSize;
+  real textoffsety = 0;
+  real textoffsetx = 0;
+  char leadingcharacter = 0;
+
+  if (text[0] == ';') {
+    Imp_Cmd += "CHanGe Layer 94;\n";
+  }
+  else if (text[0] == '!') { // check spice directive
+      Imp_Cmd += "CHanGE Layer 97;\n";
+      leadingcharacter = '\\';  // Einleitendes Ausrufezeichen als Sonderzeichen definieren, da Eagle sonst den Text überstreicht.
+  }
+
+  imp_print_text(texthigh, leadingcharacter, text, imp_eagle_coordvalue(strtod(s[1])), imp_eagle_coordvalue(strtod(s[2])*-1.0));  // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+  return;
+}
+
+
+void imp_window_sym(string l, int line) {
+  string s[];
+  int n = strsplit(s, l, ' ');
+  int winattrib = strtod(s[1]);
+
+  string h = "";
+  switch(winattrib) {
+    case 0    :   Imp_Winattrib[0] = "0";  // InstName  // WINDOW 0 273 -48 Bottom 2
+                  sprintf(h, "Change Layer 95;\nChange Size 70mil;\nTexT '>NAME' (%.4f %.4f);\n", imp_eagle_coordvalue(strtod(s[2])), imp_eagle_coordvalue(strtod(s[3])*-1.0));
+                  Imp_Cmd += h;
+                  break;
+
+    case 1    :   Imp_Winattrib[1] = "1";  // Type
+                  sprintf(h, "Change Layer 97;\nChange Size 10mil;\nTexT 'win1' (%.4f %.4f);\n", imp_eagle_coordvalue(strtod(s[2])), imp_eagle_coordvalue(strtod(s[3])*-1.0));
+                  Imp_Cmd += h;
+                  break;
+
+    case 2    :   Imp_Winattrib[2] = "2";
+                  sprintf(h, "Change Layer 97;\nChange Size 10mil;\nTexT 'win2' (%.4f %.4f);\n", imp_eagle_coordvalue(strtod(s[2])), imp_eagle_coordvalue(strtod(s[3])*-1.0));
+                  Imp_Cmd += h;
+                  break;
+
+    case 3    :   Imp_Winattrib[3] = "3";  // Value  // WINDOW 3 0 151 Center 0
+                  sprintf(h, "Change Layer 96;\nChange Size 70mil;\nTexT '>VALUE' (%.4f %.4f);\n", imp_eagle_coordvalue(strtod(s[2])), imp_eagle_coordvalue(strtod(s[3])*-1.0));
+                  Imp_Cmd += h;
+                  break;
+
+    case 38   :   Imp_Winattrib[38] = "38";  // SpiceModel // WINDOW 38 0 32 Center 0
+                  Imp_SpiceModelSymX = imp_eagle_coordvalue(strtod(s[2]));
+                  Imp_SpiceModelSymY = imp_eagle_coordvalue(strtod(s[3])*-1.0);
+                  Imp_SpiceModelSymAlign = s[4];
+                  Imp_SpiceModelSymOffset = imp_eagle_coordvalue(strtod(s[5]));
+                  if (Imp_SpiceModelSymAlign != "Center") if (dlgMessageBox(l + "\error 2246", "OK", "CANCEL") != 0) exit(-2538);
+                  break;
+
+    case 39   :   Imp_Winattrib[39] = "39";  // SpiceLine // WINDOW 39 273 154 Center 2
+                  Imp_SpiceLineSymX = imp_eagle_coordvalue(strtod(s[2]));
+                  Imp_SpiceLineSymY = imp_eagle_coordvalue(strtod(s[3])*-1.0);
+                  Imp_SpiceLineSymAlign = s[4];
+                  Imp_SpiceLineSymOffset = imp_eagle_coordvalue(strtod(s[5]));
+                  break;
+
+    case 40   :   Imp_Winattrib[40] = "40";  // SpiceLine2
+                  Imp_SpiceLine2SymX = imp_eagle_coordvalue(strtod(s[2]));
+                  Imp_SpiceLine2SymY = imp_eagle_coordvalue(strtod(s[3])*-1.0);
+                  Imp_SpiceLine2SymAlign = s[4];
+                  Imp_SpiceLine2SymOffset = imp_eagle_coordvalue(strtod(s[5]));
+                  break;
+
+    case 123  :   Imp_Winattrib[123] = "123";  // Value2
+                  sprintf(h, "Change Layer 96;\nChange Size 70mil;\nTexT '>VALUE2' (%.4f %.4f);\n", // Attribute Platzhalter
+                              imp_eagle_coordvalue(strtod(s[2])), imp_eagle_coordvalue(strtod(s[3])*-1.0)
+                         );
+                  Imp_Cmd += h;
+                  break;
+
+    default   :   sprintf(h, "File:%s\nUnknown window attribute \"%s\" in line :%d\n%s", Imp_SymDevName, s[1], line+1, l);
+                  if (dlgMessageBox(h, "OK", "CANCEL") != 0) exit(-2563);
+  }
+  return;
+}
+
+void attribute2script(string at, string symbolfile, string mode) {
+  output(filesetext(symbolfile, ".scr"), mode) {
+    printf("%s", at);
+  }
+  return;
+}
+
+string imp_symattr_sym(string l, int cnt, string source) {
+  /***3
+   Zu diesem Zeitpunk existiert noch kein Package, also kann man Attribute nur für das Packagelose
+   Device anlegen!
+   Das anlegen einer Package-Variante, löscht die Attribute, die keinem Package zugeordnet sind.
+   Die Attribute müssen in einem separaten SCRIPT eingetragen werden, daß dann zu gegebenen Zeitpunkt
+   nach dem erzeugen der Package-Variante gestartet wird.
+  ***3 ***/
+  string s[];
+  int n = strsplit(s, l, ' ');
+  string sy;
+  if (s[1] == "Prefix") {
+    Imp_Winattrib[0] = s[2];
+    sprintf(sy, "ATTRIBUTE SPICEPREFIX '%s';\n", Imp_Winattrib[0]);  // 2012-10-04
+    attribute2script(sy, source, FileAppend);  // im Device ablegen ***3
+    return "";
+  }
+
+  else if (s[1] == "Value") { // Value  [3]
+    Imp_Winattrib[3] = s[2];
+    attribute2script("VALUE OFF;\n", source, FileAppend);   // im Device ablegen ***3
+    return "";  // im Device ablegen
+  }
+
+  else if (s[1] == "SpiceModel") {  // SpiceModel  [38]
+    Imp_Winattrib[38] = s[2];
+    sprintf(sy, "ATTRIBUTE 'SPICEMODEL' '%s';\n", Imp_Winattrib[38]);
+    attribute2script(sy, source, FileAppend);  // im Device ablegen ***3
+    return "";
+  }
+
+  else if (s[1] == "SpiceLine") {  // SpiceLine   Imp_Winattrib[39]
+    if (Imp_Winattrib[39]) {
+      sprintf(sy, "Change Layer %d;\nChange Size 70mil;\nCHanGE Align %s;\nTexT 'Spiceline>%s' (%.4f %.4f);\n",
+                   LayerSpiceOrder,
+                   Imp_SpiceLineSymAlign,
+                   imp_secondstr(l, s[1]), // Spiceline : können mehrere Wörter durch Space getrennt sein
+                   Imp_SpiceLineSymX, Imp_SpiceLineSymY
+             );
+      Imp_Cmd += sy; // im Symbol ablegen
+      return "";
+    }
+    else {
+      sprintf(sy, "ATTRIButE 'Spiceline' '%s';\n",  // im Device als Attribute ablegen
+                     imp_secondstr(l, s[1]) // Spiceline : können mehrere Wörter durch Space getrennt sein
+             );
+      attribute2script(sy, source, FileAppend);  // im Device ablegen ***3
+      return "";
+    }
+  }
+
+  else if (s[1] == "SpiceLine2") {  // SpiceLine2  Winattrib[40]
+    if (Imp_Winattrib[40]) {
+      sprintf(sy, "Change Layer %d;\nChange Size 70mil;\nTexT 'Spiceline2>%s' (%.4f %.4f);\n",  // im Symbol ablegen
+                     LayerSpiceOrder, imp_secondstr(l, s[1]), // Spiceline2 : können mehrere Wörter durch Space getrennt sein
+                     Imp_SpiceLine2SymX, Imp_SpiceLine2SymY
+             );
+      Imp_Cmd+= sy;
+      return "";
+    }
+    else {
+      sprintf(sy, "ATTRIButE 'Spiceline2' '%s';\n",  // im Device als Attribute ablegen
+                     imp_secondstr(l, s[1]) // Spiceline2 : können mehrere Wörter durch Space getrennt sein
+             );
+      attribute2script(sy, source, FileAppend);  // im Device ablegen ***3
+      return "";
+    }
+  }
+
+  else if (s[1] == "Value2") {  // Value2  [123]
+    Imp_Winattrib[123] = imp_secondstr(l, s[1]);
+    sprintf(sy, "ATTRIBUTE 'VALUE2' '%s'; #2658\n", Imp_Winattrib[123]);
+    attribute2script(sy, source, FileAppend);  // im Device ablegen ***3
+    return "";
+  }
+
+  else if (s[1] == "Description") {
+    string descript;
+    sprintf(descript, "DESCRIPTION '%s'\n", imp_secondstr(l, s[1]));
+    return descript;    // im Device ablegen
+  }
+
+  else if (s[1] == "ModelFile") {
+    Imp_Winattrib[123] = s[2];
+    sprintf(sy, "ATTRIBUTE 'ModelFile' '%s'; #2671\n", Imp_Winattrib[123]);
+    attribute2script(sy, source, FileAppend);  // im Device ablegen ***3
+    return "";
+  }
+  else if (s[1] == "DefSubstrate") {
+    sprintf(sy, "ATTRIBUTE 'DefSubstrate' '%s'; #2676\n", s[2]);
+    attribute2script(sy, source, FileAppend);  // im Device ablegen ***3
+    return "";
+  }
+
+  sprintf(h, "%s:\nUnknown SYMATTR in line %d:\n%s", source, cnt+1, l);
+  if (dlgMessageBox(h, "OK", "ESC") != 0) exit(-2670);
+  return "";
+}
+
+
+string imp_pin(string l) {
+  string s[];
+  int n = strsplit(s, l, ' ');
+  string coord;
+
+  if (s[3] == "NONE") { // bedeutet der PIN hat keinen sichbaren Namen
+    sprintf(coord, "%.4f %.4f\t%.4f %.4f\t%s",
+                     imp_eagle_coordvalue(strtod(s[1])),
+                     imp_eagle_coordvalue(strtod(s[2])*-1.0),             // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+                     imp_eagle_coordvalue(strtod(s[1]) + strtod(s[4])),   // plus offset
+                     imp_eagle_coordvalue(strtod(s[2])*-1.0),
+                     s[3]
+            );
+  }
+  else if (s[3] == "LEFT") { // bedeutet der PIN steht an der linken Seite und der Name des Pin verschieb sich nach rechts
+    sprintf(coord, " %.4f %.4f\t%.4f %.4f\t%s",
+                     imp_eagle_coordvalue(strtod(s[1])),
+                     imp_eagle_coordvalue(strtod(s[2])*-1.0),            // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+                     imp_eagle_coordvalue(strtod(s[1]) + strtod(s[4])),  // plus offset
+                     imp_eagle_coordvalue(strtod(s[2])*-1.0),
+                     s[3]
+            );
+  }
+  else if (s[3] == "RIGHT") {// bedeutet der PIN steh an der rechten Seite und der Name des Pin verschieb sich nach links
+    sprintf(coord, "%.4f %.4f\t%.4f %.4f\t%s",
+                     imp_eagle_coordvalue(strtod(s[1])),
+                     imp_eagle_coordvalue(strtod(s[2])*-1.0),            // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+                     imp_eagle_coordvalue(strtod(s[1]) - strtod(s[4])),  // minus offset
+                     imp_eagle_coordvalue(strtod(s[2])*-1.0),
+                     s[3]
+           );
+  }
+  else if (s[3] == "TOP") { // bedeutet der PIN steht an der oberen Seite und der Name des Pin verschieb sich nach unten
+    sprintf(coord, "%.4f %.4f\t%.4f %.4f)\t%s",
+                     imp_eagle_coordvalue(strtod(s[1])),
+                     imp_eagle_coordvalue(strtod(s[2])*-1.0),                   // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+                     imp_eagle_coordvalue(strtod(s[1])),
+                     imp_eagle_coordvalue((strtod(s[2]) + strtod(s[4]))*-1.0),  // plus offset
+                     s[3]
+            );
+  }
+  else if (s[3] == "BOTTOM") { // bedeutet der PIN steht an der unteren Seite und der Name des Pin verschieb sich nach oben
+    sprintf(coord, "%.4f %.4f\t%.4f %.4f\t%s",
+                     imp_eagle_coordvalue(strtod(s[1])),
+                     imp_eagle_coordvalue(strtod(s[2])*-1.0),                   // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+                     imp_eagle_coordvalue(strtod(s[1])),
+                     imp_eagle_coordvalue((strtod(s[2]) - strtod(s[4]))*-1.0),  // minus offset
+                     s[3]
+            );
+  }
+  else {
+    string e;
+    sprintf(e, "Unknown '%s' in %s\nerror 2436", s[3], l);
+    dlgMessageBox(e, "OK");
+  }
+  return coord;
+}
+
+
+void imp_pinattr(string l, string coordpin, string coordname, string orientation) {
+  string s[];
+  int cnt = strsplit(s, l, ' ');
+
+  string k[];
+  int cntk = strsplit(k, coordname, ' ');
+  real kx = strtod(k[0]);
+  real ky = strtod(k[1]);
+
+  if (s[1] == "PinName") {
+    if (cnt > 3) { // Mehr als 3 Teilstrings bedeutet der Pin-Name besteht aus mehreren Teilstrings (Leerzeichen getrennt).
+      for (int n = 3; n < cnt; n++) {  // LTspice läßt im Namen SPACE (Leerzeichen) zu, in Eagle sind SPACE verboten!
+        s[2] += "_" + s[n];
+      }
+    }
+    Imp_SymPinName = strupr(s[2]);  // Pinnamen in Eagle nur in upper case
+    // Pin name of pin to use with CONNECT
+    // PINATTR PinName _RST  der Unterstrich bedeutet das Negierungszeichen, in Eagle das !
+    if (Imp_SymPinName[0] == '_') Imp_SymPinName[0] = '!'; // ! das Negierungszeichen in EAGLE
+
+    Imp_SymPinName = imp_checkpinname(Imp_SymPinName); // doppelte Pin-Namen dürfen nicht vorkommen.
+    if (!orientation) {
+      Imp_Cmd += "CHANGE VISIBLE Off;\n";  // visible Off
+      sprintf(h, "PIN '%s' PAS NONE POINT (%s);\n", Imp_SymPinName, coordpin);
+      Imp_Cmd+=h;
+    }
+    else if (orientation == "NONE") {
+      Imp_Cmd += "CHANGE VISIBLE Off;\n";  // visible Off
+      sprintf(h, "PIN '%s' PAS NONE POINT (%s);\n", Imp_SymPinName, coordpin);
+      Imp_Cmd+=h;
+    }
+    else if (orientation == "LEFT") {
+      Imp_Cmd += "CHANGE VISIBLE Pin;\n";   // Visible Pin
+      sprintf(h, "PIN '%s' PAS NONE POINT R0 (%s);\n", Imp_SymPinName, coordpin);
+      Imp_Cmd+=h;
+    }
+    else if (orientation == "RIGHT") {
+      Imp_Cmd += "CHANGE VISIBLE Pin;\n";   // Visible Pin
+      sprintf(h, "PIN '%s' PAS NONE POINT R180 (%s);\n", Imp_SymPinName, coordpin);
+      Imp_Cmd+=h;
+    }
+    else if (orientation == "TOP") {
+      Imp_Cmd += "CHANGE VISIBLE Off;\n";  // Visible Off, der Pinnmaem wir waagerecht als Text erzeugt
+      sprintf(h, "PIN '%s' PAS NONE POINT R270 (%s);\n", Imp_SymPinName, coordpin);
+      Imp_Cmd+=h;
+      sprintf(h, "Change Layer 95;\nChange Align Top Center;\nCHANGE SIZE 60;\nTEXT '%s' R0 (%.4f %.4f);\n", Imp_SymPinName, kx, ky); // 50 ist der Eagle-Offset zum Pinnamen
+      Imp_Cmd+=h;
+    }
+    else if (orientation == "BOTTOM") {
+      Imp_Cmd += "CHANGE VISIBLE Off;\n";   // Visible Off, der Pinnmaem wir waagerecht als Text erzeugt
+      sprintf(h, "PIN '%s' PAS NONE POINT R90 (%s);\n", Imp_SymPinName, coordpin);
+      Imp_Cmd+=h;
+      sprintf(h, "CHange Layer 95;\nChAnge Align Bottom Center;\nCHANGE SIZE 60;\nTEXT '%s' R0 (%.4f %.4f);\n", Imp_SymPinName, kx , ky);  // 50 ist der Eagle-Offset zum Pinnamen
+      Imp_Cmd+=h;
+    }
+    else {
+      if (dlgMessageBox("Unknown orientation: " + orientation + "\nin line:" + l,"OK", "CANCEL") != 0) exit(-2790);
+    }
+  }
+
+  else if (s[1] == "SpiceOrder") {
+    if (coordname) {
+      sprintf(h, "CHANGE Size 16;\nChange Layer %d;\n", LayerSpiceOrder);
+      Imp_Cmd+=h;
+      sprintf(h, "CHANGE Align Center; # SpiceOrder\n");
+      Imp_Cmd+=h;
+      sprintf(h, "TEXt '%s %s' (%s);\n", s[1], s[2], coordpin); // SpiceOrder number 2012-06-11
+      Imp_Cmd+=h;
+    }
+  }
+  return;
+}
+
+
+void imp_dataflag(string l) {  // 2012-06-14
+  string s[];
+  int cnt = strsplit(s, l, ' ');
+  string datflag;
+  sprintf(datflag, "TEXT 'DATAFLAG:%s' (%.6f %.6f);\n",
+                     s[3],
+                     imp_eagle_coordvalue(strtod(s[1])),
+                     imp_eagle_coordvalue(strtod(s[2])*-1.0)    // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+         );
+  Imp_Cmd+=datflag;
+  return;
+}
+
+
+int imp_checkexist_sym(string name) {
+  if (library) {
+    library(L) {
+      L.symbols(S) {
+        if (S.name == name) return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+int imp_checkexist_dev(string name) {
+  if (library) {
+    library(L) {
+      L.devicesets(DEV) {
+        if (DEV.name == name) return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+int imp_checkexist_sch(string name) {
+  string f[];
+  int cnt = fileglob(f, name);
+  if (cnt) { dlgMessageBox("Schematic exist:\n" + name, "CANCEL"); exit(-2847); }
+  return 0;
+}
+
+
+/**************************************************
+            parse schematic lines
+***************************************************/
+void imp_sheet(string l) {
+  string s[];
+  int cnt = strsplit(s, l, ' ');
+  s[2] = strupr(s[2]);
+  sprintf(h, "EDIT .s%s;\nSET WIRE_BEND 0;\nCHANGE STYLE Continuous;\n;", s[1]);
+  Imp_Cmd+=h;
+  if (Test) { // nur im Testfall wird der Zeichnungsrahmen übernommen.
+    sprintf(h, "CHangE LAYER 94;\nWIRE 10 (%.4f %.4f) (%.4f %.4f) (%.4f %.4f);\n# frame\n",
+                      0.0, 0.0,
+                      imp_eagle_coordvalue(strtod(s[2])),
+                      imp_eagle_coordvalue(strtod(s[3])*-1.0),  // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+                      0.0, 0.0
+           );
+    Imp_Cmd+=h;
+  }
+  return;
+}
+
+
+void imp_wire(string l) {
+  status("WIRE");  // ein Lebenszeichen
+  if (!Imp_SetWireStyle) {
+    Imp_Cmd += "CHANGE STYLE Continuous;\n";
+    Imp_SetWireStyle++;
+  }
+  string s[];
+  int cnt = strsplit(s, l, ' ');
+  imp_add_wire(strtod(s[1]), strtod(s[2]), strtod(s[3]), strtod(s[4]));
+  return;
+}
+
+
+void imp_flag(string l) {  // NET-Name des Segment, zugleich Supply-Symbol und LABEL
+                           // Die FLAGs 0 und COM werden besonders behandelt,
+                           // hier zeichnet LT-Spice ein Dreieck (Supply) das nach unten zeigt.
+                           // Bei COM (Common/Masse) zeichnet LT-spice eine Pfeilspitze nach unten.
+                           // Alle weiteren FLAGs sind NETz-Namen / LABEL
+  status("FLAG");  // ein Lebenszeichen
+  string s[];
+  int cnt = strsplit(s, l, ' ');
+  CmdNameLabel+=RememberFlag;
+  RememberFlag = "";
+
+  string coordidirection;
+  sprintf(coordidirection, "%d %d", strtol(s[1]), strtol(s[2]) );
+  int flagr = imp_getflagrotate(coordidirection, l);  // Supply-Symbole sind in der Nulllage vertical ausgerichtet.
+  if (!flagr) {             // kein NET-Segment mit der gleichen Koordinate gefunden,
+                            // dann platziere ein Supply-Symbol
+    if (s[3] == "+V") Imp_FlagRotate = 0;           // + Symbole nach oben 90°
+    else if (s[3] == "-V") Imp_FlagRotate = 180;    // - Symbole nach unten 270°
+    string ltsupplylbr = imp_check_use("lt-supply");
+    sprintf(h, "Add '%s%s' R%.0f (%.4f %.4f);\n",
+               s[3], ltsupplylbr,
+               Imp_FlagRotate,
+               imp_eagle_coordvalue(strtod(s[1])),
+               imp_eagle_coordvalue(strtod(s[2])*-1.0)
+           );
+    Imp_Cmd+=h;
+    return;
+  }
+
+  sprintf(h, "Ein FLAG an Netz %s\n(%.4f %.4f)\nRotation : %.1f ",
+             s[3],
+             imp_eagle_coordvalue(strtod(s[1])),
+             imp_eagle_coordvalue(strtod(s[2])*-1.0),
+             Imp_FlagRotate);
+//if (dlgMessageBox(h, "ok", "esc") != 0) exit(-2921);
+
+  if (s[3] == "0") {
+    string ltsupplylbr = imp_check_use("lt-supply");
+    sprintf(h, "aDd '%s%s' R%.0f (%.4f %.4f);\n",
+               s[3], ltsupplylbr,
+               Imp_FlagRotate,
+               imp_eagle_coordvalue(strtod(s[1])),
+               imp_eagle_coordvalue(strtod(s[2])*-1.0)
+           );
+    Imp_Cmd+=h;
+  }
+  else if (s[3] == "COM") {
+    string ltsupplylbr = imp_check_use("lt-supply");
+    sprintf(h, "adD '%s%s' R%.0f (%.4f %.4f);\n",
+               s[3], ltsupplylbr,
+               Imp_FlagRotate,
+               imp_eagle_coordvalue(strtod(s[1])),
+               imp_eagle_coordvalue(strtod(s[2])*-1.0)
+           );
+    Imp_Cmd+=h;
+  }
+  // Eagle kann kein LABEL ohne NET setzen,
+
+  else {
+    // Imp_FlagRotate wird in der Funktion imp_getflagrotate() behandelt! 2012-11-05
+    // Da LTspice die Rotation der FLAGS anahand des letzen Wiresegement berstimmt,
+    // hier muss die Nullage des Symbol entsptrechend korrigiert werden.
+    // Typischerweise werden die Spannungen (Pfeile) bei plus nach oben und bei
+    // minus nach unten angelegt. Dazu muß es für jedes Symbole eine Nulagenkorrektur geben.
+    // OUT ist nach rechts zeigend angelegt.
+    if (s[3] == "+V") Imp_FlagRotate -= 180.0;
+    else if (s[3] == "-V") Imp_FlagRotate -= 180.0;
+    else if (s[3] == "OUT") Imp_FlagRotate -= 90.0;
+    string ltsupplylbr = imp_check_use("lt-supply");   // alle benötigten Supply-Symbole müssen in dieser LBR erstellt sein
+    sprintf(h, "Add '%s%s' R%.0f (%.4f %.4f);\n",
+               s[3], ltsupplylbr,
+               Imp_FlagRotate,
+               imp_eagle_coordvalue(strtod(s[1])),
+               imp_eagle_coordvalue(strtod(s[2])*-1.0)
+           );
+    Imp_Cmd+=h;
+
+    /* 2012-11-05
+    sprintf(h, "#2582\nSET CONFIRM YES;\nNAME '%s' (%.4f %.4f) ;\n# FLAG\nSET CONFIRM OFF;\n",
+                  s[3],
+                  imp_eagle_coordvalue(strtod(s[1])),
+                  imp_eagle_coordvalue(strtod(s[2])*-1.0)   // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+           );
+    RememberFlag += h;
+    string xrefoption = "OFF";
+    sprintf(h, "Change size 70;\nCHANGE XREF %s;\nLABEL R%.1f (%.4f %.4f) (%.4f %.4f);\n",
+                  xrefoption,
+                  Imp_FlagRotate - 90.0,  // Label sind in der Nulllage horizontal nach rechts ausgerichtet
+                  imp_eagle_coordvalue(strtod(s[1])),
+                  imp_eagle_coordvalue(strtod(s[2])*-1.0),  // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+                  imp_eagle_coordvalue(strtod(s[1])),
+                  imp_eagle_coordvalue(strtod(s[2])*-1.0)
+           );
+    RememberFlag += h;
+    */
+  }
+  return;
+}
+
+
+
+void imp_iopin(string l) {
+  /*
+  FLAG 1248 176 BI_Port
+  IOPIN 1248 176 BiDir
+  FLAG 1248 144 Input_Port
+  IOPIN 1248 144 In
+  FLAG 1248 112 Output_Port
+  IOPIN 1248 112 Out
+  */  string s[];
+  int n = strsplit(s, l, ' ');
+  // der IOPIN kommt immer nach dem FLAG, also immer die gleiche Kordinate
+  sprintf(h, "CHANGE XREF ON;\nLABEL (%.4f %.4f) (%.4f %.4f);\n",
+                imp_eagle_coordvalue(strtod(s[1])),
+                imp_eagle_coordvalue(strtod(s[2])*-1.0),  // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+                imp_eagle_coordvalue(strtod(s[1])),
+                imp_eagle_coordvalue(strtod(s[2])*-1.0)
+         );
+  CmdNameLabel += h;
+  RememberFlag = "";
+  return;
+}
+
+
+string imp_checktextalign(string align) {
+  TextAlignRotation = "R0";
+  string textalign = "Left"; // default
+  if (align == "Center") {
+    sprintf(textalign, " align Center");
+  }
+  else if(align == "Left") {
+    sprintf(textalign, " align Center Left");
+  }
+  else if(align == "Right") {
+    sprintf(textalign, " align Center Right");
+  }
+  else if(align == "Top") {
+    sprintf(textalign, " align Center Top");
+  }
+  else if(align == "Bottom") {
+    sprintf(textalign, " align Center Bottom");
+  }
+  else if(align == "VLeft") {  // 90°gedreht
+    sprintf(textalign, " align Center Left");
+    TextAlignRotation = "R90";
+ }
+  else if(align == "VRight") {  // 90°gedreht
+    sprintf(textalign, " align Center Right");
+    TextAlignRotation = "R90";
+  }
+  else if (align == "VCenter") {  // 90°gedreht
+    sprintf(textalign, " align Center");
+    TextAlignRotation = "R90";
+  }
+  else if(align == "VTop") {  // 90°gedreht
+    sprintf(textalign, " align Center Top");
+    TextAlignRotation = "R90";
+  }
+  else if(align == "VBottom") { // 90! gedreht
+    sprintf(textalign, " align Center Bottom");
+    TextAlignRotation = "R90";
+  }
+  return textalign;
+}
+
+
+string imp_checkempty(string s) {
+  if (s == "\"\"") return "";
+  return s;
+}
+
+
+void imp_symbol_sch(string l) {  // place a symbol in schematic
+  /* ******* Ein Lastwiderstand zum simulieren ******
+  SYMBOL res 864 128 R0
+  SYMATTR InstName Rload1   *** Rload macht aus einem normalen Widerstand einen Lastwiderstand zum simulieren.
+  SYMATTR Value .5
+  SYMBOL eagle\\PNP_LABOR\\BST62 160 176 R0
+  ************************************************* */
+  Imp_InstanceName = "";  // Reset Instance name
+  Imp_Cmd += "CHanGe Align Left Center;\n";  // default für Textanordnung von Name/Value
+                                         // es kann, aber es muss nicht ein
+                                         // WINDOW 0 .... oder  WINDOW 3 ... folgen.
+
+  Imp_CmdValueV = "";      // Reset Value
+  Imp_Winattrib[0] = "";  // Reset window attribute
+  Imp_Winattrib[1] = "";
+  Imp_Winattrib[3] = "";
+  Imp_Winattrib[38] = "";
+  Imp_Winattrib[39] = "";
+  Imp_Winattrib[40] = "";
+  Imp_Winattrib[123] = "";
+  string s[];
+  int cnt = strsplit(s, l, ' ');
+  AddPart = s[1];
+  status(AddPart);  // ein Lebenszeichen
+
+  Imp_InstCoordX = imp_eagle_coordvalue(strtod(s[2]));
+  Imp_InstCoordY = imp_eagle_coordvalue(strtod(s[3])*-1.0);  // in LT-Spice ist die Y-Achse auf den Kopf gestellt
+  AddPartOrientation =  s[4];
+  string libpart[];
+  cnt = strsplit(libpart, s[1], '\\'); // == "eagle\\PNP_LABOR\\BST62"
+  if (cnt > 1) {                       // Wenn ein doppelter Backslash vor kommt, dann ist der LBR-Name angegeben.
+    AddPart = libpart[cnt-1];          // Library-name ist mit backslash vom part-name getrennt,
+    AddPartLib = "";                   // es können auch mehr als ein backslash vorkommen,
+    for (int n = 0; n < cnt-1; n++) {  // dann ist der Partname der letzte Teilstring.
+      if (libpart[n]) AddPartLib = libpart[n];  // 2014-04-03 setze den Pfad auf den vorletzen Teilstring
+    }
+  }
+  else {  // dann ist es vermutlich ein Simulations-Symbol
+    AddPart = libpart[cnt-1];
+    AddPartLib = "";
+  }
+  return;
+}
+
+
+void imp_window_sch(string l, int cnt) {
+  /* Attribute Window *
+  InstName    0   -
+  Type        1   -
+  SpiceModel  38  +SYMATTR
+  Value         3   -
+  Value2      123 -
+  SpiceLine    39  -
+  SpiceLine2  40  -
+
+  Rotated symbols get windows for parameters relative to the
+  anchor point of the symbol
+  */
+  string h = "";
+  string s[];
+  int n = strsplit(s, l, ' ');
+  int winattrib = strtod(s[1]);
+
+  switch(winattrib) {
+    case 0    :   Imp_Winattrib[0] = "0";
+                  Imp_InstNameSmashX = imp_eagle_coordvalue(strtod(s[2]));       // InstName   0   -
+                  Imp_InstNameSmashY = imp_eagle_coordvalue(strtod(s[3])*-1.0);
+                  TextAlignName  = s[4];
+                  Imp_InstNameOffset = imp_eagle_coordvalue(strtod(s[5]));
+                  break;
+
+    case 1    :   Imp_Winattrib[1] = "1";                                      // Type
+                  dlgMessageBox("WINDOW 1 : Type found", "CANCEL");
+                  exit(-3129);
+                  break;
+
+    case 3    :   Imp_Winattrib[3] = "3";
+                  Imp_InstValueSmashX = imp_eagle_coordvalue(strtod(s[2]));        // Value     3   -
+                  Imp_InstValueSmashY = imp_eagle_coordvalue(strtod(s[3])*-1.0);
+                  TextAlignValue  = s[4];
+                  Imp_InstValueOffset = imp_eagle_coordvalue(strtod(s[5]));
+                  break;
+
+    case 38   :   Imp_Winattrib[38] = "38";
+                  Imp_SpiceModelSmashX = imp_eagle_coordvalue(strtod(s[2]));      // SpiceModel  38  +SYMATTR
+                  Imp_SpiceModelSmashY = imp_eagle_coordvalue(strtod(s[3])*-1.0);
+                  break;
+
+    case 39   :   Imp_Winattrib[39] = "39";   // WINDOW 39 273 154 Center 2
+                  Imp_SpiceLineSmashX = imp_eagle_coordvalue(strtod(s[2]));       // SpiceLine    39  -
+                  Imp_SpiceLineSmashY = imp_eagle_coordvalue(strtod(s[3])*-1.0);
+                  TextAlignSpiceLine = s[4];
+                  Imp_SpiceLineSymOffset = imp_eagle_coordvalue(strtod(s[5]));
+                  break;
+
+    case 40   :   Imp_Winattrib[40] = "40";
+                  Imp_SpiceLine2SmashX = imp_eagle_coordvalue(strtod(s[2]));      // SpiceLine2  40  -
+                  Imp_SpiceLine2SmashY = imp_eagle_coordvalue(strtod(s[3])*-1.0);
+                  TextAlignSpiceLine2  = s[4];
+                  Imp_SpiceLine2SymOffset = imp_eagle_coordvalue(strtod(s[5]));
+                  break;
+
+    case 123  :   Imp_Winattrib[123] = "123";   // WINDOW 123 24 146 Left 0
+                  Imp_InstValue2SmashX = imp_eagle_coordvalue(strtod(s[2]));       // Value2     123 -
+                  Imp_InstValue2SmashY = imp_eagle_coordvalue(strtod(s[3])*-1.0);
+                  TextAlignValue2  = s[4];
+                  Imp_InstValue2Offset = imp_eagle_coordvalue(strtod(s[5]));
+                  break;
+
+    default   : dlgMessageBox("!Unknown window attribute:\n"+ l, "OK");
+  }
+
+
+  // <offset>
+  if (s[5] != "0") {
+    sprintf(h, "# %s:\n\# <offset> %s in Line %d:%s\n", ImpSpiceSchematicAsc, s[5] , cnt+1, l );
+    Imp_Cmd+=h;
+  }
+  return;
+}
+
+string imp_getTextOrientation( string instancename, string textholder, string textalign, string addpartorientation, real instcoordX, real instcoordY, real insttextsmashX, real insttextsmashY ) {
+  string os;
+
+  real nameposx, nameposy;
+  if (addpartorientation == "R0") {
+    nameposx = instcoordX + insttextsmashX;
+    nameposy = instcoordY + insttextsmashY;
+  }
+  else if (addpartorientation == "R90") {
+    nameposx = instcoordX + insttextsmashY;  // wegen der 90°Grad
+    nameposy = instcoordY - insttextsmashX;  // muß der für den Offset X und Y getauscht werden
+  }
+  else if (addpartorientation == "R180") {
+    nameposx = instcoordX - insttextsmashX;
+    nameposy = instcoordY - insttextsmashY;
+  }
+  else if (addpartorientation == "R270") {
+    nameposx = instcoordX - insttextsmashY;  // wegen der 270 Grad-Drehung muß der Offset X und Y getauscht werden
+    nameposy = instcoordY + insttextsmashX;
+  }
+  // mirrored
+  else if (addpartorientation == "M0") {
+    nameposx = instcoordX - insttextsmashX;
+    nameposy = instcoordY + insttextsmashY;
+  }
+  else if (addpartorientation == "M90") {
+    nameposx = instcoordX - insttextsmashY;  // wegen der 90°Grad
+    nameposy = instcoordY - insttextsmashX;  // muß der für den Offset X und Y getauscht werden
+  }
+  else if (addpartorientation == "M180") {
+    nameposx = instcoordX + insttextsmashX;
+    nameposy = instcoordY - insttextsmashY;
+  }
+  else if (addpartorientation == "M270") {
+    nameposx = instcoordX + insttextsmashY;  // wegen der 270 Grad
+    nameposy = instcoordY + insttextsmashX;  // muß der für den Offset X und Y getauscht werden
+  }
+  sprintf(h, ";\nMOVe %s>%s (%.4f %.4f); #3229\n",
+              strupr(instancename), textholder, nameposx, nameposy
+         );
+  os += h;
+
+  string alignorientation;
+  // text align kann bisher nur mit Hilfe der Koordinaten erfolgen
+  if (textalign == "Center") {
+    sprintf(alignorientation, "Center");
+    if (addpartorientation == "R0") {
+      sprintf(h, "ROTATE =R0 %s>%s ;\n", strupr(instancename), textholder) ; // # R0 Name Center\n
+    }
+    else if (addpartorientation == "R90") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ; // # R90°Name Center\n
+    }
+    else if (addpartorientation == "R180") {
+      sprintf(h, "ROTATE =R180 %s>%s ;\n", strupr(instancename), textholder) ; // # R180 Name Center\n
+    }
+    else if (addpartorientation == "R270") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ; // # R270 Name Center\n
+    }
+    if (addpartorientation == "M0") {
+      sprintf(h, "ROTATE =R0 %s>%s ;\n", strupr(instancename), textholder) ; // # M0 Name Center\n
+    }
+    else if (addpartorientation == "M90") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ; // # M90°Name Center\n
+    }
+    else if (addpartorientation == "M180") {
+      sprintf(h, "ROTATE =R180 %s>%s ;\n", strupr(instancename), textholder) ; // # M180 Name Center\n
+    }
+    else if (addpartorientation == "M270") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ; // # M270 Name Center\n
+    }
+    os += h;
+  }
+
+  else if(textalign == "Left") {
+    sprintf(alignorientation, "Bottom Left");  // 2012-07-09 Center Left
+    if (addpartorientation == "R0") {
+      sprintf(h, "rOTATe =R0 %s>%s ;\n", strupr(instancename), textholder) ; // # R0 Name Left\n
+    }
+    else if (addpartorientation == "R90") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ; // # R90°Name Left\n
+    }
+    else if (addpartorientation == "R180") {
+      sprintf(h, "ROTATE =R180 %s>%s ;\n", strupr(instancename), textholder) ; // # R180 Name Left\n
+    }
+    else if (addpartorientation == "R270") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ; // # R270 Name Left\n
+    }
+    if (addpartorientation == "M0") {
+      sprintf(h, "ROTATE =MR0 %s>%s ;\n", strupr(instancename), textholder) ; // # M0 Name Left\n
+    }
+    else if (addpartorientation == "M90") {
+      sprintf(h, "ROTATE =MR270 %s>%s ;\n", strupr(instancename), textholder) ; // # M90°Name Left\n
+    }
+    else if (addpartorientation == "M180") {
+      sprintf(h, "roTATE =R0 %s>%s ;\n", strupr(instancename), textholder) ; // # M180 Name Left\n
+    }
+    else if (addpartorientation == "M270") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ; // # M270 Name Left\n
+    }
+    os += h;
+  }
+
+  else if(textalign == "Right") {
+    sprintf(alignorientation, "Center Right");
+    if (addpartorientation == "R0") {
+      sprintf(h, "RoTATE =R0 %s>%s ;\n", strupr(instancename), textholder) ; // # R0 Name Right\n
+    }
+    else if (addpartorientation == "R90") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ; // # R90°Name Right\n
+    }
+    else if (addpartorientation == "R180") {
+      sprintf(h, "ROTATE =R180 %s>%s ;\n", strupr(instancename), textholder) ; // # R180 Name Right\n
+    }
+    else if (addpartorientation == "R270") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ; // # R270 Name Right\n
+    }
+    if (addpartorientation == "M0") {
+      sprintf(h, "ROTATE =MR0 %s>%s ;\n", strupr(instancename), textholder) ; // # M0 Name Right\n
+    }
+    else if (addpartorientation == "M90") {
+      sprintf(h, "ROTATE =MR270 %s>%s ;\n", strupr(instancename), textholder) ; // # M90°Name Right\n
+    }
+    else if (addpartorientation == "M180") {
+      sprintf(h, "RotATE =R0 %s>%s ;\n", strupr(instancename), textholder) ; // # M180 Name Right\n
+    }
+    else if (addpartorientation == "M270") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ; // # M270 Name Right\n
+    }
+    os += h;
+  }
+
+  else if(textalign == "Top") {
+    sprintf(alignorientation, "Center Top");
+    if (addpartorientation == "R0") {
+      sprintf(h, "ROtATE =R0 %s>%s ;\n", strupr(instancename), textholder) ;   // # R0 Name Top\n
+    }
+    else if (addpartorientation == "R90") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ; // # R90°Name Top\n
+    }
+    else if (addpartorientation == "R180") {
+      sprintf(h, "ROTATE =R180 %s>%s ;\n", strupr(instancename), textholder) ; // # R180 Name Top\n
+    }
+    else if (addpartorientation == "R270") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ;  // # R270 Name Top\n
+    }
+    if (addpartorientation == "M0") {
+      sprintf(h, "ROtaTE =R0 %s>%s ;\n", strupr(instancename), textholder) ;   // # M0 Name Top\n
+    }
+    else if (addpartorientation == "M90") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ;  // # M90°Name Top\n
+    }
+    else if (addpartorientation == "M180") {
+      sprintf(h, "ROTATE =R180 %s>%s ;\n", strupr(instancename), textholder) ; // # M180 Name Top\n
+    }
+    else if (addpartorientation == "M270") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ; // # M270 Name Top\n
+    }
+    os += h;
+  }
+
+  else if(textalign == "Bottom") {
+    sprintf(alignorientation, "Center Bottom");
+    if (addpartorientation == "R0") {
+      sprintf(h, "ROTaTE =R0 %s>%s ;\n", strupr(instancename), textholder) ;   // # R0 Name Bottom\n
+    }
+    else if (addpartorientation == "R90") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ; // # R90°Name Bottom\n
+    }
+    else if (addpartorientation == "R180") {
+      sprintf(h, "ROTATE =R180 %s>%s ;\n", strupr(instancename), textholder) ; // # R180 Name Bottom\n
+    }
+    else if (addpartorientation == "R270") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ;  // # R270 Name Bottom\n
+    }
+    if (addpartorientation == "M0") {
+      sprintf(h, "ROTatE =R0 %s>%s ;\n", strupr(instancename), textholder) ;   // # M0 Name Bottom\n
+    }
+    else if (addpartorientation == "M90") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ;  // # M90°Name Bottom\n
+    }
+    else if (addpartorientation == "M180") {
+      sprintf(h, "ROTATE =R180 %s>%s ;\n", strupr(instancename), textholder) ; // # M180 Name Bottom\n
+    }
+    else if (addpartorientation == "M270") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ; // # M270 Name Bottom\n
+    }
+    os += h;
+
+  }
+
+  else if(textalign == "VLeft") {  // 90°gedreht
+    sprintf(alignorientation, "Center Left");
+    if (addpartorientation == "R0") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ;  // # R0 Name VLeft\n
+    }
+    else if (addpartorientation == "R90") {
+      sprintf(h, "ROTAtE =R0 %s>%s ;\n", strupr(instancename), textholder) ;   // # R90°Name VLeft\n
+    }
+    else if (addpartorientation == "R180") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ; // # R180 Name VLeft\n
+    }
+    else if (addpartorientation == "R270") {
+      sprintf(h, "ROTATE =R0 %s>%s ;\n", strupr(instancename), textholder) ;   // # R270 Name VLeft\n
+    }
+    if (addpartorientation == "M0") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ;  // # M0 Name VLeft\n
+    }
+    else if (addpartorientation == "M90") {
+      sprintf(h, "ROTATE =MR0 %s>%s ;\n", strupr(instancename), textholder) ;  // # M90°Name VLeft\n
+    }
+    else if (addpartorientation == "M180") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ; // # M180 Name VLeft\n
+    }
+    else if (addpartorientation == "M270") {
+      sprintf(h, "ROTAte =R0 %s>%s ;\n", strupr(instancename), textholder) ;   // # M270 Name VLeft\n
+    }
+    os += h;
+  }
+
+  else if(textalign == "VRight") {  // 90°gedreht
+    sprintf(alignorientation, "Center Right");
+    if (addpartorientation == "R0") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ;   // # R0 Name VRight\n
+    }
+    else if (addpartorientation == "R90") {
+      sprintf(h, "rOtATE =R0 %s>%s ;\n", strupr(instancename), textholder) ;    // # R90°Name VRight\n
+    }
+    else if (addpartorientation == "R180") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ;  // # R180 Name VRight\n
+    }
+    else if (addpartorientation == "R270") {
+      sprintf(h, "ROTATE =R180 %s>%s ;\n", strupr(instancename), textholder) ;  // # R270 Name VRight\n
+    }
+    if (addpartorientation == "M0") {
+      sprintf(h, "ROTATE =MR90°%s>%s ;\n", strupr(instancename), textholder) ;  // # M0 Name VRight\n
+    }
+    else if (addpartorientation == "M90") {
+      sprintf(h, "ROTATE =MR0 %s>%s ;\n", strupr(instancename), textholder) ;   // # M90°Name VRight\n
+    }
+    else if (addpartorientation == "M180") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ;  // # M180 Name VRight\n
+    }
+    else if (addpartorientation == "M270") {
+      sprintf(h, "ROTATE =MR180 %s>%s ;\n", strupr(instancename), textholder) ; // # M270 Name VRight\n
+    }
+    os += h;
+  }
+
+  else if (textalign == "VCenter") {  // 90°gedreht
+    sprintf(alignorientation, "Center");
+    if (addpartorientation == "R0") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ;  // # R0 Name VCenter\n
+    }
+    else if (addpartorientation == "R90") {
+      sprintf(h, "ROTATE =R0 %s>%s ;\n", strupr(instancename), textholder) ;  // # R90°Name VCenter\n
+    }
+    else if (addpartorientation == "R180") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ;  // # R180 Name VCenter\n
+    }
+    else if (addpartorientation == "R270") {
+      sprintf(h, "ROTATE =R180 %s>%s ;\n", strupr(instancename), textholder) ;  // # R270 Name VCenter\n
+    }
+    if (addpartorientation == "M0") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ; // # M0 Name VCenter\n
+    }
+    else if (addpartorientation == "M90") {
+      sprintf(h, "ROTATE =R0 %s>%s ;\n", strupr(instancename), textholder) ;  // # M90°Name VCenter\n
+    }
+    else if (addpartorientation == "M180") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ;  // # M180 Name VCenter\n
+    }
+    else if (addpartorientation == "M270") {
+      sprintf(h, "ROTATE =MR180 %s>%s ;\n", strupr(instancename), textholder) ;  // # M270 Name VCenter\n
+    }
+    os += h;
+  }
+
+  else if(textalign == "VTop") {  // 90°gedreht
+    sprintf(alignorientation, "Center Top");
+    if (addpartorientation == "R0") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ;   // # R0 Name VTop\n
+    }
+    else if (addpartorientation == "R90") {
+      sprintf(h, "ROTATE =R0 %s>%s ;\n", strupr(instancename), textholder) ;    // # R90°Name VTop\n
+    }
+    else if (addpartorientation == "R180") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ;  // # R180 Name VTop\n
+    }
+    else if (addpartorientation == "R270") {
+      sprintf(h, "ROTATE =R180 %s>%s ;\n", strupr(instancename), textholder) ;  // # R270 Name VTop\n
+    }
+    if (addpartorientation == "M0") {
+      sprintf(h, "ROTATE =MR90°%s>%s ;\n", strupr(instancename), textholder) ;  // # M0 Name VTop\n
+    }
+    else if (addpartorientation == "M90") {
+      sprintf(h, "ROTATE =MR0 %s>%s ;\n", strupr(instancename), textholder) ;   // # M90°Name VTop\n
+    }
+    else if (addpartorientation == "M180") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ;   // # M180 Name VTop\n
+    }
+    else if (addpartorientation == "M270") {
+      sprintf(h, "ROTATE =MR180 %s>%s ;\n", strupr(instancename), textholder) ; // # M270 Name VTop\n
+    }
+    os += h;
+  }
+  else if(textalign == "VBottom") { // 90° gedreht
+    sprintf(alignorientation, "Center Bottom");
+    if (addpartorientation == "R0") {
+      sprintf(h, "ROTATE =R90°%s>%s ;\n", strupr(instancename), textholder) ;   // # R0 Name VBottom\n
+    }
+    else if (addpartorientation == "R90") {
+      sprintf(h, "ROTATE =R0 %s>%s ;\n", strupr(instancename), textholder) ;    // # R90°Name VBottom\n
+    }
+    else if (addpartorientation == "R180") {
+      sprintf(h, "ROTATE =R270 %s>%s ;\n", strupr(instancename), textholder) ;  // # R180 Name VBottom\n
+    }
+    else if (addpartorientation == "R270") {
+      sprintf(h, "ROTATE =R180 %s>%s ;\n", strupr(instancename), textholder) ;  // # R270 Name VBottom\n
+    }
+    if (addpartorientation == "M0") {
+      sprintf(h, "ROTATE =MR90°%s>%s ;\n", strupr(instancename), textholder) ;  // # M0 Name VBottom\n
+    }
+    else if (addpartorientation == "M90") {
+      sprintf(h, "ROTATE =MR0 %s>%s ;\n", strupr(instancename), textholder) ;   // # M90°Name VBottom\n
+    }
+    else if (addpartorientation == "M180") {
+      sprintf(h, "ROTATE =MR270 %s>%s ;\n", strupr(instancename), textholder) ; // # M180 Name VBottom\n
+    }
+    else if (addpartorientation == "M270") {
+      sprintf(h, "ROTATE =MR180 %s>%s ;\n", strupr(instancename), textholder) ; // # M270 Name VBottom\n
+    }
+    os += h;
+  }
+
+  sprintf(h, "Change Align %s (%.4f %.4f);\n", alignorientation, nameposx, nameposy) ; // # Name\n
+  os += h;
+  return os;
+}
+
+
+void imp_symattr_sch(string l, int cnt) {
+  /* Attribute Window *
+  InstName    0   -
+  Type        1   -
+  SpiceModel  38  +SYMATTR
+  Value       3   -
+  Value2      123 -
+  SpiceLine   39  -
+  SpiceLine2  40  -
+
+  Rotated symbols get windows for parameters relative to the
+  anchor point of the symbol
+  */
+  string s[];
+  int sn = strsplit(s, l, ' ');
+  string addpartorient;
+
+  if (s[1] == "InstName") { // Imp_Winattrib[0]
+    Imp_InstanceName = s[2];
+    int rload = strstr(Imp_InstanceName, "Rload");
+    if (!rload) { // hier nur ein Simulations-Symbol laden
+      AddPart += Imp_RloadExtention; // "_RLOAD";
+      //AddPartLib = SpiceSimulationLbr; /**** ACHTUNG: die LBR darf nicht in der USE-Liste aufgeführt sein! ****/
+      if (Test) if (dlgMessageBox("Ein Simulationswiderstand wird geladen.\n" + l + "\n" + Imp_InstanceName + ":" + SpiceSimulationLbr, "ok", "esc") != 0) exit(-3540);
+    }
+    else {
+      int Vsym = strstr(Imp_InstanceName, "V");
+      /* Hier gibt es ein Missverständnis wegen dem Prefix V
+         eine BATTRY wird in LT SPice auch mit V bezeichnet! */
+      // *** es wird nicht immer die LBR angegeben siehe LTC4000 *** if (!AddPartLib) AddPartLib = "sym";    // set library on USE-list
+    }
+    /* *** Im ADD-Menu muss das Flag SMD aktiv sein, sonst findet das Script die Devices nicht! *** */
+    AddPartLib = imp_check_use(AddPartLib);
+    if(AddPartOrientation == "R0")         addpartorient = "R0";
+    else if(AddPartOrientation == "R90")   addpartorient = "R270";
+    else if(AddPartOrientation == "R180")  addpartorient = "R180";
+    else if(AddPartOrientation == "R270")  addpartorient = "R90";
+    else if(AddPartOrientation == "M0")    addpartorient = "MR0";
+    else if(AddPartOrientation == "M90" )  addpartorient = "MR270";
+    else if(AddPartOrientation == "M180")  addpartorient = "MR180";
+    else if(AddPartOrientation == "M270" ) addpartorient = "MR90";
+
+    sprintf(h, "AdD '%s%s' '%s' %s (%.4f %.4f) ;\n",   // wegen der Package-Varianten ist es evtl. besser wenn man mit Joker * sucht?!
+              AddPart, AddPartLib,                     // Leider nein, da es CAP & CAP[METER], RES & RES[2], IND & IND[2] und
+              strupr(Imp_InstanceName),                // sontige gleichlautende Symbole gibt!
+              addpartorient,
+              Imp_InstCoordX,
+              Imp_InstCoordY
+           );
+    Imp_Cmd += h;
+
+    sprintf(h, "SMASH %s;\n", strupr(Imp_InstanceName)); // Smash kann jetzt schon mit >Name erfolgen.
+    Imp_Cmd += h;
+    if (Imp_CmdPartValue) {
+      sprintf(h, "VALUE '%s' '%s'; #3586\n", strupr(Imp_InstanceName), Imp_CmdPartValue);
+      Imp_Cmd += h;
+      Imp_CmdPartValue = "";  // wieder leeren, damit der Value nicht mehrfach zugewiesen wird.
+    }
+
+    if (Imp_Winattrib[0]) { // WINDOW 0 == InstName
+      Imp_Cmd += imp_getTextOrientation( Imp_InstanceName, "NAME", TextAlignName, AddPartOrientation, Imp_InstCoordX, Imp_InstCoordY, Imp_InstNameSmashX, Imp_InstNameSmashY);
+
+      /**** LTSpice weist den InstancNamen mal vor, mal nach dem Value zu!  ****/
+      if (Imp_CmdPartValue) {
+        sprintf(h, "VALUE '%s' '%s'; #3596\n", strupr(Imp_InstanceName), Imp_CmdPartValue);
+        Imp_Cmd += h;
+        Imp_CmdPartValue = "";
+      }
+      if (Imp_CmdValueV) { // Dadurch ergeben sich Probleme bei der Scriptausführung was
+                           // die Zuweisung der Attribute (wie VALUE) betrifft.
+                           // Trenne die Kommandos bei dem Zeichen '>' und füge die entsprechenden
+                           // Instance-namen ein. ***###***
+        string vs[];
+        int vn = strsplit(vs, Imp_CmdValueV, '>');
+        Imp_CmdValueV = vs[0] + strupr(Imp_InstanceName) +">" + vs[1];  // Füge für das '>' den InstanceName ein!
+        int n = 2;
+        while (vs[n]) {
+          Imp_CmdValueV += strupr(Imp_InstanceName) + ">" + vs[n]; // Füge für das '>' den InstanceName plus '>' ein!
+          n++;
+        }
+        Imp_Cmd += Imp_CmdValueV;  // In LTspice kann das Attribute Value vor der Zuweisung des Namen kommen,
+                                   // dann gibt es diverse Probleme bei der Zuordnung der Attribute über Koordinaten!
+                                   // Deshalb erst den Namen zuweisen, dann alle anderen Attribute!
+        Imp_CmdValueV = "";        // Reset Value-Attribute
+      }
+
+      string v[];
+      if (Imp_CmdValue2) { // [123] LTspice weist auch ein Attribute zu, bevor der Instancename bekannt ist!
+        strsplit(v, Imp_CmdValue2, '>');
+        string displayonoff = "OFF";
+        if (Imp_Winattrib[123]) displayonoff = "Value"; // 2012-12-17
+        sprintf(h, "ChAngE Display %s;\nATTRIBUTE '%s' %s%s>%s%s>%s\n", displayonoff, strupr(Imp_InstanceName), v[0], strupr(Imp_InstanceName), v[1], strupr(Imp_InstanceName), v[2]); // füge den jetzt bekannten Instanc Name ein
+        Imp_Cmd += h;
+        Imp_CmdValue2 = ""; // für das nächste Symbol/Instance wieder leeren!
+      }
+
+      if (Imp_MemSpiceline) {  // [39] 2012-12-17
+        strsplit(v, Imp_MemSpiceline, '>');
+        string displayonoff = "OFF";
+        if (Imp_Winattrib[38]) displayonoff = "Value";
+        sprintf(h, "ChAngE Display %s;\nATTRIBUTE %s SPICELINE '%s';\nMOvE %s>SPICELINE %s;\nCHange Align %s %s;\n", // 2012-12-17 Display off
+                     displayonoff,
+                     strupr(Imp_InstanceName),
+                     v[0],
+                     strupr(Imp_InstanceName),
+                     v[1],
+                     v[2],
+                     v[1]
+               ); // füge den jetzt bekannten Instance Namen ein
+        Imp_Cmd += h;
+        Imp_Cmd += "ChAngE Display Off; #3642\n";  // 2012-10-11
+        Imp_MemSpiceline = "";
+      }
+      if (Imp_MemSpiceline2) {
+        strsplit(v, Imp_MemSpiceline2, '>');
+        sprintf(h, "ChaNgE Display Value;\nATTRIBUTE %s SPICELINE2 '%s';\nMOVE %s>SPICELINE2 %s;\nCHange Align %s %s;\n",
+                     strupr(Imp_InstanceName),
+                     v[0],
+                     strupr(Imp_InstanceName),
+                     v[1],
+                     v[2],
+                     v[1]
+               ); // füge den jetzt bekannten Instance Namen ein
+        Imp_Cmd += h;
+        Imp_Cmd += "ChAngE Display Off; #3656\n";  // 2012-10-11
+        Imp_MemSpiceline2 = "";
+      }
+      return;
+    }
+  }
+
+  // SYMATTR Value 100%
+  else if (s[1] == "Value") {
+    if (Imp_InstanceName) {   // LTSpice weist den Instance-Namen mal vor mal nach dem Value zu!
+      sprintf(h, "VALUE '%s' '%s';\n", strupr(Imp_InstanceName), imp_checkempty(imp_secondstr(l, s[1])));
+      Imp_Cmd += h;
+    }
+    else {
+      sprintf(Imp_CmdPartValue, "%s", imp_secondstr(l, s[1]));
+    }
+    if (Imp_Winattrib[3]) { // WINDOW 3 == Value
+      Imp_CmdValueV += imp_getTextOrientation( Imp_InstanceName, "VALUE", TextAlignValue, AddPartOrientation, Imp_InstCoordX, Imp_InstCoordY, Imp_InstValueSmashX, Imp_InstValueSmashY);
+      if (Imp_InstanceName) {
+        Imp_Cmd += Imp_CmdValueV;
+        Imp_CmdValueV = "";
+      }
+    }
+    return;
+  }
+
+  // SYMATTR Value2 X2
+  else if (s[1] == "Value2") { // [123] 2012-12-17
+    string displayonoff = "OFF";
+    if (Imp_Winattrib[123]) displayonoff = "Value";
+    if (Imp_InstanceName) {
+      sprintf(h, "Change Display %s;\nATTRIBUTE '%s' 'VALUE2' '%s';\n#3557\n", displayonoff, strupr(Imp_InstanceName), imp_secondstr(l, s[1]));
+      Imp_Cmd += h;
+    }
+    else {
+      // da noch kein InstanceName definiert ist, das Attribute zwischenmerken!
+      sprintf(Imp_CmdValue2, " 'VALUE2' '%s';\n#3562\n", imp_secondstr(l, s[1]));
+    }
+
+    Imp_CmdValue2 += imp_getTextOrientation( Imp_InstanceName, strupr(s[1]), TextAlignValue2, AddPartOrientation, Imp_InstCoordX, Imp_InstCoordY, Imp_InstValue2SmashX, Imp_InstValue2SmashY);
+    /********************************************/
+    if (Imp_InstanceName) {
+      Imp_Cmd += Imp_CmdValue2;  // Ist der Name noch nicht zugewiesen, dann erfolgt die Zuweisung des Value
+      Imp_CmdValue2 = "";        // mit dem Namen. Die Befehlssequenz wird entsprechend nachbearbeitet. ******
+    }
+    return;
+  }
+
+  else if(s[1] == "SpiceLine") {  // [39]
+    if (Imp_Winattrib[39]) { // wenn es eine Koordinate für das Attribute gibt, dann anzeigen, sonst nur ein Attribute definieren
+      real spicelineposx, spicelineposy;
+      if (AddPartOrientation == "R0") {
+        spicelineposx = Imp_InstCoordX + Imp_SpiceLineSmashX;
+        spicelineposy = Imp_InstCoordY + Imp_SpiceLineSmashY;
+      }
+      else if (AddPartOrientation == "R90") {
+        spicelineposx = Imp_InstCoordX + Imp_SpiceLineSmashY;  // wegen der der 90°Drehung muß X und Y getauscht werden
+        spicelineposy = Imp_InstCoordY - Imp_SpiceLineSmashX;
+      }
+      else if (AddPartOrientation == "R180") {
+        spicelineposx = Imp_InstCoordX - Imp_SpiceLineSmashX;
+        spicelineposy = Imp_InstCoordY - Imp_SpiceLineSmashY;
+      }
+      else if (AddPartOrientation == "R270") {                 // Verkehrtes Vorzeichen der Y-Achse
+        spicelineposx = Imp_InstCoordX - Imp_SpiceLineSmashY;  // wegen der 270 Grad-Drehung muß der Offset X und Y getauscht werden
+        spicelineposy = Imp_InstCoordY + Imp_SpiceLineSmashX;
+      }
+      else if (AddPartOrientation == "M0") {
+        spicelineposx = Imp_InstCoordX - Imp_SpiceLineSmashX;
+        spicelineposy = Imp_InstCoordY + Imp_SpiceLineSmashY;
+      }
+      else if (AddPartOrientation == "M90") {
+        spicelineposx = Imp_InstCoordX - Imp_SpiceLineSmashY;
+        spicelineposy = Imp_InstCoordY - Imp_SpiceLineSmashX;
+      }
+      else if (AddPartOrientation == "M180") {
+        spicelineposx = Imp_InstCoordX + Imp_SpiceLineSmashX;
+        spicelineposy = Imp_InstCoordY - Imp_SpiceLineSmashY;
+      }
+      else if (AddPartOrientation == "M270") {
+        spicelineposx = Imp_InstCoordX + Imp_SpiceLineSmashY;
+        spicelineposy = Imp_InstCoordY + Imp_SpiceLineSmashX;
+      }
+
+      // den Wert des Attribute mit Textplatzhalter anzeigen
+      sprintf(Imp_MemSpiceline, "%s> (%.4f %.4f)>%s",
+                  imp_secondstr(l, s[1]),   // der Value für Spiceline kannen mehrere Wörter durch Space getrennt enthalten
+                  spicelineposx, spicelineposy,
+                  TextAlignSpiceLine
+             );
+    }
+    else {
+      sprintf(h, "ATTRIBUTE %s  %s '%s';\n", strupr(Imp_InstanceName), s[1], imp_secondstr(l, s[1]));
+      Imp_Cmd += h;
+    }
+    return;
+  }
+
+  else if(s[1] == "SpiceLine2") {  // [40]
+    if (Imp_Winattrib[40]) { // wenn es eine Koordinate für das Atrribute gibt, dann anzeigen, sonst nur ein Attribute definieren
+      real spiceline2posx, spiceline2posy;
+      if (AddPartOrientation == "R0") {
+        spiceline2posx = Imp_InstCoordX + Imp_SpiceLine2SmashX;
+        spiceline2posy = Imp_InstCoordY + Imp_SpiceLine2SmashY;
+      }
+      else if (AddPartOrientation == "R90") {
+        spiceline2posx = Imp_InstCoordX + Imp_SpiceLine2SmashY;  // wegen der der 90°Drehung muß X und Y getauscht werden
+        spiceline2posy = Imp_InstCoordY - Imp_SpiceLine2SmashX;
+      }
+      else if (AddPartOrientation == "R180") {
+        spiceline2posx = Imp_InstCoordX - Imp_SpiceLine2SmashX;
+        spiceline2posy = Imp_InstCoordY - Imp_SpiceLine2SmashY;
+      }
+      else if (AddPartOrientation == "R270") {                   // Verkehrtes Vorzeichen der Y-Achse
+        spiceline2posx = Imp_InstCoordX - Imp_SpiceLine2SmashY;  // wegen der 270 Grad-Drehung muß der Offset X und Y getauscht werden
+        spiceline2posy = Imp_InstCoordY + Imp_SpiceLine2SmashX;
+      }
+      else if (AddPartOrientation == "M0") {
+        spiceline2posx = Imp_InstCoordX - Imp_SpiceLine2SmashX;
+        spiceline2posy = Imp_InstCoordY + Imp_SpiceLine2SmashY;
+      }
+      else if (AddPartOrientation == "M90") {
+        spiceline2posx = Imp_InstCoordX - Imp_SpiceLine2SmashY;
+        spiceline2posy = Imp_InstCoordY - Imp_SpiceLine2SmashX;
+      }
+      else if (AddPartOrientation == "M180") {
+        spiceline2posx = Imp_InstCoordX + Imp_SpiceLine2SmashX;
+        spiceline2posy = Imp_InstCoordY - Imp_SpiceLine2SmashY;
+      }
+      else if (AddPartOrientation == "M270") {
+        spiceline2posx = Imp_InstCoordX + Imp_SpiceLine2SmashY;
+        spiceline2posy = Imp_InstCoordY + Imp_SpiceLine2SmashX;
+      }
+
+      // den Wert des Attribute mit Textplatzhalter anzeigen
+      sprintf(Imp_MemSpiceline2, "%s> (%.4f %.4f)>%s",
+                  imp_secondstr(l, s[1]),   // Der Value von Spiceline kann mehrere Wörter durch Space getrennt enthalten
+                  spiceline2posx, spiceline2posy,
+                  TextAlignSpiceLine2
+             );
+    }
+    else {
+      sprintf(h, "CHANGE Display Off;\nATTRIBUTE %s  %s '%s';\n", strupr(Imp_InstanceName), s[1], imp_secondstr(l, s[1]));
+      Imp_Cmd += h;
+    }
+    return;
+  }
+
+  // SYMATTR Description Capacitor
+  else if(s[1] == "Description") {  // kein WINDOW für SYMATTR Description - deshalb die Description im Schaltplan als Attribute anlegen
+    if (!Imp_InstanceName) {
+      sprintf(h, "CHANGE Display OFF;\nATTRIBUTE (%.4f %.4f) 'SPICE_DESCRIPTION' '%s';\n", Imp_InstCoordX, Imp_InstCoordY, s[2]); // 2012-12-17
+    }
+    else sprintf(h, "CHANGE Display OFF;\nATTRIBUTE '%s' 'SPICE_DESCRIPTION' '%s';\n", strupr(Imp_InstanceName), s[2]);
+    Imp_Cmd += h;
+    return;
+  }
+
+  // SYMATTR Type cap
+  else if(s[1] == "Type") {
+    if (!Imp_InstanceName) {
+      sprintf(h, "ATTRIBUTE (%.4f %.4f) 'SpiceType' '%s';\n", Imp_InstCoordX, Imp_InstCoordY, s[2]);
+    }
+    else sprintf(h, "ATTRIBUTE '%s' 'SpiceType' '%s';\n", strupr(Imp_InstanceName), s[2]);
+    Imp_Cmd += h;
+    return;
+  }
+  return;
+}
+
+
+void imp_bustap(string l) {
+  if (!Imp_WireChecked) {
+    imp_get_net_segment(); // nachdem alle Wire gesammelt wurden, müssen die Segmente ermittelt werden
+  }
+  // BUSTAP 864 208 880 208
+  string s[];
+  int n = strsplit(s, l, ' ');
+
+  imp_check_bus(strtod(s[1]), strtod(s[2]));  // Die erste Koordinate ist der Anschluss an den BUS,
+                                              // die zweite Koordinate an das Netz.
+
+  sprintf(h, "NET (%.4f %.4f)(%.4f %.4f);\n",  // zeichne das fehlende NET-Stück.
+          imp_eagle_coordvalue(strtod(s[1])),
+          imp_eagle_coordvalue(strtod(s[2])*-1.0),
+          imp_eagle_coordvalue(strtod(s[3])),
+          imp_eagle_coordvalue(strtod(s[4])*-1.0)
+         );
+  Imp_Cmd += h;
+  return;
+}
+
+
+void call_system(string exportfile) {  // DOS comand execute
+  string syscommand;
+  // Das executable und der Dateiname müssen in " " eingeschlossen werden, wegen Spaces im Pfad-Dateinamen!
+  sprintf(syscommand, "\"%s\" \"%s\"", lash2backslash(LTSpiceExecute), lash2backslash(exportfile));
+  system(syscommand);  // externes Programm starten
+  return;
+}
+
+
+/****** IMPORT SETUP MENU ******/
+void imp_setupmenu(void) {
+    int editspicesym = 0;
+    int editspicesch = 0;
+    int fImport_All_Symbols = strtol(Import_All_Symbols);
+    int fExternalSymbol = strtol(ExternalSymbol);
+
+    dlgDialog("LT-Spice import") {
+      dlgHBoxLayout dlgSpacing(600);
+
+      if (library) {  /*** SYMBOL ***/
+        //library(L) NewLbrName = L.name;
+        if (!SpiceSymbol) {
+          SpiceSymbol = LTSpiceLibDir + "*.asy";
+        }
+        FileSpiceSym[0] = SpiceSymbol;
+
+        dlgGridLayout {
+          dlgCell( 1, 1)  dlgLabel("Directory of Eagle connect scrips");
+          dlgCell( 1, 2)  dlgStringEdit(Imp_ConnectScriptDir);
+
+          dlgCell( 2, 1)  dlgLabel("LTspice symbol:");
+          dlgCell( 2, 2)  dlgStringEdit(SpiceSymbol);
+          dlgCell( 2, 3)  dlgPushButton("&Browse") {
+                            string mFileSpiceSym = backslash2lash(dlgFileOpen("Select a LTspice symbol", SpiceSymbol, "*.asy"));
+                            if (mFileSpiceSym) {
+                              EagleSpiceLbrDir = filedir(mFileSpiceSym);
+                              SpiceSymbol = mFileSpiceSym;
+                              FileSpiceSym[0] = mFileSpiceSym;
+                              CntFileSpiceSym = 1;
+                              editspicesym = 1;
+                              string f[];
+                              int cntf = strsplit(f, FileSpiceSym[0], '/');
+                              if (cntf > 2) LbrName = f[cntf-2] + ".lbr";  // Bibliotheksname = Verzeichnisname
+                              else LbrName = filesetext(FileSpiceSym[0], ".lbr");
+                              if (Import_All_Symbols) NewLbrName = filedir(NewLbrName) + imp_dirname(SpiceSymbol) + ".lbr";
+                              else NewLbrName = ""; // filedir(NewLbrName) + filesetext(filename(SpiceSymbol), ".lbr");
+                            }
+                          }
+
+          dlgCell( 3, 1)  ;
+          dlgCell( 3, 2)  dlgCheckBox("Import &all symbols from directory", fImport_All_Symbols) {
+                            if (fImport_All_Symbols) {
+                              NewLbrName = filedir(NewLbrName) + imp_dirname(SpiceSymbol) + ".lbr";
+                              Import_All_Symbols = "1";
+                            }
+                            else {
+                              NewLbrName = ""; // filedir(NewLbrName) + filesetext(filename(SpiceSymbol), ".lbr");
+                              Import_All_Symbols = "";
+                            }
+                          }
+          dlgCell( 3, 3)  ;
+
+          dlgCell( 4, 1)  ;
+          dlgCell( 4, 2)  dlgCheckBox("Import as simulation &part ( generate ATTRIBUTE _EXTERNAL_ )", fExternalSymbol) imp_helpSimulationSymbols();
+          dlgCell( 4, 3)  ;
+
+          dlgCell( 7, 1)  dlgLabel("&New EAGLE library name ");
+          dlgCell( 7, 2)  dlgStringEdit(NewLbrName);
+          dlgCell( 7, 3)  dlgPushButton("Br&owse") {
+                            string mNewLbrName = backslash2lash(dlgFileSave("Select a Spice symbol", NewLbrName, "*.lbr"));
+                            if (mNewLbrName) NewLbrName = mNewLbrName;
+                          };
+          dlgCell( 8, 2)  dlgLabel("(<i>let this line empty to import symbol at current lbr.</b>)");
+        }
+      }
+
+      else if (schematic) {  /*** SHEMATIC ***/
+         string schname;
+         schematic(SCH) schname = SCH.name;
+        dlgGridLayout {
+          dlgCell( 0, 1) dlgLabel(" ");
+          dlgCell( 0, 2) dlgSpacing(300);
+          dlgCell( 0, 3) dlgLabel(" ");
+
+          /*********************************************************************************
+          Für LT-Spice gibt es Standard-Symbole (default) die nicht als Datei angelegt sind,
+          für diese Symbole muß es in Eagle eine entsprechende Bibliothek geben, die exakt
+          dem Aussehen in LT-Spice entsprechen.
+          Hier wird der Pfad und Dateiname dieser Bibliothek eingetragen.
+          **********************************************************************************/
+          dlgCell( 1 ,  1 ) dlgLabel("Spice default symbols");
+          dlgCell( 1 ,  2 ) dlgLabel(SpiceDefaultSymLbr, 1); // = lt-spice-simulation.lbr
+          //dlgCell( 1 ,  3 ) dlgPushButton("B&rowse") {
+          //  string mSpiceDefaultSymLbr = backslash2lash(dlgFileOpen("Select a spice default symbol library", SpiceDefaultSymLbr));
+          //  if (mSpiceDefaultSymLbr) SpiceDefaultSymLbr = mSpiceDefaultSymLbr;
+          //}
+
+          // Die Symbol-LBR für Generatorn, Messgeräte, Lastwiderstände etc.
+          /*****************************************************************************
+          Symbole die für die Simulation von Bedeutung sind, müssen in einer Bibliothek
+          angelegt werden, und mit dem ATTRIBUTE "_EXTERNAL_" versehen sein.
+          Hier wird der Pfad und Dateiname dieser Bibliothek eingetragen.
+          ******************************************************************************/
+          dlgCell( 2 ,  1 ) dlgLabel("Spice simulation library");
+          dlgCell( 2 ,  2 ) dlgLabel(SpiceSimulationLbr, 1);
+          //dlgCell( 2 ,  3 ) dlgPushButton("&Browse") {
+          //  string mSpiceSimulationLbr = backslash2lash(dlgFileOpen("Select Simuation-Symbol-LBR", SpiceSimulationLbr , "*.lbr"));
+          //  if (mSpiceSimulationLbr) {
+          //    SpiceSimulationLbr = mSpiceSimulationLbr;
+          //  }
+          //}
+
+          dlgCell( 4 ,  1 ) dlgLabel("<hr>");
+          dlgCell( 4 ,  2 ) dlgLabel("<hr>");
+          dlgCell( 4 ,  3 ) dlgLabel("<hr>");
+
+          dlgCell( 6 ,  1 ) dlgLabel("Spice schematic");
+          dlgCell( 6 ,  2 ) dlgStringEdit(ImpSpiceSchematicAsc);
+          dlgCell( 6 ,  3 ) dlgPushButton("&Browse") {
+            string mImpSpiceSchematicAsc = backslash2lash(dlgFileOpen("Select a spice schematic", ImpSpiceSchematicAsc , "*.asc"));
+            if (mImpSpiceSchematicAsc) {
+              ImpSpiceSchematicAsc = mImpSpiceSchematicAsc;
+              SchName = filedir(schname) + filesetext(filename(mImpSpiceSchematicAsc), ".sch");
+              string f[];
+              int exist = fileglob(f, SchName);
+              if (exist) {
+                dlgMessageBox("!Schematic '" + SchName + "' exist.", "CANCEL"); exit(-3960);
+              }
+            }
+          }
+
+
+          dlgCell( 7 ,  1 ) dlgLabel("Eagle schematic ");
+          dlgCell( 7 ,  2 ) dlgStringEdit(SchName);
+          dlgCell( 7 ,  3 ) dlgPushButton("&Browse") {
+            string mSchName = backslash2lash(dlgFileOpen("Select eagle schematic", SpiceSimulationLbr , "*.sch"));
+            if (mSchName) {
+              SchName = mSchName;
+            }
+          }
+        }
+      }
+
+      else {
+        dlgMessageBox("!Start this ULP in a schematic or library.", "OK");
+        exit(-4);
+      }
+      dlgHBoxLayout {
+        dlgPushButton("+OK") {
+          if (fileext(ImpSpiceSchematicAsc) == ".asc" || fileext(FileSpiceSym[0]) == ".asy") {
+            if (schematic) {
+              if (!SchName) SchName = filename(filesetext(ImpSpiceSchematicAsc, ".sch"));
+              ScriptFile = filesetext(SchName, Imp_ScriptExt);
+              dlgAccept();
+            }
+            else if (library) {
+              CntFileSpiceSym = fileglob(FileSpiceSym, SpiceSymbol);
+              dlgAccept();
+            }
+          }
+          else {
+            if (schematic) dlgMessageBox("Select a LTC schematic file (*.asc) first!", "OK");
+            else if (library) {
+              if (fileext(FileSpiceSym[0]) != ".asy" ) dlgMessageBox("Select a LTC symbol file (*.asy) first!", "OK");
+            }
+          }
+        }
+        dlgPushButton("-CANCEL") { dlgReject(); exit(-5); }
+        dlgStretch(1);
+        dlgLabel(ULP_Version);
+        dlgPushButton("&Save config") saveconfig();
+      }
+    };
+  return;
+}
+
+/***** EXPORT menu *****/
+void ex_setupmenu(void) {
+  string schexportname;
+  dlgDialog("Eagle-LTspice Setup") {
+    dlgHBoxLayout  dlgSpacing(200);
+    dlgLabel("spice.asy = "+ LTSpiceLibDir);
+    dlgLabel("eagle.asy = "+ ExpEagleSpiceSymDir);
+
+      if (schematic) {  /*** SCHEMATIC ***/ //2012-10-10 alf
+        schematic(SCH) schexportname = filesetext(SCH.name, ".asc");
+        dlgLabel("SCH = "+ schexportname);
+      }
+      else if (library) {    /*** LIBRARY ***/
+      dlgGridLayout {
+        ExOnceLib = 1;
+        if (deviceset) {
+          dlgCell( 5 ,  2 )  dlgGroup("Export") {
+                               dlgRadioButton("Export &all devices", ExOnceLib);
+                               dlgRadioButton("EXPORT &only this deviceset to LTspice symbol (*.asy)", ExOnceLib);
+                             }
+        }
+        else {
+          dlgCell( 5 ,  2 )  dlgLabel("EXPORT all devicesets to LTspice symbols (*.asy)");
+        }
+      }
+    }
+    dlgHBoxLayout {
+      dlgPushButton("+OK") dlgAccept();
+      dlgPushButton("-CANCEL") { dlgReject(); exit(-2); }
+      dlgStretch(1);
+      dlgLabel(ULP_Version);
+    }
+  };
+  saveconfig();
+  return;
+}
+
+
+void dosfilecopy( string source, string target, string option) {
+  string DOScommand;
+  sprintf(DOScommand, "XCOPY \"%s\" \"%s\" %s", lash2backslash(source), lash2backslash(target), option);
+  /*
+  dlgDialog("DOS command") {
+    dlgHBoxLayout dlgSpacing(800);
+    dlgStringEdit(DOScommand);
+    dlgPushButton("ok") dlgAccept();
+    dlgPushButton("esc") { dlgReject(); exit(-4056); }
+  };
+  */
+  system(DOScommand);
+  return;
+}
+
+void autosetupinfo(string dlgheader, string cntscrsetup) {
+  dlgDialog(dlgheader) {
+    dlgGridLayout {
+      dlgCell(  0, 1) dlgLabel("Program:");
+      dlgCell(  0, 2) dlgLabel(EAGLE_SIGNATURE);
+      dlgCell(  1, 1) dlgLabel("System:");
+      dlgCell(  1, 2) dlgLabel(OS_SIGNATURE);
+      dlgCell(  2, 1) dlgLabel("Eagle Path:");
+      dlgCell(  2, 2) dlgLabel(EAGLE_PATH);
+      dlgCell(  3, 1) dlgLabel("Eagle Dir:");
+      dlgCell(  3, 2) dlgLabel(EAGLE_DIR);
+      dlgCell(  4, 1) dlgLabel("User Dir:");
+      dlgCell(  4, 2) dlgLabel(EAGLE_HOME);
+      dlgCell(  5, 1) dlgLabel("<hr>");
+      dlgCell(  5, 2) dlgLabel("<hr>");
+      dlgCell(  6, 1) dlgLabel("LTSpiceExecute");
+      dlgCell(  6, 2) dlgLabel(LTSpiceExecute);
+      dlgCell(  7, 1) dlgLabel("LTSpiceLibDir");
+      dlgCell(  7, 2) dlgLabel(LTSpiceLibDir);
+      dlgCell(  8, 1) dlgLabel("ExpEagleSpiceSymDir");
+      dlgCell(  8, 2) dlgLabel(ExpEagleSpiceSymDir);
+      dlgCell(  9, 1) dlgLabel("<hr>");
+      dlgCell(  9, 2) dlgLabel("<hr>");
+      dlgCell( 10, 1) dlgLabel("EagleExecute");
+      dlgCell( 10, 2) dlgLabel(EagleExecute);
+      dlgCell( 11, 1) dlgLabel("Imp_ConnectScriptDir");
+      dlgCell( 11, 2) dlgLabel(Imp_ConnectScriptDir);
+      dlgCell( 12, 2) dlgLabel(cntscrsetup);
+      dlgCell( 13, 1) dlgLabel("SpiceSimulationLbr");
+      dlgCell( 13, 2) dlgLabel(SpiceSimulationLbr);
+      dlgCell( 14, 1) dlgLabel("SpiceDefaultSymLbr");
+      dlgCell( 14, 2) dlgLabel(SpiceDefaultSymLbr);
+    }
+    dlgHBoxLayout {
+      dlgPushButton("+OK") dlgAccept();
+      //dlgPushButton("-CANCEL") {dlgReject(); exit(-10); }
+      dlgStretch(1);
+      if (dlgheader == "Diagnose") {
+        dlgPushButton("Save") {
+          string rptfile = filesetext(argv[0], ".rpt");
+          output(rptfile, "wt") {
+            printf("Program:\t%s\n", EAGLE_SIGNATURE);
+            printf("System:\t%s\n", OS_SIGNATURE);
+            printf("Eagle Path:\t%s\n", EAGLE_PATH);
+            printf("Eagle Dir:\t%s\n", EAGLE_DIR);
+            printf("User Dir:\t%s\n", EAGLE_HOME);
+            printf("LTSpiceExecute:\t%s\n", LTSpiceExecute);
+            printf("LTSpiceLibDir:\t%s\n", LTSpiceLibDir);
+            printf("ExpEagleSpiceSymDir:\t%s\n", ExpEagleSpiceSymDir);
+            printf("EagleExecute:\t%s\n", EagleExecute);
+            printf("Imp_ConnectScriptDir:\t%s\n", Imp_ConnectScriptDir);
+            printf("%s\n", cntscrsetup);
+            printf("SpiceSimulationLbr:\t%s\n", SpiceSimulationLbr);
+            printf("SpiceDefaultSymLbr:\t%s\n", SpiceDefaultSymLbr);
+          }
+          dlgMessageBox("Saved to:"+rptfile, "OK");
+        }
+      }
+    }
+  };
+  return;
+}
+
+/* ***********************
+ ******** MAIN ***********
+ *********************** */
+readconfig();
+int CntScr = 0;
+if (!LTSpiceExecute || argv[2] == "/S") {
+  string rootpath[] = { "C:/Programme/", "C:/Program files (x86)/", "C:/Program files/", "D:/Program files (x86)/", "D:/Program files/" }; // 2012-10-11
+  int nroot = 0;
+  do {
+    LTSpiceExecute = file_search("LTspiceIV/scad3.exe", rootpath[nroot], 3, "4085"); // 2012-11-27 das LTspice executable, in Pfad LTspiceIV, das es ältere Versionen gibt, mit unterschiedlichen Pfadnamen!
+    nroot++;
+  } while (!LTSpiceExecute && rootpath[nroot]);
+
+  if (!LTSpiceExecute) {
+    dlgMessageBox("!LTspiceIV (scad3.exe) not found.", "OK");
+    exit(-4141);
+  }
+  else {
+    ExpEagleSpiceSymDir = filedir(LTSpiceExecute) + "lib/sym/eagle/"; // 2012-12-05
+    LTSpiceLibDir = filedir(LTSpiceExecute) + "lib/";  // 2012-11-27
+  }
+
+  int pos = strstr(EagleExecute, "bin/");            // 2012-11-27 nur den Hauptpfad zu den Unterordnern
+  string eagleroot = strsub(EagleExecute, 0, pos);
+
+  string cfgdirlbr = cfgget("EAGLE:Directories.Lbr");  // 2012-10-30 den Pfad unter Optionen Verzeichnisse zu den importierten LTspice-LBRs erweitern!
+  pos = strstr(cfgdirlbr, "lbr/ltspice");
+  if (pos <0) {
+    cfgdirlbr = eagleroot + "lbr/ltspice;" + cfgdirlbr;
+    cfgset("EAGLE:Directories.Lbr", cfgdirlbr);
+  }
+
+  // prüfe Verzeichnis für Scripte zum erzeugen der Devices von LT
+  Imp_ConnectScriptDir = file_search("misc/ltspice/scr",  eagleroot, 4, "4109");  // Das Directory der Scripte von LT zum erzeugen der Devices CONNECT, PACKAGE, ATTRIBUTE...
+  if (!Imp_ConnectScriptDir) {
+    if (dlgMessageBox("!Directory of LT connect scripts not found:\n" + eagleroot + "scr/ltc", "MAKE DIR", "CANCEL") != 0) exit(-4161);
+    // makedir(eagleroot, "scr/ltc");
+  }
+  else {
+    string scr[];
+    CntScr = fileglob(scr, Imp_ConnectScriptDir + "*.scr");
+    if (!CntScr) {
+      sprintf(h, "!No scripts found in:\n%s\n\nCopy first LT connect scripts!", Imp_ConnectScriptDir);
+      dlgMessageBox(h, "CANCEL");
+      exit(-4170);
+    }
+  }
+  string copyeaglesym2spice = file_search( "eagle", LTSpiceLibDir, 3, "4123");  // prüfe ob Unterordner /eagle unter /sym besteht?
+  string copysource = eagleroot+"misc/ltspice/lib/*.*";
+  if (copyeaglesym2spice) {
+    dosfilecopy( copysource, LTSpiceLibDir, "/S /Y"); // 2012-11-27 XCOPY mit Unterordner und ohne Eingabe/Quittierung
+  }
+  else {
+    if (!makedir(LTSpiceLibDir, "/sym/eagle")) { // Returnwert 0 wenn das Verzeichnis nicht angelegt werden konnte.
+      dlgMessageBox("!Can't creat directory:\n" + LTSpiceLibDir + "eagle", "CANCEL");
+      exit(-4181);
+    }
+    // kopiere die Spice Symbole vom Eagle-Paket nach LTC lib/sym/eagle inkl. Unterordner
+    // 2012-11-27 neu ist der Ordner sub mit der Datei note.sub
+    dosfilecopy( copysource, LTSpiceLibDir, "/S /Y"); // 2012-11-27 XCOPY mit Unterordner und ohne Eingabe/Quittierung
+  }
+
+  SpiceSimulationLbr = file_search("ltspice/lt-spice-simulation.lbr",  EAGLE_DIR, 4, "4138"); // die Symbole zum simulieren, Stimuli (V, I, F Generatoren)
+  if (!SpiceSimulationLbr) {
+    dlgMessageBox("!Default LTspice simulation library not found, please import first:" + EAGLE_DIR + "/lbr/ltspice/lt-spice-simulation.lbr", "CANCEL");
+    // 2013-10-01 Pfadtrenner nach EAGLE_DIR und lbr...
+    exit(-4192);
+  }
+dlgMessageBox("!Default LTspice simulation library found on:\n" + EAGLE_DIR + "/lbr/ltspice/lt-spice-simulation.lbr", "CANCEL");
+
+  SpiceDefaultSymLbr =  file_search("ltspice/sym.lbr",  EAGLE_DIR, 4, "4144"); // die Default-Lbr für R, L, C, D, Res...
+  if (!SpiceDefaultSymLbr) {
+    dlgMessageBox("!Default LTspice symbol library (R C L D ...) not found, please import first:" + EAGLE_DIR + "lbr/ltspice/sym.lbr", "CANCEL");
+    exit(-4199);
+  }
+  string cntscrsetup;
+  sprintf(cntscrsetup,  "%d scripts", CntScr);
+  autosetupinfo("Auto Setup Info", cntscrsetup);
+  saveconfig();
+  // 2012-10-30 die LTspice LBRs (den gesamten Ordner) in die USE-Liste eintragen!
+  string uselbr;
+  sprintf(uselbr, "USE -*;\nUSE '%slbr/ltspice';\nUSE '%slbr/eagle-ltspice'; #4222\n", eagleroot, eagleroot);
+  // Pfade immer in ' einschließen, besonders bei Windows 7/8 64-Bit,
+  // da es den Ordner "Programm (x86)" gibt, und die Klammern () von Eagle als Koordinate ausgewertet werden!
+  // für die eagle-ltspice.lbr muß der absolute Pfad angegeben werden,
+  // da der Pfad für die "eagl-lbrs" jetzt an zweiter Stelle steht! 2012-10-30
+  exit(uselbr);
+}
+
+
+/* ******************************
+ ******** main Export ***********
+ ****************************** */
+if (strupr(argv[1]) == "/E") {
+  if (library) {  /*** LIBRARY ***/
+    library(L) {
+      ex_setupmenu();  // runs always with setup menu
+      if (deviceset && ExOnceLib) {
+        deviceset(DEV) {
+          DEV.devices(D) ex_draw_device(D, DEV);
+          /* *****************************************************************************************
+          Kein Handshake, das ULP wartet auf die Beendigung des aufgerufenen Programm (DOS-BOX)
+          und kehrt dann zum aufrufenden Fenster zurück.
+          Vorteil, das Fenster (Schaltplan) hat den Fokus wieder!
+          ****************************************************************************************** */
+          //call_system(Ex_AsyName);
+          //exit("RUN ulpmessage 'DEVICESET <b>" + DEV.name + ".dev</b><br>exported to<br>" + ExpEagleSpiceSymDir + filename(filesetext(L.name, "/")) + DEV.name + ".asy'");
+          string rmsg;
+          sprintf(rmsg, "RUN ulpmessage 'DEVICESET <b>%s.dev</b> (%d)<br>exported to<br>%s", DEV.name, CntOutput, filedir(Ex_AsyName));
+          exit(rmsg);
+        }
+      }
+      else {
+        int cnt = 0;
+        L.devicesets(DEV) DEV.devices(D) {
+          cnt++;
+          ex_draw_device(D, DEV);
+        }
+        //exit("RUN ulpmessage '" + L.name + "<br>exported to<br>" + ExpEagleSpiceSymDir + filename(filesetext(L.name, "/")) + "*.asy'");
+        exit("RUN ulpmessage '" + L.name + "<br>exported to<br>" + filedir(Ex_AsyName) + "*.asy");
+      }
+    }
+  }
+
+  else if (sheet) { /*** SHEET ***/
+    if (strupr(argv[2]) == "/G") ExportAll = 0; // export only selected group
+
+    schematic(SCH) {
+      if (!ExportAll) ExpSchematic2LTpice =  filesetext(SCH.name, "_group.asc"); // 2012-06-22
+      else ExpSchematic2LTpice = filesetext(SCH.name, ".asc"); // 2012-05-10
+    }
+    if (strupr(argv[2]) == "/S") {
+      ex_setupmenu();
+      exit(0);
+    }
+
+    if (Test) if (dlgMessageBox("Export Schematic to:\n" + ExpSchematic2LTpice, "OK", "CANCEL") != 0) exit(-6);
+
+    output(ExpSchematic2LTpice, "wt") {
+      printf("Version 4\n");
+      sheet(S) {
+        printf("SHEET %d %.0f %.0f\n", S.number, ex_spicegrid(u2mil(S.area.x2)), ex_spicegrid(u2mil(S.area.y2)*-1.0)); // SHEET 1 1684 1612
+        S.nets(N) N.segments(SEG) SEG.wires(W) if (ingroup(W) || ExportAll) ex_draw_net_wire(W);
+        S.nets(N) N.segments(SEG) SEG.labels(LAB) if (ingroup(LAB) || ExportAll) ex_draw_label(LAB);
+        S.parts(P) P.instances(I) if (ingroup(I) || ExportAll) ex_draw_instance(I, P);
+        S.wires(W) if (ingroup(W) || ExportAll) ex_draw_wire(W);
+        S.rectangles(R) if (ingroup(R) || ExportAll) ex_draw_rectangle(R);
+        S.circles(C)  if (ingroup(C) || ExportAll) ex_draw_circle(C);
+        S.texts(T)  if (ingroup(T) || ExportAll) ex_draw_text(T, "SCH", ""); // 2012-05-11
+      }
+    }
+
+    //string ExportedFile = ExpSchematic2LTpice;
+    int    ExportedFileTime = -1;
+    int newfiletim = -1;
+    string f[];
+    int cnt = fileglob(f, ExpSchematic2LTpice);
+    if (cnt) {
+      ExportedFileTime = filetime(ExpSchematic2LTpice);
+    }
+    else {
+      dlgMessageBox("Warning, file '"+ExpSchematic2LTpice+"' does not exist!", "Break");
+      exit(-7);
+    }
+    status(" Waiting for return of "+filename(LTSpiceExecute));
+    string syscommand;
+
+    // Handshake mit LT-Spice über eine Datei (momentan der LTspice-Schaltplan selber, über den Zeitstempel)
+    if (Ex_WaitOnHandShake) {
+      sprintf(syscommand, "cmd.exe /c  \"%s\" \"%s\"", LTSpiceExecute, ExpSchematic2LTpice);
+      system(syscommand);  // externes Programm starten
+
+      ExportedFileTime = filetime(ExpSchematic2LTpice);
+      newfiletim = filetime(ExpSchematic2LTpice);
+      status("Waiting for LTspice response");
+      do {
+        newfiletim = filetime(ExpSchematic2LTpice);
+      } while (newfiletim == ExportedFileTime);
+      exit ("RUN 'ltspice.ulp /I' '"+ ExpSchematic2LTpice + "' 'RELOAD'");
+    }
+    /******************************************************************************************
+    Kein Handshake, das ULP wartet auf die Beendigung des aufgerufenen Programm (DOS-BOX)
+    und kehrt dann zum aufrufenden Fenster zurück.
+    Vorteil, das Fenster (Schaltplan) hat den Fokus wieder!
+    *******************************************************************************************/
+    call_system(ExpSchematic2LTpice);
+
+    newfiletim = filetime(ExpSchematic2LTpice);
+    // Überprüfe den Timestamp der Datei, falls geändert, dann starte das ULP mit der Option RELOAD!
+    if (newfiletim == ExportedFileTime) exit(0); // nothing changed!
+    exit ("RUN 'ltspice.ulp' '/I' '"+ ExpSchematic2LTpice + "' 'RELOAD'");
+  }
+
+  else dlgMessageBox("Start this ULP in a library or schematic!", "OK");
+  exit(-4320);
+}
+
+/* *******************************
+ ******** main Imxport ***********
+ ******************************* */
+else if (strupr(argv[1]) == "/I") {
+  sprintf(h, "%d", argc);
+  readconfig();
+  if (argc == 4) {
+    if (fileext(argv[2]) == ".asc") {  // work with schematic
+      Imp_CntFileSpiceAsc = 1;
+      ImpSpiceSchematicAsc = argv[2];
+    }
+    else if (fileext(argv[2]) == ".asy") {  // work with symbol
+      CntFileSpiceSym = 1;
+      FileSpiceSym[0]  = argv[2];
+    }
+    ScriptFile = filesetext(argv[2], "~spice2eagle.scr");
+  }
+
+  else {
+    // ### main menu SYMBOL/SCHEMATIC ###
+    imp_setupmenu();
+    saveconfig();
+  }
+  if (!FileSpiceSym[0] && !ImpSpiceSchematicAsc)  exit(-8);
+
+
+  /**** Import a library ****/
+  if (CntFileSpiceSym) {
+    int t = time();
+    string fext = "*.asy";
+    string libsource;
+    if (Import_All_Symbols) {
+      CntFileSpiceSym = fileglob(FileSpiceSym, filedir(FileSpiceSym[0])+fext);
+      if (!LbrName) LbrName = imp_dirname(FileSpiceSym[0]);
+      libsource = filedir(FileSpiceSym[0]) + "*.asy";
+    }
+    else {
+      if (!LbrName) LbrName = filesetext(FileSpiceSym[0], ".lbr");
+      libsource = filesetext(FileSpiceSym[0], "*.asy");
+    }
+    ScriptFile = filesetext(FileSpiceSym[0], Imp_ScriptExt);
+
+    if (NewLbrName) sprintf(Imp_Cmd, "OPEN '%s';\n", NewLbrName);
+    sprintf(h, "DESCRIPTION 'LT-Spice library generated with :<br>\\n%s<br>\\nfrom: %s<br>\\nat %s';\n",
+                filename(argv[0]), libsource, t2string(t)
+           );
+    Imp_Cmd+=h;
+    sprintf(h, "LAYER %d SpiceOrder;\n", LayerSpiceOrder);
+    Imp_Cmd+=h;
+    sprintf(h, "SET COLOR_LAYER %d %d;\n", LayerSpiceOrder, ColorViolett);  // SET COLOR_LAYER layer color;
+    Imp_Cmd+=h;
+
+    int nf = 0;
+    if (ScriptFile && FileSpiceSym[nf]) {
+      for (nf = 0; nf < CntFileSpiceSym; nf++) {
+        attribute2script("#4232\n", FileSpiceSym[nf], FileNewTemp);  // neues Script anlegen, um die Attribute die in den PAckage-Varianten
+                                                                     // angelegt werden müssen, zwischen zu speichern. Denn das anlegen einer
+                                                                     // Package-Variante löscht die ATTRIBUTE, die vorher angelegt wurden!
+        string cmd;
+        Imp_CntPinname = 0;
+        int len = strlen(FileSpiceSym[nf]);
+        if (FileSpiceSym[nf] && FileSpiceSym[nf][len-1] != '/') {  // can not use directories, cut last character /
+          CntLines = fileread(Lines, FileSpiceSym[nf]);
+          status(FileSpiceSym[nf]);  // ein Lebenszeichen
+          Imp_SymDevName = strupr(filesetext(filename(FileSpiceSym[nf]), ""));
+          if (imp_checkexist_dev(Imp_SymDevName)) {
+            if (dlgMessageBox("! Attention: <b>" + Imp_SymDevName + ".DEV</b> exist.<p>DELETE ?", "YES", "NO") != 0) {
+              exit("EDIT " + Imp_SymDevName + ".SYM");
+            }
+            else sprintf(Imp_Cmd, "SET CONFIRM YES;\nREMOVE %s.DEV;\nSET CONFIRM OFF;\n", Imp_SymDevName);
+          }
+          if (imp_checkexist_sym(Imp_SymDevName)) {
+            if (dlgMessageBox("! Attention: <b>" + Imp_SymDevName + ".SYM</b> exist.<p>DELETE ?", "YES", "NO") != 0) {
+              exit("EDIT " + Imp_SymDevName + ".SYM");
+            }
+            else sprintf(Imp_Cmd, "SET CONFIRM YES;\nREMOVE %s.SYM;\nSET CONFIRM OFF;\n", Imp_SymDevName);
+          }
+
+          sprintf(cmd, "EDIT %s.SYM;\nCHANGE LAYER 96;\nGRID MIL 50 2 LINES ON;\nCHANGE WIDTH 0;\nCHANGE STYLE Continuous;\n", Imp_SymDevName);
+          Imp_Cmd+=cmd;
+
+          if (ExternalSymbol) {
+            sprintf(Imp_CmdDev, "EDIT %s.DEV;\nVALUE ON;\nADD %s '%s' (0 0);\n", Imp_SymDevName, Imp_SymDevName, Imp_DefaultGateName);  // add new gate (symbol)
+            sprintf(cmd, "ATTRIBUTE '%s';\n", ExternalAttributeName);
+            Imp_CmdDev+=cmd;
+          }
+
+          string pincoord[];  // remember pin coordinate for attribute
+          int cntpin;
+
+          for (n = 0; n < CntLines; n++) {
+            if      (strstr(Lines[n], "Version") == 0)    imp_version(Lines[n]);
+            else if (strstr(Lines[n], "SymbolType") == 0) imp_symboltype(Lines[n]);
+            else if (strstr(Lines[n], "LINE") == 0)       imp_line(Lines[n]);
+            else if (strstr(Lines[n], "RECTANGLE") == 0)  imp_rectangle(Lines[n]);
+            else if (strstr(Lines[n], "CIRCLE") == 0)     imp_circle(Lines[n]);
+            else if (strstr(Lines[n], "ARC") == 0)        imp_arc(Lines[n]);
+            else if (strstr(Lines[n], "TEXT") == 0)       imp_text(Lines[n]);
+            else if (strstr(Lines[n], "WINDOW") == 0)     imp_window_sym(Lines[n], n);
+            else if (strstr(Lines[n], "SYMATTR") == 0)    Imp_CmdDev += imp_symattr_sym(Lines[n], n, FileSpiceSym[nf]);
+                                                         // PIN -48 -32 LEFT 8
+            else if (strstr(Lines[n], "PIN ") == 0)       cntpin = strsplit(pincoord, imp_pin(Lines[n]), '\t');
+            else if (strstr(Lines[n], "PINATTR") == 0)    imp_pinattr(Lines[n], pincoord[0], pincoord[1], pincoord[2]);
+            else if (Lines[n] == ""); // empty line in LTC3703-5.asy
+            else {
+              sprintf(h, "Symbol: Line %d unknown:\n%s", n+1, Lines[n]);
+              if (dlgMessageBox(h, "OK", "CANCEL") != 0) exit(-4429);
+            }
+          }
+          Imp_Cmd += Imp_CmdDev + "WIN FIT;\n";  // make a device and use generated symbol
+          if (Test) {
+            dlgDialog("Test") {
+              dlgHBoxLayout dlgSpacing(700);
+              dlgHBoxLayout {
+                dlgVBoxLayout dlgSpacing(700);
+                dlgTextEdit(Imp_Cmd);
+              }
+              dlgHBoxLayout {
+                dlgPushButton("ok") dlgAccept();
+                dlgPushButton("esc") { dlgReject(); exit(-9); }
+                dlgPushButton("weiter ohne Scriptanzeige") { dlgAccept(); Test = 0; }
+              }
+            };
+          }
+        }
+        sprintf(cmd, "EDIT %s.DEV;\nVALUE ON;\n", Imp_SymDevName);  // add new empty device
+        Imp_Cmd+=cmd;
+        string connectscript = file_search(filename(filesetext(FileSpiceSym[nf], ".scr")), Imp_ConnectScriptDir, 3, "4434");
+        if (connectscript) {
+          string usedpacname = get_pac_from_script(connectscript);
+          int pacexist = check_exist_packname(usedpacname);
+          if (!pacexist) {
+            exit(-10); // without package can not define ATTRIBUTEs
+          }
+          sprintf(cmd, "SCRIPT '%s';\n", connectscript);
+          Imp_Cmd += cmd;
+          sprintf(cmd, "SCRIPT '%s';\n", filesetext(FileSpiceSym[nf], ".scr"));
+          Imp_Cmd += cmd;  // die zuvor geretteten ATTRIBUTE in das Device schreiben
+          Imp_Cmd += "RUN 'copy-attribute-at-deviceset';\n"; // kopiert alle Attribute in alle Packagevarianten,
+                                                             // und benennt die ertse Variante um zu '', damit die
+                                                             // Schaltpläne reibungslos importiert werden können. 2012-10-07
+        }
+      }
+      output(ScriptFile, "wtD") {
+        printf("#Generated with %s\n#from %s\n# at %s\n", argv[0], libsource, t2string(time(), "dd-MM-yyyy hh:mm:ss"));
+        printf("%s", Imp_Cmd);
+      }
+      exit ("SCRIPT '"+ ScriptFile + "'");
+    }
+  }
+
+  /*** Import a schematic ***/
+  if (ImpSpiceSchematicAsc) {
+    if (schematic) {
+      string schname;
+      string spicename = filesetext(filename(ImpSpiceSchematicAsc), "");
+      schematic(SCH) {
+        schname = filesetext(filename(SCH.name), "");
+        if (spicename == schname) {
+          if (argv[3] == "RELOAD") {  // return from export (RUN ltpsice.ulp /E)
+            RELOAD = 1;
+            exit(-4484); /* include here the different import */
+          }
+        }
+      }
+    }
+    string FileImpSpiceSchematicAsc[];
+    Imp_CntFileSpiceAsc = fileglob(FileImpSpiceSchematicAsc, ImpSpiceSchematicAsc);
+    if (ScriptFile && ImpSpiceSchematicAsc) {
+      if (ImpSpiceSchematicAsc) {
+        CntLines = fileread(Lines, ImpSpiceSchematicAsc);
+        status(ImpSpiceSchematicAsc);  // ein Lebenszeichen
+        if (!imp_checkexist_sch(SchName)) {
+          string cmd;
+          sprintf(cmd, "EDIT '%s';\nCHANGE LAYER 96;\nGRID MIL 50 2 LINES ON;\nCHANGE WIDTH 10;\n", SchName);
+          Imp_Cmd+=cmd;
+          Imp_Cmd+= "SET CONFIRM YES;\n";
+          Imp_Cmd+= "CHANGE STYLE Continuous;\n";
+          Imp_Cmd+= "USE '"+ SpiceSimulationLbr + "'; #4516\n"; // set simulation symbol lbr to use list
+          Imp_Cmd+= "USE '"+ SpiceDefaultSymLbr + "';\n";  // set spice default symbol lbr to use list
+          for (n = 0; n < CntLines; n++) {
+            if      (strstr(Lines[n], "Version") == 0)    imp_version(Lines[n]);
+            else if (strstr(Lines[n], "SHEET") == 0)      imp_sheet(Lines[n]);
+            else if (strstr(Lines[n], "WIRE") == 0)       imp_wire(Lines[n]);
+            else if (strstr(Lines[n], "FLAG") == 0)       imp_flag(Lines[n]);
+            else if (strstr(Lines[n], "IOPIN") == 0)      imp_iopin(Lines[n]);
+            else if (strstr(Lines[n], "BUSTAP") == 0)     imp_bustap(Lines[n]);
+            else if (strstr(Lines[n], "SYMBOL") == 0)     imp_symbol_sch(Lines[n]);
+            else if (strstr(Lines[n], "WINDOW") == 0)     imp_window_sch(Lines[n], n);
+            else if (strstr(Lines[n], "SYMATTR") == 0)    imp_symattr_sch(Lines[n], n);
+            else if (strstr(Lines[n], "CIRCLE") == 0)     imp_circle(Lines[n]);
+            else if (strstr(Lines[n], "RECTANGLE") == 0)  imp_rectangle(Lines[n]);
+            else if (strstr(Lines[n], "ARC") == 0)        imp_arc(Lines[n]);
+            else if (strstr(Lines[n], "TEXT") == 0)       imp_text(Lines[n]);
+            else if (strstr(Lines[n], "text") == 0)       imp_text(Lines[n]);
+            else if (strstr(Lines[n], "LINE") == 0)       imp_line(Lines[n]);
+            else if (strstr(Lines[n], "DATAFLAG") == 0)   imp_dataflag(Lines[n]);
+            else {
+              sprintf(h, "Schematic: Line %d unknown:\n%s", n+1, Lines[n]);
+              if (dlgMessageBox(h, "OK", "CANCEL") != 0) exit(-4);
+            }
+          }
+          imp_draw_net();
+          if (RememberFlag) CmdNameLabel += RememberFlag;
+          Imp_Cmd += CmdNameLabel;
+          Imp_Cmd += Imp_CmdDev + "WIN FIT;\n";  // make a device and use generated symbol
+          Imp_Cmd += "SET CONFIRM OFF;\n";
+        }
+      }
+    }
+
+    if (Test) {  // Testview("nach allem");
+      dlgDialog("Das Rückgabe-SCRIPT") {
+        dlgHBoxLayout dlgSpacing(700);
+        dlgHBoxLayout {
+          dlgVBoxLayout dlgSpacing(700);
+          dlgTextEdit(Imp_Cmd);
+        }
+        dlgHBoxLayout {
+          dlgPushButton("ok") dlgAccept();
+          dlgPushButton("esc") { dlgReject(); exit(-4544); }
+          dlgPushButton("weiter") dlgAccept();
+        }
+      };
+    }
+
+    output(ScriptFile, "wtD") {
+      printf("#Generated with %s\n#from %s\n# at %s\n", argv[0], ImpSpiceSchematicAsc, t2string(time(), "dd-MM-yyyy hh:mm:ss"));
+
+      printf("%s", Imp_Cmd);
+      printf("DISPLAY NONE 91 92 94 95 96 97 98;\n");  // Display Layer 99 'SpiceOrder' off !
+    }
+    exit ("SCRIPT '"+ ScriptFile + "'");
+  }
+}
+/* ******************************
+ ******** main Diagnostic *******
+ ****************************** */
+else if (strupr(argv[1]) == "/?") { // 2013-10-01
+  string cntscrsetup;
+  sprintf(cntscrsetup,  "%d scripts", CntScr);
+  autosetupinfo("Diagnose", cntscrsetup);
+  exit(-4565);
+}
+
+dlgDialog("Help") {
+  dlgHBoxLayout dlgSpacing(800);
+  dlgHBoxLayout {
+    dlgVBoxLayout dlgSpacing(500);
+    dlgTextView(usage);
+  }
+  dlgHBoxLayout {
+    dlgStretch(1);
+    dlgPushButton("OK") dlgAccept();
+    dlgPushButton("LTspice Info") dlgMessageBox(LTspiceFormatInfo, "OK");
+    dlgStretch(1);
+  }
+};
+
+
+
+
+
+
+

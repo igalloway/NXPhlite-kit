@@ -1,0 +1,17 @@
+ Edit 'LTC3541.dev' ;
+ Prefix 'IC' ;
+ Description 'High Efficiency Buck + VLDO Regulator' ;
+ Value off ;
+ Add LTC3541 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.LVOUT' '5' ;
+ Connect 'G$1.LVIN' '6' ;
+ Connect 'G$1.VIN' '1' ;
+ Connect 'G$1.SW' '10' ;
+ Connect ALL 'G$1.GND' '7 11' ;
+ Connect 'G$1.LFB' '4' ;
+ Connect 'G$1.ENBUCK' '2' ;
+ Connect 'G$1.ENVLDO' '9' ;
+ Connect 'G$1.MODE' '8' ;
+ Connect 'G$1.BUCKFB' '3' ;

@@ -1,0 +1,18 @@
+ Edit 'LT3573.dev' ;
+ Prefix 'IC' ;
+ Description 'Isolated Flyback Converter without an Opto-Coupler' ;
+ Value off ;
+ Add LT3573 'G$1' next 0 (0 0) ;
+ Package 'MSOP16(MSE)' 'MSE' ;
+ Technology '' ;
+ Connect 'G$1.VC' '12' ;
+ Connect 'G$1.SS' '10' ;
+ Connect 'G$1.RREF' '14' ;
+ Connect 'G$1.VIN' '5' ;
+ Connect 'G$1.SW' '4' ;
+ Connect ALL 'G$1.GND' '2 17 8 9 16 3 1' ;
+ Connect 'G$1.BIAS' '6' ;
+ Connect 'G$1.!SHDN/UVLO' '7' ;
+ Connect 'G$1.RLIM' '11' ;
+ Connect 'G$1.TC' '15' ;
+ Connect 'G$1.RFB' '13' ;

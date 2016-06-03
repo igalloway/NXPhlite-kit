@@ -1,0 +1,14 @@
+ Edit 'LT3591.dev' ;
+ Prefix 'IC' ;
+ Description 'White LED Driver with Integrated Schottky in 3mm x 2mm DFN' ;
+ Value off ;
+ Add LT3591 'G$1' next 0 (0 0) ;
+ Package 'DFN8(DDB)' 'DDB' ;
+ Technology '' ;
+ Connect 'G$1.VIN' '1' ;
+ Connect 'G$1.SW' '4' ;
+ Connect ALL 'G$1.GND' '2 9' ;
+# Connect ALL 'G$1.NC' '6 3' ;
+ Connect 'G$1.LED' '7' ;
+ Connect 'G$1.CTRL' '8' ;
+ Connect 'G$1.CAP' '5' ;

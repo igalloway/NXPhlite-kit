@@ -1,0 +1,129 @@
+#usage "en:<b>Generates a Dummy Package for the currently displayed Device in the Library Editor </b>\n"
+       "<p>"
+       "For electro devices it has proved to be useful to use the same names for symbol pins and "
+       "package pads. This program generates a package that has identical pad/pin names."
+       "<p>"
+       "Start the ULP in the library editor window, after having created a device and "
+       "used the ADD command to add the symbol(s). A package will be created which has "
+       "the same name as the device and the pad names are identical with the pin names. "
+       "Connect pins und pads with the Connect command.<p>"
+       "<author>Author: alf@cadsoft.de</author>"
+       ,
+       "de:<b>Generiert ein Dummy-Package für das aktuell angezeigte Device im Bibliothekseditor</b>\n"
+       "<p>"
+       "Für Elektro-Bauteile empfiehlt es sich, dass Symbol-Pins und Package-Pads gleiche "
+       "Namen haben. Dieses Programm erzeugt ein Package mit identischen Pad-/Pin-Namen."
+       "<p>"
+       "Starten Sie das Programm im Bibliothekseditor, sobald Sie ein Device angelegt "
+       "und die Symbole mit dem Add-Befehl geholt haben. Es wird ein Package angelegt, "
+       "dessen Name dem des Device entspricht (falls noch nicht vorhanden) und dessen "
+       "Pads entsprechend den Pins benannt sind. Pins und Pads sind mit dem Connect-Befehl "
+       "verbunden.<p>"
+       "<author>Author: alf@cadsoft.de</author>"
+
+string Version = "1.0.2"; // 2012-03-23 Behandlung der Apostrophen in Pin/Pad-Namen berichtig.
+                          // 2013-01-25 Bei nur einem Gate den Gate-Namen nicht benutzen um die Pad-Namen zu erzeugen
+string cmd, concmd, s;
+string f;
+string PadName;
+string CurrentDevice;
+int    PackagePresent = 0;
+int    PADname;
+
+int test = 0;
+
+// Da der ganze String in ' eingeschlossen wird,
+// müssen die Apostrophen verdoppelt werden.
+string addApostroph(string name) {  // 2012-03-23
+  string t[];
+  int cnt = strsplit(t, name, '\''); // check Apostroph
+  if (cnt > 1) {
+    name = "";
+    for (int i = 0; i < cnt; i++) {
+      if (i == 0) {
+        if (t[i]) name += t[i];
+      }
+      else if (i) name += "''" + t[i];
+    }
+  }
+  return name;
+}
+
+if (deviceset) {
+  library(L) {
+    f = filename(L.name);
+    f = filesetext(f, "$$$.scr");
+    f = path_scr[0] + '/' + f;    // verwende Script-Pfad
+    deviceset(DS) {
+      CurrentDevice = DS.name;
+      DS.devices(D) {
+        if (!D.package && CurrentDevice == DS.name) {
+          sprintf(s, "EDIT %s.PAC;\n", DS.name);
+          cmd += s;
+          sprintf(s, "DESCRIPTION 'Dummy';\n");
+          cmd += s;
+          sprintf(s, "GRID MM; CHANGE DRILL 0.5; CHANGE DIAMETER 1.0;\n");
+          cmd += s;
+          sprintf(s, "EDIT %s.DEV;\n", DS.name);
+          concmd += s;
+          sprintf(s, "PAC '%s' '';\n", DS.name);
+          concmd += s;
+          int cntg = 0;
+          DS.gates(G) {
+            cntg++;
+          }
+          DS.gates(G) {
+            string gname = addApostroph(G.name);
+            if (cntg == 1) gname = ""; // 2013-01-25 bei nur einem Gate, nur den Pin-Namen beutzen.
+            G.symbol.pins(P) {
+              PadName = (P.name);
+              sprintf(s, "PAD '%s%s' (%.4f %.4f);\n",
+                           gname, addApostroph(PadName),
+                           u2mm(P.x),
+                           u2mm(P.y)-7.62
+                     );  // Pin-Offset im Device in Y-Richtung
+              cmd += s;
+              sprintf(s, "CONNECT '%s.%s' '%s%s';\n",
+                           addApostroph(G.name),
+                           addApostroph(P.name),
+                           gname,
+                           addApostroph(PadName)
+                     );
+              concmd += s;
+            }
+          }
+        }
+      }
+    }
+    L.packages(P) {
+      if (CurrentDevice == P.name) PackagePresent = 1;
+    }
+  }
+  cmd += concmd;
+  if (cmd && !PackagePresent) {
+    if (test) {
+      dlgDialog("Check") {
+        dlgHBoxLayout dlgSpacing(500);
+        dlgHBoxLayout {
+          dlgVBoxLayout dlgSpacing(500);
+          dlgTextEdit(cmd);
+        }
+        dlgHBoxLayout {
+          dlgPushButton("OK") dlgAccept();
+          dlgPushButton("Cancel") { dlgReject(); exit(-1); }
+        }
+      };
+    }
+    output(f, "wtD") printf("%s", cmd); // temporäre Script-Datei erzeugen
+    exit("SCRIPT '"+ f +"'");
+  }
+  else {
+    if (language() == "de") dlgMessageBox("Das Device besitzt schon ein Package, bzw. es existiert schon ein Package mit entsprechenden Namen.", "OK");
+    else dlgMessageBox("There is already a package defined for this device/package with this name already exists.", "OK");
+  }
+}
+
+else {
+  if (language() == "de") dlgMessageBox("Das ULP kann nur im Device-Editor (Bibliothek) benutzt werden!", "OK");
+  else dlgMessageBox("This ULP can be used in the Device Editor (Library) only!", "OK");
+}

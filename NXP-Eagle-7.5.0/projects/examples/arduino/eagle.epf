@@ -1,0 +1,36 @@
+[Eagle]
+Version="07 05 00"
+Globals="Globals"
+Desktop="Desktop"
+
+[Globals]
+AutoSaveProject=1
+
+[Win_1]
+Type="Control Panel"
+Loc="0 0 1005 768"
+State=2
+Number=0
+
+[Win_2]
+Type="Board Editor"
+Loc="80 65 884 688"
+State=2
+Number=1
+File="Arduino_MEGA2560_ref.brd"
+View="-15.2327 -17.1916 124.669 57.877"
+
+[Win_3]
+Type="Schematic Editor"
+Loc="137 117 941 740"
+State=2
+Number=2
+File="Arduino_MEGA2560_ref.sch"
+View="-6.44567 -77.6387 562.071 230.513"
+Sheet=1
+
+[Desktop]
+Screen="1024 768"
+Window="Win_1"
+Window="Win_2"
+Window="Win_3"

@@ -1,0 +1,18 @@
+ Edit 'LTC3454.dev' ;
+ Prefix 'IC' ;
+ Description '1A Synchronous Buck-Boost High Current LED Driver' ;
+ Value off ;
+ Add LTC3454 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.VC' '8' ;
+ Connect 'G$1.VOUT' '7' ;
+ Connect 'G$1.VIN' '9' ;
+ Connect 'G$1.GND' '11' ;
+ Connect 'G$1.SW1' '10' ;
+ Connect 'G$1.EN1' '1' ;
+ Connect 'G$1.SW2' '6' ;
+ Connect 'G$1.EN2' '2' ;
+ Connect 'G$1.LED' '5' ;
+ Connect 'G$1.ISET2' '4' ;
+ Connect 'G$1.ISET1' '3' ;

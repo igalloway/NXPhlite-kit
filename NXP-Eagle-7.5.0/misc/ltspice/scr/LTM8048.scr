@@ -1,0 +1,18 @@
+ Edit 'LTM8048.dev' ;
+ Prefix 'IC' ;
+ Description '3.1VIN to 32VIN Isolated uModule DC/DC Converter with LDO Post Regulator' ;
+ Value off ;
+ Add LTM8048 'G$1' next 0 (0 0) ;
+ Package 'BGA45(Y)' 'Y' ;
+ Technology '' ;
+ Connect 'G$1.BYP' 'B2' ;
+ Connect ALL 'G$1.VOUT-' 'C5 C4 C3 B5 B4 B3 A5 A4 A3' ;
+ Connect 'G$1.SS' 'H6' ;
+ Connect 'G$1.RUN' 'F3' ;
+ Connect ALL 'G$1.VIN' 'G1 G2 H1 H2' ;
+ Connect ALL 'G$1.GND' 'H7 H4 G6 G5 G4 F7 F6 F5 F4 E7 E6 E5 E4 E3 E2 E1' ;
+ Connect 'G$1.BIAS' 'H5' ;
+ Connect ALL 'G$1.VOUT2' 'C2 C1 B1 A1' ;
+ Connect ALL 'G$1.VOUT1' 'C7 C6 B7 B6 A7 A6' ;
+ Connect 'G$1.ADJ1' 'G7' ;
+ Connect 'G$1.ADJ2' 'A2' ;

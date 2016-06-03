@@ -1,0 +1,13 @@
+ Edit 'LTC3025-1.dev' ;
+ Prefix 'IC' ;
+ Description '500mA Micropower VLDO Linear Regulators' ;
+ Value off ;
+ Add LTC3025-1 'G$1' next 0 (0 0) ;
+ Package 'DFN6(DC)' 'DC' ;
+ Technology '' ;
+ Connect 'G$1.IN' '3' ;
+ Connect ALL 'G$1.GND' '7 2' ;
+ Connect 'G$1.OUT' '4' ;
+ Connect 'G$1.ADJ' '5' ;
+ Connect 'G$1.!SHDN' '6' ;
+ Connect 'G$1.BIAS' '1' ;

@@ -1,0 +1,14 @@
+ Edit 'LT3483A.dev' ;
+ Prefix 'IC' ;
+ Description 'Inverting Micropower DC/DC Converters with Schottky' ;
+ Value off ;
+ Add LT3483A 'G$1' next 0 (0 0) ;
+ Package 'DFN8(DC)' 'DC' ;
+ Technology '' ;
+ Connect 'G$1.D' '7' ;
+ Connect 'G$1.VIN' '5' ;
+ Connect 'G$1.SW' '4' ;
+ Connect ALL 'G$1.GND' '2 3 9' ;
+ Connect 'G$1.FB' '1' ;
+ Connect 'G$1.!SHDN' '8' ;
+# Connect 'G$1.NC' '6' ;

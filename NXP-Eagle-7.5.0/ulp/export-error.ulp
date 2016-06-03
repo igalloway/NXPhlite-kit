@@ -1,0 +1,484 @@
+#usage "de:Exportiert/speichert DRC & ERC Errors<p>"
+       "RUN export-errors [Save] [Filename]<br>"
+       "<author>author alf@cadsoft.de</author>"
+       ,
+       "en:Export/save DRC & ERC errors<p>"
+       "RUN export-errors [Save] [Filename]<br>"
+       "<author>author alf@cadsoft.de</author>"
+
+#require 7.01.03;
+string Version = "1.0.0"; // 2014-11-11 alf@cadsoft.de
+
+string HeaderErcErrors;
+string HeaderDrcErrors;
+
+string SaveErrorFileName = "";
+string Option1 = strupr(argv[1]);
+int    CntErrorInconsistenc = 0;
+
+int    Consistence = 0;
+string ExistSCHfile = "";
+string ExistBRDfile = "";
+string ErrorList[];
+int    CntError = 0;
+
+int    Debug = 0;
+
+/*
+Die Member layer und contours() sind nur im UL_BOARD Kontext und
+die Member area2, modulename, s1..s6 und sheet sind nur im UL_SCHEMATIC Kontext verfügbar.
+*/
+int    ErrBx1[], ErrBy1[], ErrBx2[], ErrBy2[]; // area UL_AREA nur im Board
+int    ErrSx1[], ErrSy1[], ErrSx2[], ErrSy2[]; // area2 UL_AREA nur im Schaltplan
+int    ErrCode[];      // Identifikations-Nummer
+string ErrDescription[];
+int    ErrLayer[];
+string ErrModulename[];
+string ErrS1[], ErrS2[], ErrS3[], ErrS4[], ErrS5[], ErrS6[];
+int    ErrSheet[];     // int Seitennummer
+string ErrSignature[]; // string (Signatur-String) state
+int    ErrState[];     // int (ERROR_STATE_...)
+int    ErrType[];      // int (ERROR_TYPE_...)
+int    ErrX[], ErrY[]; // int (Mittelpunkt)
+
+string ErrorState[], ErrorType[];
+  ErrorState[ERROR_STATE_ACTIVE]    = "error has not yet been approved or processed";
+  ErrorState[ERROR_STATE_APPROVED]  = "error has been approved";
+  ErrorState[ERROR_STATE_PROCESSED] = "	error has been processed";
+  ErrorType[ERROR_TYPE_NONE]        = "no error";
+  ErrorType[ERROR_TYPE_WARNING]     = "warning";
+  ErrorType[ERROR_TYPE_ERROR]       = "error";
+  ErrorType[ERROR_TYPE_CONSISTENCY] = "consistency error";
+
+  HeaderErcErrors  = "Consistency not checked (no board loaded)";
+
+if (language() == "de") {
+  ErrorState[ERROR_STATE_ACTIVE]    = "Fehler wurde weder bearbeitet, noch gebilligt";
+  ErrorState[ERROR_STATE_APPROVED]  = "Fehler wurde gebilligt";
+  ErrorState[ERROR_STATE_PROCESSED] = "Fehler wurde bearbeitet";
+  ErrorType[ERROR_TYPE_NONE]        = "kein Fehler";
+  ErrorType[ERROR_TYPE_WARNING]     = "Warnung";
+  ErrorType[ERROR_TYPE_ERROR]       = "Fehler";
+  ErrorType[ERROR_TYPE_CONSISTENCY] = "Konsistenz-Fehler";
+
+  HeaderErcErrors  = "Konsistenz nicht geprüft (kein Board geladen)";
+}
+
+
+string s;
+
+/* ### ERROR functions ### */
+void error_3(int sel) {
+  sprintf(s, "RUN ulpmessage 'Signatur:%s<br>Description:%s<br>Layer:%d<br>'",
+               ErrSignature[sel], ErrDescription[sel], ErrLayer[sel]
+         );
+  exit(s);
+}
+
+void  error_5(int sel) {
+  real x = u2mm(ErrSx2[sel]) - u2mm(ErrSx1[sel]);
+  real y = u2mm(ErrSy2[sel]) - u2mm(ErrSy1[sel]);
+  if (x < y) {
+    sprintf(s, "Win (%.8fmm %.8fmm);\nRUN ulpmessage 'der Abstand in x ist um %.8fmm zu klein.'",
+               u2mm(ErrX[sel]), u2mm(ErrY[sel]), x
+           );
+  }
+  else if (y < x) {
+    sprintf(s, "Win (%.8fmm %.8fmm);\nRUN ulpmessage 'der Abstand in y ist um %.8fmm zu klein.'",
+               u2mm(ErrX[sel]), u2mm(ErrY[sel]), y
+           );
+  }
+  else {
+    sprintf(s, "Win (%.8fmm %.8fmm);\nRUN ulpmessage 'der Abstand in x & y ist jeweils um %.8fmm zu klein.'",
+               u2mm(ErrX[sel]), u2mm(ErrY[sel]), y
+           );
+  }
+  exit(s);
+}
+
+void error_11(int sel) {
+  sprintf(s, "DISPLAY NONE %d;\nWINDOW (%.8fmm %.8fmm);\nCHANGE FONT Vector (%.8fmm %.8fmm);\nDISPLAY LAST;",
+               ErrLayer[sel],
+               u2mm(ErrX[sel]), u2mm(ErrY[sel]),
+               u2mm(ErrX[sel]), u2mm(ErrY[sel])
+         );
+  exit(s);
+}
+
+void  checkerror(int sel) {
+  int ecod = ErrCode[sel];
+  switch(ecod) {
+    case   1 : // Drill Size
+               break;
+    case   2 : // Drill Distance
+               break;
+    case   3 : // Width
+               break;
+    case   4 : // Dimension
+               break;
+    case   5 : // Clearance
+               break;
+    case   6 : // Restrict
+               break;
+    case   7 : // Keepout
+               break;
+    case   8 : // Angle
+               break;
+    case   9 : // Off Grid
+               break;
+    case  11 : // No Vector Font
+               break;
+    case  19 : // Overlap
+               break;
+    case 101 : // Nicht angeschlossener Pin
+               break;
+    case 102 : // SUPPLY-Pin überschrieben mit xxx
+               break;
+    case 103 : // NC-Pin IC3 xxxx verbunden mit xx
+               break;
+    case 104 : // POWER-Pin verbunden mit xxx
+               break;
+    case 105 : // Keine Pins an Netz xxx
+               break;
+    case 106 : // Nur ein Pin an Netz xxx
+               break;
+    case 107 : // Junction verbindet Netze xx und xx scheinbar
+               break;
+    case 108 : // Fehlende Junction in Netz xxx
+               break;
+    case 109 : // Nahe beieinander liegende, aber unverbundene Linien in Netz xx
+               break;
+    case 110 : // Nahe beeinander liegende, aber unverbundene Linien in Netzen xxx und xxx
+               break;
+    case 111 : // Netz xxx überlappt Pin
+               break;
+    case 112 : // Pins überlappen
+               break;
+    case 113 : // Part has no value
+               break;
+    case 115 : // Segment des Netzes XXX hat keine erkennbare Verbindung (z.B. Label, Bus oder Supply-Pin) zu anderen Segmenten des selben Netzes
+               break;
+    case 116 : // Pin an XXXX angeschlossen ohne Netz-Wire, Junction oder anderen Pin
+               break;
+    case 118 : // Netz benutzt durch Port xxx hat kein Label
+               break;
+    case 119 : // Es existiert kein Modul Netz für Port xxxx
+               break;
+    case 120 : // Bus A[0..15] überlappt Port
+               break;
+    case 121 : // Netz L1 überlappt Port
+               break;
+    case 201 : // SUPPLY-Pin überschrieben mit mehr als einem Signal
+               break;
+    case 202 : // not connected input pin
+               break;
+    case 205 : // no Supply-Pin for implizit Power pin
+               break;
+    case 206 : // Mehr als ein OUTPUT-Pin an Netz xx
+               break;
+    case 209 : // Nur INPUT-Pins an Netz xxx
+               break;
+    case 211 : // Netzname XXX ist im Bus xxxxxx nicht enthalten
+               break;
+    case 213 : // Direction 'io' von Port KB0 ist nicht kompatibel mit den Pins am Netz im Modul
+               break;
+    case 304 : // element not found on board
+               break;
+    case 305 : // part not found on schematic
+               break;
+    default  : sprintf(s, "Error-Code %d: unknown!", ecod);
+               dlgDialog("Error") {
+                 dlgHBoxLayout dlgSpacing(600);
+                 dlgStringEdit(ErrDescription[sel]);
+                 dlgLabel(s);
+                 dlgHBoxLayout {
+                   dlgStretch(1);
+                   dlgPushButton("+OK") dlgAccept();
+                   dlgPushButton("-CANCEL") { dlgReject(); exit(-1); }
+                   dlgStretch(1);
+                 }
+               };
+  }
+}
+
+/* *** normal functions *** */
+string checkexistfile(string existfile) {
+  string a[];
+  int cnt = fileglob(a, existfile);
+  if (cnt) return a[0];
+  return "";
+}
+
+void savefile(string sourcefilename, string editname) {
+  output(SaveErrorFileName, "wt") {
+    printf("#Exported from: \"%s\"\n#with %s Version %s\n", sourcefilename, filename(argv[0]), Version);
+    printf("#%s\n", EAGLE_SIGNATURE);
+    printf("#at:%s\n", t2string(time()) );
+    if (CntErrorInconsistenc) {
+      //if (ExistSCHfile) printf("%s\n",ExistSCHfile);
+      //if (ExistBRDfile) printf("%s\n",ExistBRDfile);
+      printf("%s\n", HeaderErcErrors);
+    }
+    else {
+      printf("%s\n", HeaderErcErrors);
+    }
+    for (int n = 0; n < CntError; n++) {
+      printf("%s\n", ErrorList[n]);
+    }
+  }
+}
+
+void saveerrors(string header, string sourcefilename, string errorfilename) {
+  string a[];
+  int fexist = fileglob(a, errorfilename);
+  int xl = 30 + strlen(errorfilename) * 5;
+
+  dlgDialog(header) {
+    dlgHBoxLayout dlgSpacing(xl);
+    dlgStringEdit(errorfilename);
+    dlgHBoxLayout {
+      if (fexist) {
+        if (language() == "de") {
+          dlgLabel("Datei existiert bereits... ");
+          dlgPushButton("Überschreiben") { dlgAccept(); savefile(sourcefilename, errorfilename); exit(0); }
+        }
+        else {
+          dlgLabel("File exist... ");
+          dlgPushButton("Overwrite") { dlgAccept(); savefile(sourcefilename, errorfilename); exit(0); }
+        }
+      }
+      else {
+        dlgPushButton("+OK") { dlgAccept(); savefile(sourcefilename, errorfilename); exit(0); }
+      }
+      dlgPushButton("+CANCEL") { dlgReject(); exit(-2); }
+      dlgStretch(1);
+    }
+  };
+}
+
+void saveerrdialog(string dialogheader, string listheader, string sourcefilename) {
+  string consistenceleader;
+  string consistencetrailer;
+  if (schematic) {
+    if (CntErrorInconsistenc) {
+      //if (ExistSCHfile) printf("%s\n",ExistSCHfile);
+      //if (ExistBRDfile) printf("%s\n",ExistBRDfile);
+    }
+    else {
+      consistenceleader = "<font color =\"red\"><b>";
+      consistencetrailer = "</b></font>";
+    }
+    if (Consistence) {
+      ExistSCHfile = "";
+      ExistBRDfile = "";
+      consistenceleader = "<font color =\"green\"><b>";
+      consistencetrailer = "</b></font>";
+    }
+  }
+  if (board) {
+    ExistSCHfile = "";
+    ExistBRDfile = "";
+    consistenceleader = "";
+    consistencetrailer = "";
+  }
+  dlgDialog(dialogheader) {
+    int sel = -1;
+    int srt = 0;
+    dlgHBoxLayout dlgSpacing(800);
+    if (ExistSCHfile) dlgLabel(ExistSCHfile);
+    if (ExistBRDfile) dlgLabel(ExistBRDfile);
+
+    dlgLabel(consistenceleader + HeaderErcErrors + consistencetrailer);
+
+    dlgHBoxLayout {
+      dlgVBoxLayout dlgSpacing(400);
+      dlgListView(listheader, ErrorList, sel, srt) checkerror(sel);
+    }
+    dlgHBoxLayout {
+      dlgStretch(1);
+      dlgPushButton("+OK") dlgAccept();
+      dlgPushButton("&Save") saveerrors("Save ERC-ERRORS", sourcefilename, SaveErrorFileName);
+      dlgStretch(1);
+    }
+  };
+}
+
+if (schematic) {
+  schematic(SCH) {
+    if (!SCH.checked) {
+      string msg = "Schematic is changed, first start Electrical Rule Check (ERC)!";
+      if (language() == "de") msg = "Der Schaltplan wurde verändert, starten sie zuerst den Electrical Rule Check!";
+      if (dlgMessageBox(msg, "OK", "CANCEL") != 0) exit(-3);
+      string cmd;
+      sprintf(cmd, "ERC; RUN '%s'", argv[0]);
+      exit (cmd);
+    }
+    ExistSCHfile = "SCH File loaded: \"" + SCH.name + "\"";
+    ExistBRDfile = "BRD File exist : \"" + checkexistfile(filesetext(SCH.name, ".brd")) + "\"";
+    if(project.board) {
+      Consistence = 1;
+      HeaderErcErrors = "Baord and schematic are consistent";
+      if (language() == "de") HeaderErcErrors = "Board und Schaltplan sind konsistent";
+    }
+    else Consistence = 0;
+
+    SCH.errors(E) {
+      if (E.type == ERROR_TYPE_CONSISTENCY) CntErrorInconsistenc++;
+      ErrSignature[CntError] = E.signature;
+      ErrSx1[CntError] = E.area.x1;
+      ErrSy1[CntError] = E.area.y1;
+      ErrSx2[CntError] = E.area.x2;
+      ErrSy2[CntError] = E.area.y2;
+      ErrBx1[CntError] = E.area2.x1;// Das Member area2 ist eine zweite UL_AREA, die nur im Schaltplan bei einzelnen ERC-Fehlern die entsprechende Region im Board angibt.
+      ErrBy1[CntError] = E.area2.y1;
+      ErrBx2[CntError] = E.area2.x2;
+      ErrBy2[CntError] = E.area2.y2;
+
+      ErrCode[CntError]  = E.code;
+      ErrDescription[CntError] = E.description;
+      ErrLayer[CntError] = E.layer;
+      ErrModulename[CntError] = E.modulename;
+      ErrS1[CntError] = E.s1;
+      ErrS2[CntError] = E.s2;
+      ErrS3[CntError] = E.s3;
+      ErrS4[CntError] = E.s4;
+      ErrS5[CntError] = E.s5;
+      ErrS6[CntError] = E.s6;
+
+      ErrX[CntError]     = E.x;
+      ErrY[CntError]     = E.y;
+      ErrSheet[CntError] = E.sheet;
+      ErrState[CntError] = E.state;
+      ErrType[CntError] = E.type;
+      if (Debug) checkerror(CntError);
+      sprintf(ErrorList[CntError], "%s\t%s\t%d\t%s\t%s\t%s\t%d\t%d\t%d\t%d",
+              ErrorType[E.type],
+              E.description,
+              E.sheet,
+              E.modulename,
+              E.signature,
+              ErrorState[E.state],
+              ErrSx1[CntError],
+              ErrSy1[CntError],
+              ErrSx2[CntError],
+              ErrSy2[CntError]
+             );
+      CntError++;
+    }
+    if (CntErrorInconsistenc) {
+      sprintf(HeaderErcErrors, "Consistence Error(%d).", CntErrorInconsistenc);
+      if (language() == "de") sprintf(HeaderErcErrors, "Konsistenzfehler (%d)", CntErrorInconsistenc);
+    }
+    else {
+      if (Consistence) {
+        HeaderErcErrors = "Board and Schematic are consistent.";
+        if (language() == "de") HeaderErcErrors = "Board und Schematic sind konsistent";
+      }
+    }
+
+    if (Option1 == "SAVE") {
+      if (!argv[2]) {
+        SaveErrorFileName = filesetext(SCH.name, ".erc.err");
+        saveerrors("Save ERC-ERRORS", SCH.name, SaveErrorFileName);
+      }
+      else {
+        SaveErrorFileName = argv[2];
+      }
+      savefile(SaveErrorFileName, SCH.name);
+    }
+    else {
+      SaveErrorFileName = filesetext(SCH.name, ".erc.err");
+      string listheader = "Type\tDesciption\tSheet\tModul\tSignatur\tState\tAreaX1\tAreaY1\tAreaX2\tAreaY2";
+      if (language() == "de") listheader = "Type\tBeschreibung\tSeite\tModul\tSignatur\tStatus\tAreaX1\tAreaY1\tAreaX2\tAreaY2";
+      saveerrdialog("ERRORS ERC)", listheader, SCH.name);
+    }
+  }
+}
+
+else if (board) {
+  board(BRD) {
+    if (!BRD.checked) {
+      string msg = "Board is changed, first start Design Rile Check (DRC)!";
+      if (language() == "de") msg = "Board wurde verändert, starten sie zuerst den Design Rule Check! (DRC)";
+      if (dlgMessageBox(msg, "OK", "CANCEL") != 0) exit(-4);
+
+      string cmd;
+      sprintf(cmd, "DRC; RUN '%s'", argv[0]);
+      exit (cmd);
+    }
+    ExistBRDfile = "BRD File loaded: " + BRD.name;
+    ExistSCHfile = "SCH File exist : " + checkexistfile(filesetext(BRD.name, ".sch"));
+
+    if(project.schematic) {
+      Consistence = 1;
+    }
+    else Consistence = 0;
+    BRD.errors(E) {
+      ErrSignature[CntError] = E.signature;
+      ErrSx1[CntError] = E.area.x1;
+      ErrSy1[CntError] = E.area.y1;
+      ErrSx2[CntError] = E.area.x2;
+      ErrSy2[CntError] = E.area.y2;
+      ErrBx1[CntError] = E.area2.x1;// Das Member area2 ist eine zweite UL_AREA, die nur im Schaltplan bei einzelnen ERC-Fehlern die entsprechende Region im Board angibt.
+      ErrBy1[CntError] = E.area2.y1;
+      ErrBx2[CntError] = E.area2.x2;
+      ErrBy2[CntError] = E.area2.y2;
+
+      ErrCode[CntError]  = E.code;
+      ErrDescription[CntError] = E.description;
+      ErrLayer[CntError] = E.layer;
+      ErrModulename[CntError] = E.modulename;
+      ErrS1[CntError] = E.s1;
+      ErrS2[CntError] = E.s2;
+      ErrS3[CntError] = E.s3;
+      ErrS4[CntError] = E.s4;
+      ErrS5[CntError] = E.s5;
+      ErrS6[CntError] = E.s6;
+
+      ErrX[CntError]     = E.x;
+      ErrY[CntError]     = E.y;
+      ErrSheet[CntError] = E.sheet;
+      ErrState[CntError] = E.state;
+      ErrType[CntError] = E.type;
+      if (Debug) checkerror(CntError);
+      sprintf(ErrorList[CntError], "%s\t%s\t%d\t%s\t%s\t%d\t%d\t%d\t%d\t%s",
+              ErrorType[E.type],
+              E.description,
+              E.layer,
+              E.signature,
+              ErrorState[E.state],
+              ErrSx1[CntError],
+              ErrSy1[CntError],
+              ErrSx2[CntError],
+              ErrSy2[CntError],
+              ""
+             );
+      CntError++;
+    }
+    sprintf(HeaderErcErrors, "Error (%d)", CntError);
+    if (language() == "de") sprintf(HeaderErcErrors, "Fehler (%d)", CntError);
+
+    if (Option1 == "SAVE") {
+      if (!argv[2]) {
+        SaveErrorFileName = filesetext(BRD.name, ".drc.err");
+        saveerrors("Save DRC-ERRORS", BRD.name, SaveErrorFileName);
+      }
+      else {
+        SaveErrorFileName = argv[2];
+      }
+      savefile(SaveErrorFileName, BRD.name);
+    }
+    else {
+      SaveErrorFileName = filesetext(BRD.name, ".drc.err");
+      string listheader = "Type\tDesciption\tLayer\tSigatur\tState\tAreaX1\tAreaY1\tAreaX2\tAreaY2";
+      if (language() == "de") listheader = "Type\tBeschreibung\tLayer\tSigatur\tStatus\tAreaX1\tAreaY1\tAreaX2\tAreaY2";
+      saveerrdialog("ERRORS DRC", listheader, BRD.name);
+    }
+  }
+}
+
+else {
+  dlgMessageBox("Start this ULP in a schematic or board.", "OK");
+  exit(0);
+}
+

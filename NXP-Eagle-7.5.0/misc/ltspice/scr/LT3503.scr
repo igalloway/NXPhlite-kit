@@ -1,0 +1,13 @@
+ Edit 'LT3503.dev' ;
+ Prefix 'IC' ;
+ Description '1A, 2.2MHz Step-Down Switching Regulator in 2mm x 3mm DFN' ;
+ Value off ;
+ Add LT3503 'G$1' next 0 (0 0) ;
+ Package 'DFN6(DCB)' 'DCB' ;
+ Technology '' ;
+ Connect 'G$1.VIN' '5' ;
+ Connect 'G$1.SW' '4' ;
+ Connect ALL 'G$1.GND' '7 2' ;
+ Connect 'G$1.FB' '1' ;
+ Connect 'G$1.!SHDN' '6' ;
+ Connect 'G$1.BOOST' '3' ;

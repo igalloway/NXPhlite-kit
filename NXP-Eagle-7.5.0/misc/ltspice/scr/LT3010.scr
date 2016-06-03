@@ -1,0 +1,13 @@
+ Edit 'LT3010.dev' ;
+ Prefix 'IC' ;
+ Description '50mA, 3V to 80V Low Dropout Micropower Linear Regulator' ;
+ Value off ;
+ Add LT3010 'G$1' next 0 (0 0) ;
+ Package 'MSOP8(MS8E)' 'MS8E' ;
+ Technology '' ;
+ Connect 'G$1.VIN' '8' ;
+ Connect ALL 'G$1.GND' '9 4' ;
+ Connect 'G$1.OUT' '1' ;
+ Connect 'G$1.ADJ' '2' ;
+ Connect 'G$1.!SHDN' '5' ;
+# Connect ALL 'G$1.NC' '3 6 7' ;

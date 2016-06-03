@@ -1,0 +1,17 @@
+ Edit 'LT3750.dev' ;
+ Prefix 'IC' ;
+ Description 'Capacitor Charger Controller' ;
+ Value off ;
+ Add LT3750 'G$1' next 0 (0 0) ;
+ Package 'MSOP10(MS)' 'MS' ;
+ Technology '' ;
+ Connect 'G$1.VTRANS' '1' ;
+ Connect 'G$1.SOURCE' '6' ;
+ Connect 'G$1.!DONE' '2' ;
+ Connect 'G$1.RVOUT' '9' ;
+ Connect 'G$1.RDCM' '8' ;
+ Connect 'G$1.VCC' '4' ;
+ Connect 'G$1.GND' '5' ;
+ Connect 'G$1.CHARGE' '3' ;
+ Connect 'G$1.RBG' '10' ;
+ Connect 'G$1.GATE' '7' ;

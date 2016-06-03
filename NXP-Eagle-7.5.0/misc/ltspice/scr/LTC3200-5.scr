@@ -1,0 +1,13 @@
+ Edit 'LTC3200-5.dev' ;
+ Prefix 'IC' ;
+ Description 'Low Noise, Regulated Charge Pump DC/DC Converters' ;
+ Value off ;
+ Add LTC3200-5 'G$1' next 0 (0 0) ;
+ Package 'SOT6(S6)' 'S6' ;
+ Technology '' ;
+ Connect 'G$1.VOUT' '1' ;
+ Connect 'G$1.VIN' '5' ;
+ Connect 'G$1.GND' '2' ;
+ Connect 'G$1.!SHDN' '3' ;
+ Connect 'G$1.CAP+' '6' ;
+ Connect 'G$1.CAP-' '4' ;

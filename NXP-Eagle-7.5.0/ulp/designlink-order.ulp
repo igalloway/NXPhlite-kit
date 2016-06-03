@@ -1,0 +1,603 @@
+#usage "en: <b>DesignLink Search and Order</b>\n"
+            "<p>"
+            "With this ULP you can do a general product search or a search for all parts "
+            "of your schematic, check price and availability and order directly at Farnell. "
+            "Found order codes can be saved as attributes. "
+            "The order list can be exported."
+            "<p>"
+            "Usage: run designlink-order [-general]|[-sop]"
+            "<p>"
+            "Options:<br>"
+            "<table>"
+            "<tr><td><i>-general</i></td><td>General product search. Without this option search is done "
+                                            "for all parts of a schematic.</td></tr>"
+            "<tr><td><i>-sop</i></td><td>Search option package. By default, for a product search the part "
+                                        "value is used. With this option value and package name are used.</td></tr>"
+            "</table>"
+            "<p>"
+            "<author>Author: support@cadsoft.de</author><p>",
+       "de: <b>DesignLink Suche und Bestellung</b>\n"
+            "<p>"
+            "Mit diesem ULP können Sie eine allgemeine Produktsuche oder eine Suche für "
+            "alle Bauteile Ihres Schaltplans durchführen, Preis und Verfügbarkeit prüfen "
+            "und direkt bei Farnell bestellen. "
+            "Gefundene Ordercodes können als Attribute gespeichert werden. "
+            "Die Bestelliste kann exportiert werden."
+            "<p>"
+            "Usage: run designlink-order [-general]|[-sop]"
+            "<p>"
+            "Optionen:<br>"
+            "<table>"
+            "<tr><td><i>-general</i></td><td>Allgemeine Produktsuche. Ohne diese Option erfolgt die "
+                                            "Suche für alle Bauteile eines Schaltplans.</td></tr>"
+            "<tr><td><i>-sop</i></td><td>Search option package. Für die Produktsuche zu einem Bauteil wird "
+                                        "standardmässig der Value verwendet. Mit dieser Option wird mit "
+                                        "Value und Packagebezeichnung gesucht.</td></tr>"
+            "</table>"
+            "<p>"
+            "<author>Autor: support@cadsoft.de</author><p>"
+
+// THIS PROGRAM IS PROVIDED AS IS AND WITHOUT WARRANTY OF ANY KIND, EXPRESSED OR IMPLIED
+
+#require 7.0101  // uses UL_PART.module* members
+
+#include "designlink-inc.ulp"
+
+string Version = "1.0.7"; // 2010-08-13: Part of beta 5.10.1
+                          // 2010-08-24: Checkbox Ordercode speichern
+                          // 2010-08-30: Value und Package in Liste mit TAB getrennt, nicht mehr mit " "
+                          //             clipDeviceDescription, nur Headerzeile anzeigen
+
+if (DIVersion != Version)
+  dlgMessageBox(tr("Verschiedene Versionen von ") + filename(argv[0]) + " (" + Version + ") " +
+                tr("und Include ") + "designlink-inc.ulp (" + DIVersion + ") !\n");
+
+string SchPartName[];      // name, sheet, coordinates of every part to save attributes into schematic
+numeric string SchPartSheet[]; // string needed for sorting
+
+int    Icnt = 0;
+
+int    CntSchPart = 0;
+string SchParts[];         // the collected parts, value:partname+sheet \t partname...
+string SchPartModule[];    // The part's module (if any)
+string SchPartModPart[];   // The part's corresponding part in module
+string SchPartValue[];
+string SchPartPackage[];
+string SchPartDescription[]; // The part's device description
+int    SchQuantPart[];
+string SchFilename;
+string OrderCode[];
+string OrderCodes[];
+
+string SchPartAttOC[];        // the existing Farnell or Newark order code
+string SchPartAttMF[];        // the existing Manufacturer name
+string SchPartAttMPN[];       // the existing Manufacturer Part Number
+int    PCBcount = 1;          // PCB multiplyer
+int    CntBasketLines = 0;    // positions to order
+int    CntInStock = 0;
+string NrPositions;
+numeric string PartCode[];
+string PartCodeHeader = tr("Anzahl\tValue\tPackage\tOrdercode\tHersteller\tHerstellercode\tVerfügbarkeit\tPreis (ab)\tBeschreibung"); // 2020-08-27 "/" zu TAB geändert Value\tPackage
+
+// Debug stuff
+void DbgWriteCode(string scode, int index) {
+  output(DIDbgFile, "wt")
+    for (int nw = 0; nw < DINrProductsInList; nw++) {
+      printf("%s\n", DIProductList[nw]);
+    }
+  return;
+}
+
+void DbgWritePartCode(void) {
+  output(DIDbgFile, "wt") {
+    printf("\n");
+    printf("%s\n", PartCodeHeader);
+    for (int n = 0; n < CntSchPart; n++) {
+      printf("%s\n", PartCode[n]);
+    }
+    printf("*end*");
+  }
+  return;
+}
+// End Debug stuff
+
+/************** Functions ****************************************************************/
+string GetBasket() {  // 2010-08-09 alf
+  string basket;
+  CntBasketLines = 0;
+  CntInStock = 0;
+  string firsttilde = "";
+  string s[];
+  for (int n = 0; n < CntSchPart; n++) {
+    // WSP: Könnte man nicht alleine mit PartCode arbeiten ?
+    int cnt = strsplit(s, PartCode[n], '\t');
+    int partcnt = strtol(s[0]);
+    int availcnt = strtol(s[6]);               // 2010-08-30
+    // Wenn ein Code vorhanden ist
+    if (OrderCode[n] && OrderCode[n] != DIUnknown) {
+      CntBasketLines++;
+      // Bestellen, wenn das Produkt auf Lager ist !
+      if (availcnt > 0) {
+        CntInStock++;
+        string h;
+        sprintf(h, "%s%s~%d", firsttilde, OrderCode[n], partcnt);
+        basket += h;
+        firsttilde = "~";
+      }
+    }
+  }
+  sprintf(NrPositions, "%s%d   %s%d   %s%d",
+                        tr("Anzahl Positionen: "), CntSchPart,
+                        tr("Mit Ordercodes: "), CntBasketLines,
+                        tr("Auf Lager: "), CntInStock
+         );
+  string xbasket;
+  sprintf(xbasket, "<b><a href=\"http://%s/jsp/extlink.jsp?action=buy&product=%s~\\&CMP=GRHB-CADSOFT\">%s </b>",
+          DIShoppingURL, basket, tr("Zum Warenkorb hinzufügen"));
+  return xbasket;
+}
+
+
+string GetShoppingURL() {
+  string url, order_str = "";
+  if (DIProductSel >= 0) {
+    string s[];
+    strsplit(s, DIProductList[DIProductSel], '\t');
+    order_str = s[0] + "~1";  // Only one piece
+  }
+  sprintf(url, "<b><a href=\"http://%s/jsp/extlink.jsp?action=buy\&product=%s~\\&CMP=GRHB-CADSOFT\">%s</b>",
+          DIShoppingURL, order_str, tr("Selektion zum Warenkorb hinzufügen"));
+  return url;
+}
+
+
+string GetDescription(int idx) {
+  string description = "<b> Value: </b>" + (SchPartValue[idx] ? SchPartValue[idx] : "---") + "   " +
+                       "<b> Package: </b>" + (SchPartPackage[idx] ? SchPartPackage[idx] : "---");
+  if (SchPartDescription[idx]) description += "<br>" + SchPartDescription[idx];
+  return description;
+}
+
+// Replace the Quantity with the multiple of number of pcbs
+void UpdateQuantity(int nr_pcbs) {
+  for (int i = 0; i < CntSchPart; i++) {
+    string s[];
+    int cnt = strsplit(s, PartCode[i], '\t');
+    sprintf(PartCode[i], "%d", SchQuantPart[i] * nr_pcbs);
+    for (int j = 1; j < cnt; j++)
+      PartCode[i] += "\t" + s[j];
+  }
+  return;
+}
+
+
+int NewSearch(int point) {
+  DISkipRem = 0; // reset DISkipRem
+  string s[];
+  int cnts = strsplit(s, PartCode[point], '\t');
+  Clear();
+
+  string farnell_part = SingleSearch(DIModeNewSearch, DICompany + " DesignLink " + tr("Bauteilsuche für ") + SchFilename,
+                                     GetDescription(point), "", DISearchByOC, s[3],
+                                     (s[3] == DIUnknown) ? SchPartValue[point] : s[3]); // Initially suggest part value for search if OC is unknown
+  // Cancel: Nothing to do. Reset Flag.
+  if (DICancelSearch) {
+    DICancelSearch = 0;
+    return 0;
+  }
+  else if (farnell_part != "") {
+    string o[];
+    strsplit(o, farnell_part, '\t');
+    OrderCode[point] = o[0];
+    SchPartAttOC[point] = o[0];
+    sprintf(PartCode[point], "%d\t%s\t%s\t%s\t%s",
+                             SchQuantPart[point] * PCBcount,
+                             SchPartValue[point],
+                             SchPartPackage[point],
+                             farnell_part,
+                             SchParts[point]
+           );
+  }
+  else {
+    OrderCode[point] = DIUnknown;
+    SchPartAttOC[point] = DIUnknown;
+    sprintf(PartCode[point], "%d\t%s\t%s\t%s\t\t\t\t\t\t%s",           // 2010-08-27
+                             SchQuantPart[point] * PCBcount,
+                             SchPartValue[point],
+                             SchPartPackage[point],
+                             SchPartAttOC[point],
+                             SchParts[point]
+           );
+  }
+  return 0;
+}
+
+
+void GetOrderCode(void) {
+  DIAdvice = "\n <b>" + tr("Bitte manuell suchen oder Part überspringen !") + "<b>\n";  // If no result
+  string actVal = "";
+  string actPac = "";
+  string s[];
+  string description = "";
+  for (int n = 0; n < CntSchPart; n++) {
+    Clear();
+    string farnell_part = "";
+    string sch_key = (SchPartValue[n]) ? SchPartValue[n] : SchPartPackage[n]; // Fall, dass Value leer beachten !
+    if (DISearchOptPac && SchPartValue[n] && SchPartPackage[n]) sch_key += " " + SchPartPackage[n];  // 2010-08-28 aus Space muss später TAB werden
+    if (!SchPartAttOC[n]) {
+
+      // Do the actual Search (if the user doesn't want to skip the rest)
+      status(tr("Suche") + " " + sch_key);
+      if (!DISkipRem) {
+        farnell_part = SingleSearch(DIModeInitSearch, DICompany + " DesignLink " + tr("Bauteilsuche für ") + SchFilename,
+                                    GetDescription(n), "", DISearchByKeyword, sch_key, sch_key);
+      }
+      strsplit(s, farnell_part, '\t');
+
+      if (DIDebug) output(DIDbgFile, "wt") printf("\n%s\n", sch_key);
+      OrderCode[n] = s[0]; // farnell order code
+      if (!farnell_part) {
+        OrderCode[n] = DIUnknown;
+        sprintf(PartCode[n], "%d\t%s\t%s\t%s\t\t\t\t\t\t%s",    // 2010-08-27 es wird immer Value und Package aus dem SCH benutzt
+                              SchQuantPart[n], SchPartValue[n], SchPartPackage[n], OrderCode[n], SchParts[n]
+               );
+      }
+      else {
+        sprintf(PartCode[n], "%d\t%s\t%s\t%s\t%s",            // 2010-08-27 es wird immer Value und Package aus dem SCH benutzt
+                              SchQuantPart[n], SchPartValue[n], SchPartPackage[n], farnell_part, SchParts[n]
+               );
+      }
+      if (DIDebug) DbgWriteCode(sch_key, n);
+    }
+    else { // 2010-08-05 if order code exists, fill line
+      if (SchPartAttOC[n] == DIUnknown) {
+        sprintf(PartCode[n], "%d\t%s\t%s\t%s\t\t\t\t\t\t%s",  // 2010-08-28 space zu TAB geändert
+                                 SchQuantPart[n],
+                                 SchPartValue[n], SchPartPackage[n],
+                                 SchPartAttOC[n],
+                                 SchParts[n]
+               );
+      }
+      else {
+        status(tr("Prüfe Preis und Verfügbarkeit: ") + SchPartAttOC[n]);  // to see eagle/ulp is running
+        farnell_part = SingleSearch(DIModeInitSearch, DICompany + " DesignLink " + tr("Bauteilsuche für ") + SchFilename,
+                                    GetDescription(n), "", DISearchByOC, SchPartAttOC[n], SchPartAttOC[n]);
+        // Normal case: Search by OC was successful, the part is returned
+        // Special case: The OC is not (no longer) valid.
+        // The user can choose s.th. by manual search. We take this instead.
+        // Or if he skips the part, set the stuff to "unknown"
+        if (farnell_part) {
+          strsplit(s, farnell_part, '\t');
+          OrderCode[n] = s[0];
+          SchPartAttOC[n] = s[0];
+          sprintf(PartCode[n], "%d\t%s\t%s\t%s\t%s",  // 2010-08-27 space zu TAB geändert
+                               SchQuantPart[n], SchPartValue[n], SchPartPackage[n], farnell_part, SchParts[n]
+                 );
+        }
+        else {
+          OrderCode[n] = DIUnknown;
+          SchPartAttOC[n] = DIUnknown;
+          sprintf(PartCode[n], "%d\t%s\t%s\t%s\t%s\t%s\t\t\t\t%s",  // 2010-08-27 Space zu TAB geändert
+                               SchQuantPart[n],
+                               SchPartValue[n], SchPartPackage[n],
+                               SchPartAttOC[n],
+                               SchPartAttMF[n],
+                               SchPartAttMPN[n],
+                               SchParts[n]
+                 );
+        }
+      }
+    }
+  }
+  DISkipRem = 0; // Reset after run through all parts is finished
+  return;
+}
+
+string SaveAttributes() { // 2010-08-09 alf
+  string cmd, h;
+
+  // Display of attributes. Useful feature. Do we add that ?
+  // => Too much stuff visible. Texts cover each other
+  // CHANGE DISPLAY OFF | VALUE | NAME | BOTH
+  //string attdisplay[] = { "OFF", "VALUE", "NAME", "BOTH" };
+  //int attdisplayoption = 0;
+  //dlgDialog(filename(argv[0])) {
+  //  dlgGroup(tr("Attribute - Anzeigeoptionen")) {
+  //    dlgRadioButton(tr("&Keine Anzeige"), attdisplayoption);
+  //    dlgRadioButton(tr("&Wert anzeigen"), attdisplayoption);
+  //    dlgRadioButton(tr("&Name anzeigen"), attdisplayoption);
+  //    dlgRadioButton(tr("Wert &und Name anzeigen"), attdisplayoption);
+  //  }
+  //  dlgHBoxLayout {
+  //    dlgStretch(1);
+  //    dlgPushButton("+OK") dlgAccept();
+  //    dlgStretch(1);
+  //  }
+  //};
+
+  // We turn off visibility of attributes
+  cmd += "CHANGE DISPLAY OFF;\n";
+
+  int index[];
+  // Sortiert nach Modul, dann nach Sheet, dann nach Partname. reduziert lediglich das Herumspringen beim Speichern.
+  sort(CntSchPart, index , SchPartModule, SchPartSheet, SchParts);
+  for (int n = 0; n < CntSchPart; n++) {
+    string l[]; // split line
+    int cntl = strsplit(l, PartCode[index[n]], '\t'); // 2010-08-27  s[1] is the value, s[2] is the package
+    string r[]; // split row
+    int cntr = strsplit(r, l[cntl-1], ' ');
+    for (int np = 0; np < cntr; np++) {
+      for (int i = 0; i < Icnt; i++) {
+        if (SchPartName[i] == r[np]) {
+           // Bei einem hierarchischen Part muß ins Modul gegangen werden und das entspr. Part im Modul behandelt werden !
+           string pname = (SchPartModule[i] == "") ? SchPartName[i] : SchPartModPart[i];
+           // 0=Quant., 1=Value, 2=Package, 3=Ordercode Farnell, 4=Manufacturer Name, 5=Manuf. Code, 6=Verfügbarkeit, 7=Preis, 8=Beschreibung, 8=Value, 9=Partnames
+           sprintf(h, "EDIT %s.%s%s;\n", SchPartModule[i], (SchPartModule[i] == "") ? "s" : "m", SchPartSheet[i]); cmd += h;
+           sprintf(h, "ATTRIBUTE %s %s '%s';\n", pname, DIAttOC, l[3]); cmd += h;
+           sprintf(h, "ATTRIBUTE %s %s '%s';\n", pname, DIAttMF, l[4]); cmd += h;
+           sprintf(h, "ATTRIBUTE %s %s '%s';\n", pname, DIAttMPN, l[5]); cmd += h;
+           break;
+        }
+      }
+    }
+  }
+  cmd += "WRITE;\n";
+
+//  //Debug stuff for checking command sequence
+//  dlgDialog(tr("Rückgabe Script")) {
+//    dlgHBoxLayout dlgSpacing(800);
+//    dlgHBoxLayout {
+//      dlgVBoxLayout dlgSpacing(600);
+//      dlgTextEdit(cmd);
+//    }
+//    dlgHBoxLayout {
+//      dlgStretch(1);
+//      dlgPushButton(tr("OK")) dlgAccept();
+//      dlgPushButton(tr("CANCEL")) { dlgReject(); exit(-2); }
+//      dlgStretch(1);
+//    }
+//  };
+  return cmd;
+}
+
+
+string clipDeviceDescription(string partdescription) {
+  int pos = strstr(partdescription, "<p>");
+  if (pos > 0) {
+    return strsub(partdescription, 0, pos);  // 2010-08-30 nur headerzeile anzeigen
+  }
+  return partdescription;
+}
+
+
+//---Here we go: Main section---------------------------------
+
+// Get arguments if any
+int OptGeneral = 0;  // Means general search => Extended "old" DL interface is launched
+for (int i = 1; i <= argc; ++i) {
+  if (argv[i] == "-sop") DISearchOptPac = 1;
+  if (argv[i] == "-general") OptGeneral = 1;
+}
+
+// Init stuff
+InitCountryData();
+InitCfg();
+// ------------ Schematic Part --------------------
+if (schematic && (!OptGeneral)) {
+  // Keep help here locally "
+  string help[] = {
+    "<b>Bestellliste</b><br>"
+    "Die Bestellliste ist eine Stückliste all Ihrer Bauteile, die Sie für die "
+    "Fertigung der Leiterplatte benötigen. Je nach vorheriger Suche und Auswahl "
+    "sind den einzelnen Positionen Farnell-Artikel mit Ordercodes zugeordnet. "
+    "Per Doppelklick auf die einzelnen Positionen gelangen Sie zur Detailansicht "
+    "der Artikel und können mit manueller Suche und Auswahl diese "
+    "nochmal ändern oder rückgängig machen. Auf dieselbe Art können Sie auch für Bauteile, "
+    "denen Sie noch keinen Farnell-Artikel zugeordnet haben, eine Auswahl treffen. "
+    "Sie können für Ihre Bestellung eine beliebige Anzahl von Leiterplatten vorgeben "
+    "(in entprechendes Feld eingeben, <i>Aktualisieren</i> drücken). <br>"
+    "Mit dem Link <i>Zum Warenkorb hinzufügen</i> "
+    "gelangen Sie schliesslich zur landesspezifischen Einkaufsseite von Farnell, "
+    "wo alle entsprechenden Produkte in einen Warenkorb gelegt werden, "
+    "soweit Sie auf Lager sind.<br>"
+    "Alles Weitere (Bestellung, Bezahlung) können Sie dort erledigen."
+    "<p><b>Ordercodes speichern, Bestellliste exportieren</b><br>"
+    "Wollen Sie die Ordercodes zu einem späteren Zeitpunkt wiederverwenden, "
+    "z.B. nachdem Sie Änderungen am Schaltplan vorgenommen haben, "
+    "können Sie diese durch Ankreuzen der entsprechenden Checkbox im Schaltplan speichern. "
+    "Beim nächsten Bestellvorgang brauchen Sie dann nur noch Produkte für die neuen "
+    "Bauteile auszusuchen.<br>"
+    "Verwenden Sie Bauteile aus Hersteller-Bibliotheken, die bereits mit Farnell-Ordercodes "
+    "versehen sind, erübrigt sich auch diese Suche. Die entsprechenden Farnell-Artikel werden "
+    "automatisch in die Bestellliste aufgenommen. <br>"
+    "Sie können die Bestellliste auch als Textdatei exportieren, z.B. zur Weiterverarbeitung "
+    "in anderen Systemen."
+    ,
+    "<b>Order list</b><br>"
+    "The order list is a list of all the parts that you need for manufacturing your PCB. "            +
+    "The individual positions are related to " + DICompany + " articles with order codes, "             +
+    "depending on your previous search and selection. By doubleclicking the items you get a "         +
+    "detail view, can change them once more by manual search and selection or cancel the "                +
+    "previous selection. "                                                                            +
+    "The same way you can make a choice for parts that have not been assigned " + DICompany + " articles yet. " +
+    "You can specifiy the number of PCBs for your order (enter in according field, press "            +
+    "<i>update</i>).<br>"                                                                             +
+    "Pressing the link <i>add to shopping cart</i> directs you to " + DICompany +"'s country specific "        +
+    "shopping site and all your products are put into a shopping cart, depending on availability. "   +
+    "You can finish all further steps (order, payment) on this site. "                                +
+    "<p><b>Saving the order codes</b><br>"                                                            +
+    "If you want to reuse the order codes later, e.g. after changes of the schematic, you can "       +
+    "save them to schematic with the according checkbox. <br>"                                        +
+    "Next time you order, you just need to select the articles for the new parts.<br>"                +
+    "If you use parts from manufacturer libraries with " + DICompany + " order codes this selection "           +
+    "is also not necessary. The related articles are taken automatically to the order list.<br>"
+    "You can also export the order list as a text file, e.g. for processing in other systems."
+  };
+  // We don't use those flags here.
+  DIInStock = 0;
+  DIRoHS = 0;
+  int saveatt = 1;     // Flag for option save the attributes
+  schematic(SCH) {
+    SchFilename = filename(SCH.name);
+    Icnt = 0;
+    SCH.allparts(P) {
+       if (P.device.package) {
+          // For virtual parts get the module name and module part's name
+          if (P.modulepart) {
+            SchPartModule[Icnt] = P.module.name;
+            SchPartModPart[Icnt] = P.modulepart.name;
+            P.modulepart.instances(I) {
+              sprintf(SchPartSheet[Icnt], "%d", I.sheet);
+              if (I.sheet != 0) break;
+            }
+          }
+          else
+            P.instances(I) {
+              sprintf(SchPartSheet[Icnt], "%d", I.sheet);
+              if (I.sheet != 0) break;
+            }
+          SchPartName[Icnt] = P.name;
+          Icnt++;
+          int found = 0;
+          for (int n = 0; n < CntSchPart; n++)
+              if (P.value == SchPartValue[n] && P.device.package.name == SchPartPackage[n]) {
+                 SchQuantPart[n]++;
+                 SchParts[n] += " " + P.name;
+                 found = 1;
+                 break;
+              }
+          if (!found) {
+             SchParts[CntSchPart] = P.value + "\t" + P.name;
+             SchPartValue[CntSchPart] = P.value;
+             SchPartPackage[CntSchPart] = P.device.package.name;
+             SchPartDescription[n] = clipDeviceDescription(P.deviceset.description);
+             SchPartAttOC[CntSchPart] = P.attribute[DIAttOC];
+             SchPartAttMF[CntSchPart] = P.attribute[DIAttMF];
+             SchPartAttMPN[CntSchPart] = P.attribute[DIAttMPN];
+             SchQuantPart[CntSchPart] = 1;   // Quantity
+             CntSchPart++;
+          }
+        }
+    }
+    GetOrderCode();
+    if (DIDebug) DbgWritePartCode();
+    string basket = GetBasket();
+    int pcsel = -1;
+    sprintf(NrPositions, "%s%d   %s%d   %s%d", tr("Anzahl Positionen: "), CntSchPart,
+            tr("Mit Ordercodes: "), CntBasketLines,  tr("Auf Lager: "), CntInStock);
+    dlgDialog(DICompany + " DesignLink " + tr("Bestellliste für ") + SchFilename) {
+      dlgHBoxLayout dlgSpacing(800);
+      dlgHBoxLayout {
+        dlgVBoxLayout dlgSpacing(400);
+        dlgVBoxLayout {
+          dlgListView(PartCodeHeader, PartCode, pcsel) {
+            NewSearch(pcsel);
+            basket = GetBasket();  // Warenkorb aktualisieren
+          }
+          dlgLabel(tr("Zur Detailansicht oder erneuten Suche der Artikel bitte diese doppelklicken !"));
+          dlgHBoxLayout {
+            dlgLabel(tr("Anzahl Leiterplatten:"));
+            dlgIntEdit(PCBcount, 1, 1000000);
+            dlgPushButton(tr("Aktualisieren")) {
+              UpdateQuantity(PCBcount);
+              basket = GetBasket();
+            }
+            dlgSpacing(10);
+            dlgVBoxLayout {
+              dlgHBoxLayout dlgSpacing(280);
+              dlgLabel(NrPositions, 1);
+            }
+            dlgSpacing(10);
+            dlgVBoxLayout {
+              dlgHBoxLayout dlgSpacing((DIDlgLang = "de") ? 160 : 150);
+              dlgLabel(basket, 1);
+            }
+            dlgCheckBox(tr("Ordercodes speichern"), saveatt);
+            dlgPushButton(tr("Exportieren") + "...") {
+              string file = dlgFileSave(tr("Bestellliste exportieren"), filesetext(filesetext(SCH.name,"") + "-order", ".txt"));
+              if (file) output(file, "wt") {
+                printf("Order list for %s\n", SCH.name);
+                printf("Exported from EAGLE with DesignLink\n\n");
+                printf("%s\n", PartCodeHeader);
+                for (int i = 0; i < CntSchPart; ++i) {
+                  string str[];
+                  strsplit(str, PartCode[i], '\t');
+                  printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                         str[0], str[1], str[2], str[3], str[4], str[5], str[6], str[7], str[8]);
+                }
+              }
+            }
+            dlgPushButton(tr("Hilfe") + "...")
+              dlgMessageBox(help[DILangIdx]);
+            dlgPushButton(tr("Beenden")) dlgAccept();
+          }
+        }
+      }
+    };
+  }
+  SaveCfg();
+  if (saveatt) {
+    status(tr("Ordercodes speichern") + "..."); // This can take a little time for large files
+    exit(SaveAttributes());
+  }
+}
+
+else if (OptGeneral) {
+   DIHtml = "<br><b>" + tr("Bitte geben Sie unten einen Suchstring ein !") + "<br>";
+   DIMode = 0;  // Display search message
+   dlgDialog(DICompany + " DesignLink " + tr("allgemeine Suche")) {
+      string keyword = "";
+      string url = GetShoppingURL();
+      dlgVBoxLayout {
+         dlgHBoxLayout dlgSpacing(800);
+         dlgHBoxLayout {
+            dlgTextView(DIHtml);
+            dlgVBoxLayout dlgSpacing(400);
+         }
+         dlgListView(DIProductListHead, DIProductList, DIProductSel)
+            if (dlgSelectionChanged()) {
+               ShowSelection();
+               url = GetShoppingURL();
+            }
+         dlgHBoxLayout {
+            dlgCheckBox(tr("Vorrätig"), DIInStock);
+            dlgCheckBox("RoHS", DIRoHS);
+            dlgStretch(1);
+            dlgPushButton(tr("Vorige"))
+               if (DIProductOffset > 0) {
+                  DIProductOffset -= DINrProductsPerPage;
+                  DoSearch(keyword);
+                  url = GetShoppingURL();
+               }
+            dlgLabel(DIResInfo, 1);
+            dlgPushButton(tr("Nächste"))
+               if (DIProductOffset + DINrProductsPerPage < DINrAccessibleProducts) {
+                  DIProductOffset += DINrProductsPerPage;
+                  DoSearch(keyword);
+                  url = GetShoppingURL();
+               }
+               else
+                  dlgMessageBox(tr("Keine weiteren Produkte verfügbar!"));
+            dlgVBoxLayout {
+              dlgHBoxLayout dlgSpacing(238);
+              dlgHBoxLayout {
+                dlgSpacing(35);
+                dlgLabel(url, 1);
+              }
+            }
+         }
+         dlgHBoxLayout {
+            dlgStringEdit(keyword, DISearchHist, 9);
+            dlgPushButton(tr("+Suchen")) {
+               DoSearch(keyword);
+               url = GetShoppingURL();
+            }
+            dlgPushButton(tr("Beenden")) dlgReject();
+         }
+      }
+   }; // The ; is necessary here. Is this a bug of ULP ?
+   SaveCfg();
+}
+else
+   dlgMessageBox(tr("Bitte starten Sie vom Schaltplan aus !"));
+

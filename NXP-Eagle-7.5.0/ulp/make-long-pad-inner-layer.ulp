@@ -1,0 +1,180 @@
+#usage "en:This ULP generates for LONG and OFFSET pads in inner layers the same diameter and shape as it is in the outer layers.<p>"
+       "<nobr>EAGLE basically uses for all pads in <b>inner layers</b> a <b>round</b> pad shape.</nobr><br>"
+       "If you are using a LONG or OFFSET pad for a oblong soldering lug, and you defined a slotted hole with contours "
+       "drawn in layer 46, Milling, it is necessary to expand the pad in the inner layers with additional WIRE "
+       "segments. So the DRC is able to check possible conflicts with the slotted hole, and polygons with a different "
+       "signal name can be calculated properly.<br>"
+       "However, there might occur a problem with thermals because the ULP can't recognize whether the pad is "
+       "connected to a polygon with thermals in the current layer. It can happen that the pad extension connects "
+       "fully with the copper plane. <br>"
+       "If a (list of) <b>Element_name</b>(s) is given, the extended shape will be generated for the given element(s); "
+       "if there is no Element_name given, extended shapes are generated for all elements that have long pads.<p>"
+       "RUN make-long-pad-inner-layer [Element_name [Element_name] .. ]<br>"
+       "<font color=\"red\">The inner layers must be used.!<br>There has to be at least one WIRE oder POLYGON "
+       "in the inner layer.<p>"
+       "<font color=\"blue\">In order to avoid DRC Overlap errors, you have to connect each pad. "
+       "The wires must have the correct signal name!  Therefore connect each referring pin in the schematic with a NET. "
+       "The ERC reports 'Only one pin on net...' then, but this has to be approved. </font>"
+       "<p>"
+       "<author>Author: support@cadsoft.de</author>"
+       ,
+       "de:Dieses ULP generiert für LONG- und OFFSET-Pads für die Innenlagen die gleiche Größe und Form wie in den Aussenlagen.<p>"
+       "<nobr>EAGLE generiert grundsätzlich für Pads in <b>Innenlagen</b> eine <b>runde</b> Padform.</nobr><br>"
+       "Wird für längliche Lötanschlüsse (Lötfahnen) ein LONG- oder OFFSET-Pad benutzt und die Bohrung zusätzlich "
+       "geschlitzt, wobei die Fräskontur für den Längsschlitz im Layer 46 (Milling) definiert wird, so muß "
+       "in den Innenlagen das Pad zusätzlich mit WIRE-Segmenten erweitert werden. Dadurch kann der DRC Konflikte "
+       "mit dem Längsschlitz überprüfen bzw. ein Polygon mit fremden Signalnamen entsprechend freirechnen.<br>"
+       "Es gibt allerdings ein Problem bei Thermalstegen, da über das ULP nicht ohne weiteres erkannt werden kann, "
+       "ob das Pad in diesem Layer an eine Kupferfläche über Thermalstege angeschlossen ist. "
+       "Diese Pads werden durch die Paderweiterung teilweise vollflächig angebunden.<br>"
+       "Bei Angabe eines (einer Liste von) <b>Bauteilnamen</b> werden nur für dieses (diese) Bauteil(e) die "
+       "Paderweiterung erzeugt. Ohne Angabe von Bauteilnamen wird bei allen Bauteilen, die LONG-Pads enthalten, die "
+       "Paderweiterung erzeugt.<p>"
+       "RUN make-long-pad-inner-layer [Bauteilname [Bauteilname] .. ]<p>"
+       "<font color=\"red\">Die Innenlagen müssen benutzt sein!<br>Es muß also mindestens ein WIRE oder ein POLYGON "
+       "in der Innenlage vorhanden sein.<p>"
+       "<font color=\"blue\">Um Overlap-Fehler im DRC zu vermeiden, muß jedes PAD angeschlossen sein; "
+       "somit haben die erzeugten WIREs auch den entsprechenden Signal-Namen. "
+       "Dazu verbinden Sie im Schaltplan die Pins mit einem NETz. "
+       "Dadurch bedingt, meldet der ERC 'Nur ein Pin an Net... Diese Meldung kann aber toleriert werden.'</font>"
+       "<p>"
+       "<author>Autor: support@cadsoft.de</author>"
+
+#require 6.0400;
+
+string Version = "1.4"; // 1.0 2007-11-29  alf@cadsoft.de
+                        // 1.1 2008-01-08  check if connect with signal
+                        //                 generate error messages
+                        // 1.2 2008-01-15  Option - Element-Name list
+                        //                 check if schematic consistent
+                        // 1.3 2011-11-14  also use unused Layer
+                        // 1.4 2013-01-15  Version 6 has no more supply option ($) of inner layer
+                        //                 more detail info about pad without signal name
+                        //                 real values extended to new resolution .9f
+string s;
+string cmd = "GRID mm;\nSET WIRE_BEND 2;\n";
+string error = "";
+int    usedLayer[];
+string nameLayer[];
+
+
+void err(string name, string padname, int x, int y) {
+  sprintf(s, "%s Pad %s (%.9f %.9f) mm : No signal connected\n",
+              name, padname, u2mm(x), u2mm(y) );
+  error += s;
+  return;
+}
+
+
+string checkname(string s) {   // check signal name, if name add ' '  2008.01.08 alf@cadsoft.de
+  if (s) sprintf(s, "'%s'", s);
+  return s;
+}
+
+
+int checkEname(string s) {
+  for (int n = 1; n < argc; n++ ) {
+    if (strupr(argv[n]) == s) return 1;
+  }
+  return 0;
+}
+
+
+if (board) {
+  int usedsum = 0;
+  if (dlgMessageBox(usage + "<p>Version " + Version, "OK", "Cancel") != 0) exit(-1);
+  board(B) {
+    B.layers(L) {
+      if (L.number < 16 & L.number > 1) {
+        if (L.used) {
+          usedLayer[L.number] = 1;
+          nameLayer[L.number] = L.name;
+          usedsum++;
+        }
+      }
+    }
+    B.elements(E) {
+      if (!argv[1] || checkEname(E.name) ) {
+        E.package.contacts(C) {
+          if (C.pad) {
+            string p, m;
+            real l;
+            if (C.pad.shape[16] == PAD_SHAPE_LONG) {
+              l = u2mm(C.pad.diameter[1]) * C.pad.elongation * 0.005;
+              sprintf(m, "MARK (%.9f %.9f);\n", u2mm(C.x), u2mm(C.y));
+              sprintf(s, "WIRE %s %.9f (R0 0) (P%.9f %0.1f);\n",  // 2013-01-15 more resolution
+                          checkname(C.pad.signal),
+                          u2mm(C.pad.diameter[1]),
+                          l, C.pad.angle
+                     );
+              p += s;
+              sprintf(s, "WIRE %s %.9f (R0 0) (P%.9f %.1f);\n",   // 2013-01-15 more resolution
+                          checkname(C.pad.signal),
+                          u2mm(C.pad.diameter[1]),
+                          l, C.pad.angle+180.0
+                     );
+              p += s;
+              if (!C.pad.signal) err(E.name, C.pad.name, u2mm(C.x), u2mm(C.y) );
+            }
+            else if (C.pad.shape[16] == PAD_SHAPE_OFFSET) {
+              real l = u2mm(C.pad.diameter[1]) * C.pad.elongation * 0.01;
+              sprintf(m, "MARK (%.9f %.9f);\n", u2mm(C.x), u2mm(C.y));
+              sprintf(s, "WIRE %s %.9f (R0 0) (P%.9f %0.1f);\n",  // 2013-01-15 more resolution
+                            checkname(C.pad.signal),
+                            u2mm(C.pad.diameter[1]),
+                            l, C.pad.angle
+                       );
+
+              p += s;
+              if (!C.pad.signal) err(E.name, C.pad.name, u2mm(C.x), u2mm(C.y) );
+            }
+            if (p) {
+              cmd += m;
+              for (int n = 2; n < 16; n++) {
+                if (usedLayer[n]) { // 2011-11-14
+                    sprintf(s, "CHANGE LAYER %d;\n", n);
+                    cmd += s;
+                    cmd += p;
+                } // 2011-11-14
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (!usedsum) {
+    dlgMessageBox("!Inner layer not used!<br><nobr>No Wire or Polygon in inner layer!</nobr>", "OK");
+    exit(-1);
+  }
+
+  if (error) {  // check and view errors
+    string Message = "";
+    if (project.schematic) {
+      Message = "<font color=\"red\"><b>Consitent schematic is loaded!<br>First conect unconected Pins/Pads in schematic, please cancel.</b></font>";
+    }
+    dlgDialog("ERROR " + filename(argv[0])) {
+      dlgHBoxLayout dlgSpacing(400);
+      dlgHBoxLayout {
+        dlgVBoxLayout dlgSpacing(400);
+        dlgTextView(error);
+      }
+      dlgLabel("<font color=\"red\">Can not place</font> <b>Signal-Wires</b> on Pads with Signal-Name.<br>"+
+               "<font color=\"blue\">Please draw a NET on this PIN in Schematic to connect this PAD with an signal!</font>"
+              );
+      dlgLabel(Message);
+
+      dlgHBoxLayout {
+        dlgPushButton("Ignore") dlgAccept();
+        dlgPushButton("Cancel") { dlgReject(); exit(-1); }
+        dlgStretch(1);
+      }
+    };
+  }
+  cmd += "MARK;\nGRID LAST;\nRATSNEST;";
+  // dlgMessageBox(cmd, "OK"); // show generated script
+  exit(cmd);
+}
+
+else dlgMessageBox("Start this ULP in Board", "OK");

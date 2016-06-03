@@ -1,0 +1,15 @@
+ Edit 'LT3470A.dev' ;
+ Prefix 'IC' ;
+ Description 'Micropower Buck Regulator with Integrated Boost and Catch Diodes' ;
+ Value off ;
+ Add LT3470A 'G$1' next 0 (0 0) ;
+ Package 'DFN8(DDB)' 'DDB' ;
+ Technology '' ;
+ Connect 'G$1.VIN' '6' ;
+ Connect 'G$1.SW' '4' ;
+ Connect ALL 'G$1.GND' '5 9' ;
+ Connect 'G$1.FB' '1' ;
+ Connect 'G$1.!SHDN' '8' ;
+ Connect 'G$1.BIAS' '2' ;
+# Connect 'G$1.NC' '7' ;
+ Connect 'G$1.BOOST' '3' ;

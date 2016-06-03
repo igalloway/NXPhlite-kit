@@ -1,0 +1,38 @@
+GENERAL COMMENTS ABOUT EAGLE COMPONENT LIBRARIES
+================================================
+
+The component libraries supplied with EAGLE have been compiled with
+great care as an additional service to you, our customer.  However,
+the large number of available components and suppliers of these
+components means that the occasional discrepancy is unavoidable.
+Please note, therefore, that CadSoft takes no responsibility for the
+complete accuracy of information included in library files.
+
+Please note that libraries are not necessarily identical to former
+libraries with the same name. Therefore, it is advisable to back up
+your old libraries before installing the new ones.
+
+Additional new libraries, that have not yet been officially released,
+can be found on CadSoft's internet site in the download section
+(www.cadsoftusa.com).
+
+Please note, that libraries can be edited very conveniently with the
+commands EXPORT and SCRIPT.
+
+All packages are defined in such a way, that tNames contains the
+names of the components and tPlace contains the additional pc board
+print. For the documentation print, tDocu is selected additionally.
+This layer contains graphical objects which must not be printed onto
+the board.
+
+If components are placed on the bottom side of the board, the related
+information changes from t.. to b.. layers (e.g. from tNames to
+bNames).
+
+Further usage of layers:
+
+Holes:       mounting holes
+t/bFinish:   finish, e.g. AT-Slot
+t/bStop:     areas without solder stop mask, e.g. for bridging connections
+t/bRestrict: area without tracks, e.g. around mounting holes
+t/bKeepout:  area without components, e.g. EURO-19"

@@ -1,0 +1,15 @@
+ Edit 'LTC3900.dev' ;
+ Prefix 'IC' ;
+ Description 'Synchronous Rectifier Driver for Forward Converters' ;
+ Value off ;
+ Add LTC3900 'G$1' next 0 (0 0) ;
+ Package 'SO8(S8)' 'S8' ;
+ Technology '' ;
+ Connect 'G$1.CG' '3' ;
+ Connect 'G$1.VCC' '4' ;
+ Connect 'G$1.GND' '6' ;
+ Connect 'G$1.SYNC' '8' ;
+ Connect 'G$1.CS+' '1' ;
+ Connect 'G$1.TIMER' '7' ;
+ Connect 'G$1.FG' '5' ;
+ Connect 'G$1.CS-' '2' ;

@@ -1,0 +1,15 @@
+ Edit 'LT3495.dev' ;
+ Prefix 'IC' ;
+ Description '650mA/350mA Micropower Low Noise Boost Converter with Output Disconnect' ;
+ Value off ;
+ Add LT3495 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DDB)' 'DDB' ;
+ Technology '' ;
+ Connect 'G$1.VOUT' '7' ;
+ Connect 'G$1.VCC' '3' ;
+ Connect 'G$1.SW' '10' ;
+ Connect ALL 'G$1.GND' '11 2 1' ;
+ Connect 'G$1.FB' '6' ;
+ Connect 'G$1.!SHDN' '5' ;
+ Connect 'G$1.CTRL' '4' ;
+ Connect ALL 'G$1.CAP' '8 9' ;

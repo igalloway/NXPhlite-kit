@@ -1,0 +1,161 @@
+#usage "en:<qt><b>This ULP deletes unused package variants in the referring library of a device you placed "
+       "in the schematic and finally executes the UPDATE command.</b><p>"
+       "Attention: Copy the library into a separate directory and adjust the library path setting in "
+       "Options - Directories before.<br>"
+       "Otherwise the original libraries will be modified.<br>"
+       "Example:<br>"
+       "RUN remove-unused-package [Prefix | Partname]"
+       "<p>"
+       "<author>Author: alf@cadsoft.de</author></qt>"
+       ,
+       "de:<qt><nobr><b>Nicht benutzte Packagevarianten eines benutzen Device im Schaltplan werden in der "
+       "Bibliothek gelöscht <br>und anschliesend ein UPDATE durchgeführt.</b></nobr><p>"
+       "<font color=\"red\">ACHTUNG: Kopieren Sie evtl. die Bibliothek in einen entsprechenden Ordner, "
+       "setzen Sie den Pfad unter Optionen - Bibliotheken auf diesen Ordner, da sonst die original Bibliothek "
+       "entsprechend bearbeitet wird.</font><p>"
+       "Beispiel:<br>"
+       "RUN remove-unused-package [Prefix | Bauteilname]"
+       "<p>"
+       "<author>Author: support@cadsoft.de</author></qt>"
+
+// THIS PROGRAM IS PROVIDED AS IS AND WITHOUT WARRANTY OF ANY KIND, EXPRESSED OR IMPLIED
+
+string Version = "1.0.0"; // 2011-05-25 alf@cadsoft.de
+
+string Removename = filesetext(argv[0], "~remove_unused_pac.lst");
+
+
+string DeviceName = "";
+string DevicePackage = "";
+
+string DevSetList[];
+string DevList[];
+string PacList[];
+string LbrList[];
+int    Cnt = 0;
+string Lines[];
+
+string Use_in;
+
+string Object = strupr(argv[1]); // use in schematic (Device) or board (Element)
+int    Olen = strlen(Object);
+
+if (!Object) {
+  dlgMessageBox(usage, "OK");
+  exit(0);
+}
+
+
+void splitlist(void) {
+  string s[];
+  for (int n = 0; Lines[n]; n++) {
+    strsplit(s, Lines[n], '\t');
+    LbrList[n]    = s[0]; // devicesetlibrary;
+    DevSetList[n] = s[1]; // devicesetname;
+    DevList[n]    = s[2]; // devicename;
+    PacList[n]    = s[3]; // devicepackagename;
+  }
+  return;
+}
+
+
+void addlist(string devicesetlibrary, string devicesetname, string devicename, string devicepackagename, string tech, string ename) {
+  for (int n = 0; n < Cnt; n++) {
+    if (LbrList[n] == devicesetlibrary && DevSetList[n] == devicesetname && DevList[n] == devicename && PacList[n] == devicepackagename) {
+      return;
+    }
+  }
+  LbrList[Cnt]    = devicesetlibrary;
+  DevSetList[Cnt] = devicesetname;
+  DevList[Cnt]    = devicename;
+  PacList[Cnt]    = devicepackagename;
+  sprintf(Lines[Cnt], "%s\t%s\t%s\t%s", LbrList[Cnt], DevSetList[Cnt], DevList[Cnt], PacList[Cnt]);
+  Cnt++;
+  return;
+}
+
+if (schematic) {
+  schematic(SCH) {
+    SCH.sheets(S) {
+      S.parts(PA) {
+        string pname = PA.name;
+        if (strstr(PA.name, Object) == 0 && isdigit(pname[Olen]) || PA.name == Object) {
+          addlist(PA.deviceset.library, PA.deviceset.name, PA.device.name, PA.device.package.name, PA.device.technologies, PA.name);
+        }
+      }
+    }
+    int index[];
+    sort(Cnt, Lines);
+    output(Removename, "wtD") for (int n = 0; Lines[n]; n++) printf("%s\n", Lines[n]);
+    exit("OPEN '" + LbrList[0] + "' ;\n RUN '"+ argv[0] + "' '" + Removename + "' '" + SCH.name + "'");
+  }
+}
+
+
+else if (library) {
+  if (argv[1] == Removename) {
+    int Cnt = fileread(Lines, Removename);
+    splitlist();
+    string lname[];
+    string devsetname[];
+    string devname[];
+    string pacname[];
+    string variant[];
+    int checkdevset[];  // mark checked deviseset
+    int usedpac[];      // mark used package variant
+    library(L) {
+      int cnt = 0;
+      int doit = 0;
+      L.devicesets(DEV) {
+        DEV.devices(D) {
+          lname[cnt]      = filename(L.name);
+          devsetname[cnt] = DEV.name;
+          devname[cnt]    = D.name;
+          pacname[cnt]    = D.package.name;
+          cnt++;
+        }
+      }
+      // check used package variants
+      for (int n = 0; Lines[n]; n++) {
+        for (int n1 = 0; n1 < cnt; n1++) {
+          if (filename(LbrList[n]) == filesetext(lname[n1], "")) {
+            if ( DevSetList[n] == devsetname[n1]) {
+              checkdevset[n1] = 1;  // mark checked
+              if (PacList[n] == pacname[n1] ) { // wenn die Packagevariante benutzt ist, wird sie markiert
+                usedpac[n1] = 1;
+                //break;
+              }
+            }
+          }
+        }
+      }
+      for (int u = 0; u < cnt; u++) {
+        if (checkdevset[u]) {
+          if (usedpac[u]) {
+            // package is used
+            sprintf(variant[u], "# %s %s PAC %s %s ; used in sch.", lname[u], devsetname[u], devname[u], pacname[u]); // Kommentar benutzte Variante.
+          }
+          else {
+            sprintf(variant[u], "EDIT %s.DEV; PAC -%s # %s;", devsetname[u], devname[u], pacname[u]); // Delete unbenutzte Variante.
+          }
+        }
+        else {
+          sprintf(variant[u], "# %s nicht im SCH %s %s %s", lname[u], devsetname[u], devname[u], pacname[u]); // nicht benutztes Device im SCH
+        }
+      }
+      string fscript = filesetext(L.name, "~del-variants.scr");
+      output(fscript, "wtD") {
+        for (int n = 0; n < cnt; n++) {
+          printf("SET CONFIRM YES;\n");
+          printf("%s\n", variant[n]);
+          printf("SET CONFIRM OFF;\n");
+        }
+        printf("WRITE;\nEDIT '%s';\n UPDATE '%s';\n", argv[2], L.name);
+      }
+      exit("SCRIPT '" + fscript + "'");
+    }
+  }
+}
+
+dlgMessageBox("!Start this ULP in a schematic.", "OK");
+exit(0);

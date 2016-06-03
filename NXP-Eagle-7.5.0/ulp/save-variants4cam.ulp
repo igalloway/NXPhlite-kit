@@ -1,0 +1,304 @@
+#usage "Save Variants with extended name bei variant-name<p>"
+       "RUN save-variants4cam.ulp<br>"
+       "Für die automatisierte CAM-Datenausgabe mit einem BATCH-File<br>"
+       "1. Es wird ein SCRIPT (string) erzeugt, daß auf die Varianten umstellt, "
+       "und das Board mit Namenserweiterung durch die Variantenbezeichnung speichert.<br>"
+       "2. Eine BATCH-Datei (Shell-Script) wird erzeugt, die mit der System()-Funktion "
+       "gestartet wird, die wiederum den CAM-Prozessor mit entsprechenden Optionen startet und aus "
+       "dem gespeicherten Bard die CAM-Daten erzeugt."
+       "<p>"
+       "Unter Linux muß die KDE-Oberfläche (KUBUNTU) verwendet werden, da mit GNOME der CAM-Prozessoraufruf "
+       "das Board/Control-Panel-Fenster nicht automatisch mit QUIT; schliessen kann."
+       "<p>"
+       "<author>author alf@cadsoft.de</author>"
+
+
+#require 6.0500;
+string Version = "1.0.0"; // 2014-02-06 alf@cadsoft.de
+
+int    Test = 0;  // Testflag zum debuggen
+
+string CurrentVariant = "";
+string Variants[] = { "" };
+int    cntVD = 0;
+int    VDsel = 0;
+int    UsedLayer[];
+
+int    IsConsistent = 0;
+
+string Fname;
+string BatchFile;
+string BatchFileExt = ".bat";  // die Extension darf für Linux bleiben
+string EagleDir    = EAGLE_DIR;
+string EaglePath   = EAGLE_HOME;
+string EagleConExe = EAGLE_PATH; // "E:/EG/eg 6/bin/eaglecon.exe/";
+
+int    OS_Windows = 0;
+
+if (strstr(OS_SIGNATURE, "Windows") == 0 ) {  // Windows Option
+  EagleConExe = filesetext(EAGLE_PATH, "con.exe"); // unter Windows muß die eaglecon.exe benutzt werden
+  OS_Windows = 1;
+}
+
+string SystemExit; // das Kommando an das Betriebssystem um das Batch/Shell-Script zu starten
+
+
+// change Eagle slash in path names to backslash for windows
+string lash2backslash(string f) {
+  if (OS_Windows) {  // Windows Option
+    string s[];
+    int cnt = strsplit(s, f, '/');
+    return strjoin(s, '\\');
+  }
+  return f;
+}
+
+// change backslash in windows path names to Eagle slash
+string backslash2lash(string f) {
+  string s[];
+  int cnt = strsplit(s, f, '\\');
+  return strjoin(s, '/');
+}
+
+char checkascii(string s) {
+  int n = 0;
+  do {
+    if (s[n] > 127) return s[n];
+  } while(s[n++]);
+  return 0;
+}
+
+void generatescript(void) {  // Das Script (String) für die Speicherung der Varianten und
+  string cmd, s;             // das Batch-File/Shell-Script für den CAM-Processor erzeugen
+  string batchcommand, b;
+  string ext = fileext(Fname);
+  BatchFile = filesetext(Fname, BatchFileExt);
+  char errcode = checkascii(Fname);
+  if (errcode) {
+    string error;
+    sprintf(error, "Unerlaubtes Zeichen <b>%c</b> (ASCII-Code > 127) in Dateiname<p><b>%s</b><p>gefunden, damit gibt es unter Umständen Probleme im System-Command!", errcode, Fname);
+    if (dlgMessageBox(error, "Abbruch", "Weiter") != 0) ;
+    else exit(-80);
+  }
+
+  if (strlwr(ext) == ".sch") {
+    sprintf(s, "EDIT .brd;\n");  // zum Board wechseln
+    cmd+=s;
+  }
+  sprintf(s, "SET CONFIRM YES;\n");  // Auto-Antwort auf YES setzen, da nur BRD gespeichert wird kann überschrieben werden.
+  cmd+=s;
+  for (int n = 0; n < cntVD; n++) {
+    string var = Variants[n];
+    string camvariantoption = "";
+
+    if (Variants[n] != "''") {  // die Default-Variante darf nicht angegeben werden.
+      sprintf(camvariantoption, "-A%s ", Variants[n]); // nur echte Varianten benutzen
+    }
+    else {
+      camvariantoption = "";  // "''" darf in Dateiname nicht benutz werden
+      var = "";  // die leere '' Varianten-Bezeichnung kann hier nicht benutzt werden
+    }
+
+    string fvarname = filesetext(Fname, "-" + var + ".brd");
+
+    if (!var ) {
+      // Gerber Kupfer ... Layer
+      for (int copperlayer = 1; copperlayer < 17; copperlayer++) {
+        if (UsedLayer[copperlayer]) {
+          sprintf(b, "\"%s\" -X %s -dGERBER_RS274X_MM_34 -o\"%s.l%02d\" \"%s\" %d 17 18\n",
+                     lash2backslash(EagleConExe),
+                     camvariantoption,
+                     lash2backslash(fvarname),
+                     copperlayer,
+                     lash2backslash(fvarname),
+                     copperlayer
+                 );
+          batchcommand+=b;
+        }
+      }
+    }
+    // Gerber Bestückungsdruck oben
+    sprintf(b, "\"%s\" -X %s -dGERBER_RS274X_MM_34 -o\"%s.plc\" \"%s\" 20 21 25\n",
+               lash2backslash(EagleConExe),
+               camvariantoption,
+               lash2backslash(fvarname),
+               lash2backslash(fvarname)
+           );
+    batchcommand+=b;
+    // Gerber Bestückungsdruck unten
+    sprintf(b, "\"%s\" -X %s -dGERBER_RS274X_MM_34 -o\"%s.plc\" \"%s\" 20 22 26\n",
+               lash2backslash(EagleConExe),
+               camvariantoption,
+               lash2backslash(fvarname),
+               lash2backslash(fvarname)
+           );
+    batchcommand+=b;
+    // Gerber Boardkontour
+    sprintf(b, "\"%s\" -X %s -dGERBER_RS274X_MM_34 -o\"%s.dim\" \"%s\" 20\n",
+               lash2backslash(EagleConExe),
+               camvariantoption,
+               lash2backslash(fvarname),
+               lash2backslash(fvarname)
+           );
+    batchcommand+=b;
+    // EXCELLON MM 3.3 für GC-Prevue
+    sprintf(b, "\"%s\" -X %s -dEXCELLON_MM_33_GC-Prevue -o\"%s.drd\" \"%s\" 44 45\n",
+               lash2backslash(EagleConExe),
+               camvariantoption,
+               lash2backslash(fvarname),
+               lash2backslash(fvarname)
+           );
+    batchcommand+=b;
+
+    // Postscript -r 90 Grad gedreht
+    sprintf(b, "\"%s\" -X %s -r -dPS -o\"%s.ps\" \"%s\" 20 16\n",  // -r  für 90° gedreht
+               lash2backslash(EagleConExe),
+               camvariantoption,
+               lash2backslash(fvarname),
+               lash2backslash(fvarname)
+           );
+    batchcommand+=b;
+
+    /* ***** Ende CAM-Proz. Generierung ***** */
+
+    /* ***** Umschalten der Variante im Rückgabestring ***** */
+    sprintf(s, "VARIANT %s;\nWRITE '%s';\n", Variants[n], fvarname);
+    cmd+=s;
+    /* ***** Befehlzeile für den CAM-Proz. im Batch/Shell-Script ***** */
+    string f[];
+    int fn = fileglob(f, filesetext(fvarname ,".pdf"));
+    if (fn) { // Existiert das PDF schon, wird es gelösch, um ein aktueles zu schreiben.
+      sprintf(b, "DEL \"%s\"\n", lash2backslash(f[0]));
+      batchcommand+=b;
+    }
+    sprintf(b, "\"%s\" \"-C PRINT 10.0 -1 -MIRROR -ROTATE -UPSIDEDOWN -CAPTION SOLID WINDOW PAPER 297x210mm FILE .pdf; QUIT;\" \"%s\" \n",
+               lash2backslash(EagleConExe),
+               lash2backslash(fvarname)
+           );
+    batchcommand+=b;
+  }
+
+  if (Test) {
+    if (OS_Windows) {  // Windows Option
+      batchcommand += "PAUSE\n";
+    }
+  }
+  sprintf(s, "SET CONFIRM OFF;\n");
+  cmd+=s;
+  sprintf(s, "RUN '%s' '%s'", argv[0], lash2backslash(BatchFile)); // Der Aufruf des ULP für den zweiten Durchlauf, Batch-Ausführung
+  cmd+=s;
+
+  output(BatchFile, "wtD") printf("%s", lash2backslash(batchcommand)); // das Batch-File/Shell-Script schreiben
+
+  /* ****** nur zur Kontrolle ****** */
+  if (!OS_Windows) {  // Linux/MAC Option
+    sprintf(SystemExit, "sh \"%s\"\n", BatchFile); // unter Linux muß man eine Shell aufrufen, die die ausführbare Datei startet
+  }
+  else {
+    sprintf(SystemExit, "CMD.EXE  /C \"%s\"", BatchFile);
+  }
+  /* ****** nur zur Kontrolle ****** */
+
+
+  if (Test) {
+    dlgDialog("Check CAM-Batch/Shell scripts") {
+      dlgGridLayout {
+        dlgCell(0, 1)  dlgHBoxLayout dlgSpacing(1200);
+        dlgCell(2, 0)  dlgVBoxLayout dlgSpacing(100);
+        dlgCell(4, 0)  dlgVBoxLayout dlgSpacing(100);
+
+        dlgCell(1, 1)  dlgLabel("Rückgabe-CMD");
+        dlgCell(2, 1)  dlgTextEdit(cmd);
+        dlgCell(3, 1)  dlgLabel(BatchFile);
+        dlgCell(4, 1)  dlgTextEdit(batchcommand);
+      }
+      dlgLabel("Batch/Shell : " + SystemExit);
+      dlgHBoxLayout {
+        dlgLabel("EagleConExe : " + EagleConExe); // "Laufwerk:/Pfad/bin/eaglecon.exe/";
+        dlgLabel(" | ");
+        dlgLabel("EagleDir : " + EagleDir);
+        dlgLabel(" | ");
+        dlgLabel("EaglePath : " + EaglePath);
+        dlgLabel(" | ");
+        dlgLabel("OS_SIGNATURE : " + OS_SIGNATURE);
+        dlgStretch(1);
+      }
+      dlgHBoxLayout  {
+        dlgPushButton("+OK") dlgAccept();
+        dlgPushButton("-CANCEL") { dlgReject(); exit(-204); }
+        dlgStretch(1);
+        dlgLabel("Version " + Version);
+      }
+    };
+  }
+  output(BatchFile, "wtD") printf("%s", batchcommand);
+  exit(cmd);
+}
+
+if (argv[1]) {                                        // 2. Durchlauf startet das Batch/Shell-Script
+  string exitcmd;
+
+  if (OS_Windows) {  // Windows Option
+    sprintf(exitcmd, "CMD.EXE  /C \"%s\"", argv[1]); // den Aufruf in " " angeben, wegen SPACE im Pfad/Datei-Namen
+  }
+  else {
+    sprintf(exitcmd, "sh \"%s\"\n", argv[1]); // unter Linux muß eine Shell aufgerufen werden
+  }
+  system(exitcmd);    // rufe das Batch/Shell-Script auf, nachdem die Board-Files erzeugt wurden.
+  exit("RUN ulpmessage 'CAM-Dateien wurden erzeugt!'");
+}
+
+if (project.schematic) {
+  project.schematic(SCH) {
+    Fname = SCH.name;
+    IsConsistent++;
+    CurrentVariant = variant();
+    SCH.variantdefs(VD) {
+      if (CurrentVariant == VD.name) VDsel = cntVD;
+      sprintf(Variants[cntVD], "%s", VD.name);
+      cntVD++;
+    }
+  }
+}
+
+if (project.board) {
+  IsConsistent++;
+  project.board(B) {
+    B.layers(L) {
+      UsedLayer[L.number] = L.used;
+    }
+  }
+}
+
+if (IsConsistent == 2) { // 2 == Board und Schematic geladen == Konsistent
+  if (Test) {
+    string info;
+    sprintf(info, "%d Variants", cntVD);
+    int Result = dlgDialog("Save Variants and Generate CAM-Batch/Shell scripts") {
+      dlgHBoxLayout {
+        dlgLabel("Current &variant ");
+        dlgComboBox(Variants, VDsel) {
+          CurrentVariant = Variants[VDsel];
+          setvariant(CurrentVariant);
+        }
+        dlgStretch(1);
+      }
+      dlgLabel(info);
+      dlgSpacing(12);
+      dlgHBoxLayout  {
+        dlgPushButton("+OK") dlgAccept();
+        dlgPushButton("-CANCEL") { dlgReject(); exit(-265); }
+        dlgStretch(1);
+        dlgLabel("Version " + Version);
+      }
+    };
+    if (Result) {
+      generatescript();
+    }
+  }
+  else generatescript();
+}
+
+else {
+  dlgMessageBox("!Schematic und Board nicht konsistent!<br>Die Erzeugung der Batch/Schell Scripte nicht möglich.", "OK");
+}

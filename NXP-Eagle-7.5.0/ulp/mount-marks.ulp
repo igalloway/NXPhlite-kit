@@ -1,0 +1,75 @@
+#usage "<b>Data generation for mounting machines</b><p>\n"
+       "This ULP generates files for top and bottom layers "
+       "wich can be used with mounting machines. "
+       "Use x and y coordinates of the origin points (units: mm) of the SMD elements"
+       "and packages from defined lbr."
+       "The syntax of the output data looks like this:<p>"
+       "Name x-coord y-coord Rotation Value Package<p><p>"
+       "<author>Author: support@cadsoft.de</author>"
+
+string def_lbr = "marks";  // 2013-10-25 open the exported list in a dialog to show
+                           // define a library name to export also place coordinates
+                           // 2006.04.18 alf@cadsoft.de
+
+char   Tab = '\t'; // ';';
+
+
+board(B) {
+  // Get filename
+  string fileNameTop = dlgFileSave("Save File", filesetext(B.name, ".mnt"), "*.mnt");
+  if (fileNameTop == "") exit(0);
+  string fileNameBot = dlgFileSave("Save File", filesetext(B.name, ".mnb"), "*.mnb");
+  if (fileNameBot == "") exit(0);
+
+  int wasSmd = 0;
+  output(fileNameBot, "wt") ;
+  output(fileNameTop, "wt") {
+    B.elements(E) {
+      E.package.contacts(C) {
+        if (E.mirror == 0) {
+          printf("%s%c%.4f%c%.4f%c%.1f%c%s%c%s\n",
+          E.name, Tab, u2mm(E.x), Tab, u2mm(E.y), Tab,
+          E.angle, Tab, E.value, Tab, E.package.name);
+        }
+        else {
+          output(fileNameBot, "at") {
+            printf("%s%c%.4f%c%.4f%c%.1f%c%s%c%s\n",
+            E.name, Tab, u2mm(E.x), Tab, u2mm(E.y), Tab,
+            E.angle, Tab, E.value, Tab, E.package.name);
+          }
+        }
+        break;
+      }
+      if (strupr(E.package.library) == strupr(def_lbr)) {
+        if (E.mirror == 0) {
+          printf("%s%c%.4f%c%.4f%c%.1f%c%s%c%s\n",
+          E.name, Tab, u2mm(E.x), Tab, u2mm(E.y), Tab,
+          E.angle, Tab, E.value, Tab, E.package.name);
+        }
+        else {
+          output(fileNameBot, "at") {
+            printf("%s%c%.4f%c%.4f%c%.1f%c%s%c%s\n",
+            E.name, Tab, u2mm(E.x), Tab, u2mm(E.y), Tab,
+            E.angle, Tab, E.value, Tab, E.package.name);
+          }
+        }
+      }
+    }
+  }
+  string mt, mb;
+  int cntt = fileread(mt, fileNameTop);
+  int cntb = fileread(mb, fileNameBot);
+  dlgDialog("Mount data") {
+    dlgHBoxLayout dlgSpacing(500);
+    dlgLabel("Top place");
+    dlgTextView(mt);
+    dlgLabel("Bottom place");
+    dlgTextView(mb);
+    dlgHBoxLayout {
+      dlgStretch(1);
+      dlgPushButton("OK") dlgAccept();
+      dlgStretch(1);
+    }
+  };
+}
+

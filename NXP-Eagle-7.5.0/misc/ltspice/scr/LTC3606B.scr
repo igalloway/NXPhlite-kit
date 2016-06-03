@@ -1,0 +1,14 @@
+ Edit 'LTC3606B.dev' ;
+ Prefix 'IC' ;
+ Description '800mA Synchronous Step-Down DC/DC with Average Input Current Limit' ;
+ Value off ;
+ Add LTC3606B 'G$1' next 0 (0 0) ;
+ Package 'DFN8(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.RUN' '7' ;
+ Connect 'G$1.VIN' '5' ;
+ Connect 'G$1.SW' '4' ;
+ Connect ALL 'G$1.GND' '1 3 9' ;
+ Connect 'G$1.FB' '8' ;
+ Connect 'G$1.PGOOD' '6' ;
+ Connect 'G$1.RLIM' '2' ;

@@ -1,0 +1,18 @@
+ Edit 'LTC3443.dev' ;
+ Prefix 'IC' ;
+ Description 'High Current Micropower 600kHz Synchronous Buck-Boost DC/DC Converter' ;
+ Value off ;
+ Add LTC3443 'G$1' next 0 (0 0) ;
+ Package 'DFN12(DE)' 'DE' ;
+ Technology '' ;
+ Connect 'G$1.VC' '11' ;
+ Connect 'G$1.VOUT' '8' ;
+ Connect ALL 'G$1.PGND' '3 6 13' ;
+ Connect 'G$1.!SHDN/SS' '1' ;
+ Connect 'G$1.VIN' '10' ;
+ Connect 'G$1.GND' '2' ;
+ Connect 'G$1.FB' '12' ;
+ Connect 'G$1.SW1' '4' ;
+ Connect 'G$1.SW2' '5' ;
+ Connect 'G$1.PVIN' '9' ;
+ Connect 'G$1.MODE' '7' ;

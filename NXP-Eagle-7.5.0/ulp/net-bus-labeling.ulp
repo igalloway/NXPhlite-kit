@@ -1,0 +1,266 @@
+#usage "de:<qt><b>NET/BUS LABEL platzieren</b><p>"
+       "Um Netze automatisch mit einem Label zu versehen, muß man eine Gruppe um den Bereich "
+       "der NET/BUS-Wire definieren, an denen ein LABEL platziert werden soll. "
+       "Es wird an jedem selektierten Ende eines NET/BUS-Wire in der Gruppe ein LABEL platziert. "
+       "Man sollte also die Gruppe so wählen, daß nur eine Ende des Wire groupiert wird.<b>"
+       "Das LABEL wird bei einem NET mit einem Offset von 10 Mil, bei einem BUS mit einem Offset 20 Mil "
+       "über die waagrechte Linie gestellt, bzw. bei einer senkrechten Linie links daneben. "
+       "Ein zweiter Offset sorgt dafür, daß das LABEL um ein halbes GRID (50 Mil) vom Beginn des Wire, "
+       "in der selben Richtung wie sich der Wire erstreckt, platziert wird. "
+       "Das LABEL wird entsprechend der Ausrichtung des Wire gedreht. "
+       "Die Textgröße des LABEL wird auc 70 Mil gesetzt."
+       "<p>"
+       "<author>Author alf@cadsoft.de</author></qt>"
+       ,
+       "en:<qt>NET/BUS labeling</b><p>"
+       "For labeling nets automatically you have to draw a GROUP around the area you want to "
+       "have labels placed. "
+       "There can be labels at net/bus bends only. Which is usually the location where "
+       "two bus or net coordinates converge."
+       "A label for a net will be placed with an offset of 10 mil, for a bus with an offset of 20 mils "
+       "above a horizontal wire, or left of a vertical wire. A second offset places the label half the "
+       "grid (50 mil) from the beginning in wire direction. The label will be placed in the "
+       "same rotation the wire has. The text size of the label is 70 mil. "
+       "<p>"
+       "<author>Author alf@cadsoft.de</author></qt>"
+
+#require 5.1200
+
+string Version = "1.0.0"; // 2013-05-28
+
+real NetLabelOffset  = 10.0; // offset zur Netlinie in MIL
+real BusLabelOffset  = 25.0; // offset zur Buslinie in MIL
+real LabelLineOffset = 50.0; // in Mil
+real LabelSize = 70.0; // Mil
+int cntS = 0;
+int SegWireX1[], SegWireY1[], SegWireX2[], SegWireY2[], WireDirection[], WireType[], SegWireSide[];
+int GroupSelect = 0;
+int islabelgen = 0;
+
+enum { None, Buswire, Netwire, Horizontal, Vertical, Diagonal, Left, Right, Up, Down, Cross };
+string Cmd;
+string s;
+
+int test = 0;
+
+/*** Functions ***/
+void header(void) {
+  sprintf(s, "DISPLAY NONE 91 92;\n");
+  Cmd+=s;
+  sprintf(s, "CHANGE Size %.4fmil;\n", LabelSize);
+  Cmd+=s;
+  return;
+}
+
+void trailer(void) {
+  sprintf(s, "DISPLAY LAST;\n");
+  Cmd+=s;
+  return;
+}
+
+void gencmd(int index1, int direction, int side) {
+  // Jetzt muß nur ermittelt werden,
+  // in welche Richtung der Wire steht,
+  // und ob das Label verschoben werden muß,
+  // wenn der weiterführende Wire senkrecht und auf der
+  // rechten oder linken Seite des Wire steht.
+
+  int x, y;
+  string mirror = "";
+  real lxoffset, lyoffset;
+  int wirealignment, rotateangle = 0;
+  real labeloffset;
+  if (WireType[index1] == Buswire) labeloffset = BusLabelOffset;
+  else if (WireType[index1] == Netwire) labeloffset = NetLabelOffset;
+  else if (dlgMessageBox("WireType?", "OK", "CANCEL") != 0) exit(-65);
+
+  if (direction == Horizontal) {  // also eine waagrechte Linie
+    if (side == 1) {
+      x = SegWireX1[index1];
+      y = SegWireY1[index1];
+
+      if (SegWireX1[index1] < SegWireX2[index1]) {
+        wirealignment = Right;
+      }
+      else {
+        wirealignment = Left;
+      }
+    }
+    else if (side == 2) {
+      x = SegWireX2[index1];
+      y = SegWireY2[index1];
+      if (SegWireX2[index1] < SegWireX1[index1]) {
+        wirealignment = Right;
+      }
+      else {
+        wirealignment = Left;
+      }
+    }
+    else {
+      if (dlgMessageBox("Error horizontal", "OK", "Cancel") != 0) exit(-96);
+      return;
+    }
+  }
+  else if (direction == Vertical) {  // also eine senkrechte Linie
+    if (side == 1) {
+      x = SegWireX1[index1];
+      y = SegWireY1[index1];
+
+      if (SegWireY1[index1] < SegWireY2[index1]) {
+        wirealignment = Up;
+      }
+      else {
+        wirealignment = Down;
+      }
+    }
+    else if (side == 2) {
+      x = SegWireX2[index1];
+      y = SegWireY2[index1];
+      if (SegWireY2[index1] < SegWireY1[index1]) {
+        wirealignment = Up;
+      }
+      else {
+        wirealignment = Down;
+      }
+    }
+    else {
+      if (dlgMessageBox("Error vertical", "OK") != 0) exit(-123);
+      return;
+    }
+  }
+  else {
+    dlgMessageBox("Error cross", "ok");
+  }
+
+  if (wirealignment == Right) {
+    lyoffset = labeloffset; // oberhalb der Linie
+    lxoffset = LabelLineOffset; // nach rechts versetzt
+    mirror = "";
+  }
+  if (wirealignment == Left) {
+    lyoffset = labeloffset; // oberhalb der Linie
+    lxoffset = LabelLineOffset * -1.0; // nach links versetzt
+    mirror = "M";
+  }
+  if (wirealignment == Up) {
+    lxoffset = labeloffset * -1.0; // links von der Linie
+    lyoffset = LabelLineOffset; // nach oben versetzt
+    mirror = "";
+    rotateangle = 90;
+  }
+  if (wirealignment == Down) {
+    lxoffset = labeloffset * -1.0; // links von der Linie
+    lyoffset = LabelLineOffset * -1.0; // nach unten versetzt
+    mirror = "M";
+    rotateangle = 270;
+  }
+
+  sprintf(s, "LABEL (%.4fmil %.4fmil) (%.4fmil %.4fmil);\n",
+                u2mil(x), u2mil(y),
+                u2mil(x)+lxoffset, u2mil(y)+lyoffset
+         );
+  Cmd+=s;
+  sprintf(s, "ROTATE =R0 (%.4fmil %.4fmil);\n", u2mil(x)+lxoffset, u2mil(y)+lyoffset); // stelle rotate wieder auf 0
+  Cmd+=s;
+
+  if (!rotateangle && mirror) {
+    sprintf(s, "MIRROR (%.4fmil %.4fmil);\n", u2mil(x)+lxoffset, u2mil(y)+lyoffset);
+    Cmd+=s;
+  }
+  if (rotateangle) {
+    sprintf(s, "ROTATE =%sR%d (%.4fmil %.4fmil);\n", mirror, rotateangle, u2mil(x)+lxoffset, u2mil(y)+lyoffset);
+    Cmd+=s;
+  }
+  islabelgen++;
+  return;
+}
+
+void genlabel(void) {
+  for (int n = 0; n < cntS; n++) {
+    gencmd(n, WireDirection[n], SegWireSide[n]);
+  }
+  return;
+}
+
+void addwireseg(UL_WIRE W, string wname, int type, int side) {
+  SegWireX1[cntS] = W.x1;
+  SegWireY1[cntS] = W.y1;
+  SegWireX2[cntS] = W.x2;
+  SegWireY2[cntS] = W.y2;
+  WireType[cntS] = type;
+  SegWireSide[cntS] = side;
+
+  if (SegWireX1[cntS] == SegWireX2[cntS] || SegWireY1[cntS] ==  SegWireY2[cntS]) {
+    if (SegWireX1[cntS] == SegWireX2[cntS]) {
+      WireDirection[cntS] = Vertical;// wire senkrecht
+    }
+    else if (SegWireY1[cntS] == SegWireY2[cntS]) {
+      WireDirection[cntS] = Horizontal;// wire waagrecht
+    }
+    cntS++;
+  }
+  return;
+}
+
+/*** main ***/
+if (sheet) {
+  sheet(S) {
+    S.nets(N) {
+      status(N.name);
+      N.segments(SEG) {
+        SEG.wires(W) {
+          int side = ingroup(W);
+          if (side == 1 || side == 2) { // Wire bei denen beide Seiten in der Group sind, werden nicht benutzt
+            GroupSelect = 1;
+            addwireseg(W, N.name, Netwire, side);
+          }
+        }
+      }
+    }
+    S.busses(B) {
+      status(B.name);
+      B.segments(SEG) {
+        SEG.wires(W) {
+          int side = ingroup(W);
+          if (side == 1 || side == 2) { // Wire bei denen beide Seiten in der Group sind, werden nicht benutzt
+            GroupSelect = 1;
+            addwireseg(W, B.name, Buswire, side);
+          }
+        }
+      }
+    }
+  }
+  if (!GroupSelect) {
+    dlgMessageBox("!Selektieren Sie zuerst mit GROUP die NET/BUS-Wire.", "OK");
+    exit(0);
+  }
+  else {
+    header();
+    genlabel();
+    trailer();
+  }
+
+  if (test) {
+    string scmd;
+    sprintf(scmd, "%d Wire gefunden", cntS);
+    dlgDialog("test") {
+      dlgLabel(scmd);
+      dlgHBoxLayout dlgSpacing(800);
+      dlgHBoxLayout {
+        dlgVBoxLayout dlgSpacing(600);
+        dlgTextEdit(Cmd);
+      }
+      dlgHBoxLayout {
+        dlgPushButton("+OK") dlgAccept();
+        dlgPushButton("-ESC") { dlgReject(); exit(-99); }
+      }
+    };
+  }
+  if (!islabelgen) {
+    dlgMessageBox("!No wire (horizontal/vertical) for LABEL found, check GROUP.<p>"+usage, "OK");
+    exit(-1);
+  }
+  exit(Cmd);
+}
+
+else dlgMessageBox("Starten Sie das ULP in einem Schaltplan", "OK");

@@ -1,0 +1,13 @@
+ Edit 'LTC3221-3.3.dev' ;
+ Prefix 'IC' ;
+ Description 'Micropower, Regulated Charge Pump in 2 x 2 DFN' ;
+ Value off ;
+ Add LTC3221-3.3 'G$1' next 0 (0 0) ;
+ Package 'DFN6(DC)' 'DC' ;
+ Technology '' ;
+ Connect 'G$1.VOUT' '6' ;
+ Connect 'G$1.VIN' '5' ;
+ Connect ALL 'G$1.GND' '4 7' ;
+ Connect 'G$1.!SHDN' '3' ;
+ Connect 'G$1.C+' '1' ;
+ Connect 'G$1.C-' '2' ;

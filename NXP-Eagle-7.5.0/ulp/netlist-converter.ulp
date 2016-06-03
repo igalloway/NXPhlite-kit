@@ -1,0 +1,577 @@
+#usage "Netlist converter for netlist from other CAD-System."
+       "<author>Author: alf@cadsoft.de</author>"
+
+string Version = "Version 1.2"; // 2009-02-26 alf@cadsoft.de
+                                // 2009-05-20 Mentor, PADS2000, Accel, Allegro  alf@cadsoft.de
+                                // 2010-06-17 Allegro 16.2  alf@cadsoft.de
+
+enum   { Unknown,
+         Multiwire,
+//         OrCad,
+//         Tango,
+         Mentor,
+         PADS2000,
+         Accel,
+         Allegro,
+         Allegro162,
+         // insert new types are here
+         Last };
+
+string netListType[];
+       netListType[Unknown]      = "Unknown";
+       netListType[Multiwire]    = "Multiwire";
+//       netListType[OrCad]        = "OrCad";
+//       netListType[Tango]        = "Tango";
+       netListType[Mentor]       = "Mentor";
+       netListType[PADS2000]     = "PADS2000";
+       netListType[Accel]        = "Accel";
+       netListType[Allegro]      = "Allegro";
+       netListType[Allegro162]   = "Allegro 16.2";
+       // insert new types are here
+       netListType[Last]    = "";
+
+
+string NetlistInfo = "Netlist";
+string text, netscript;
+
+int    t;
+string line[];
+int    lines =  0;
+
+string fname;
+string saveinfo = "";
+
+string L_separator = "SPACE";
+string W_separator = ".";
+
+char   Lseparator;
+if     (L_separator == "SPACE") Lseparator = ' ';
+else   Lseparator = L_separator[0];
+char   Wseparator = W_separator[0];
+int    NetRow = 1, PartRow = 2, PadRow = 3;
+
+
+/*** Functions ***/
+void genScriptUnknown(void) {
+  saveinfo = "";
+  dlgRedisplay();
+  string Lnet, Lpart, Lpad;
+  netscript = "";
+  string actualsigname = "";
+  for (int n = 0; n < lines; n++) {
+    status(line[n]);
+    string s[];
+    int cnt;
+    int ls = strsplit(s, line[n], Lseparator);
+    int scnt = 0;
+    string startnet;
+    for (int ln = 0; ln < ls; ln++) {
+      if (s[ln]) {
+        scnt++;
+        if (scnt == NetRow) {
+          Lnet = s[ln];
+          if (actualsigname != Lnet) {
+            sprintf(startnet, ";\nSIGNAL '%s' \n", Lnet);
+            actualsigname = Lnet;
+          }
+          else startnet = "\n  ";
+
+        }
+        else if (scnt == PartRow) Lpart = s[ln];
+        else if (scnt == PadRow) Lpad = s[ln];
+      }
+    }
+    string h;
+    if (scnt == 3) {
+      sprintf(h, "%s %s %s", startnet, Lpart, Lpad);
+      netscript+=h;
+    }
+  }
+  netscript+=";\n"; // close last command
+  return;
+}
+
+
+void genScriptMultiwire(void) {
+  // defintion of separator for Multiwire;
+  Lseparator = ' ';
+  Wseparator = '.';
+  NetRow = 1;
+  PartRow = 2;
+  PadRow = 3;
+  saveinfo = "";
+  dlgRedisplay();
+  string Lnet, Lpart, Lpad;
+  netscript = "";
+  string actualsigname = "";
+  for (int n = 0; n < lines; n++) {
+    status(line[n]);
+    string s[];
+    int cnt;
+    int ls = strsplit(s, line[n], Lseparator);
+    int scnt = 0;
+    string startnet;
+    for (int ln = 0; ln < ls; ln++) {
+      if (s[ln]) {
+        scnt++;
+        if (scnt == NetRow) {
+          Lnet = s[ln];
+          if (actualsigname != Lnet) {
+            sprintf(startnet, ";\nSIGNAL '%s' \n", Lnet);
+            actualsigname = Lnet;
+          }
+          else startnet = "\n";
+
+        }
+        else if (scnt == PartRow) Lpart = s[ln];
+        else if (scnt == PadRow) Lpad = s[ln];
+      }
+    }
+    string h;
+    if (scnt == 3) {
+      sprintf(h, "%s %s %s", startnet, Lpart, Lpad);
+      netscript+=h;
+    }
+  }
+  netscript+=";\n"; // close last command
+  return;
+}
+
+
+void genScriptOrCad(void) {
+  // defintion of separator for Orcad;
+  dlgMessageBox("Orcad converter not defined!", "OK");
+  Lseparator = ' ';
+  Wseparator = '.';
+  NetRow = 1;
+  PartRow = 2;
+  PadRow = 3;
+  saveinfo = "";
+  dlgRedisplay();
+  string Lnet, Lpart, Lpad;
+  netscript = "";
+  string actualsigname = "";
+  for (int n = 0; n < lines; n++) {
+    status(line[n]);
+    string s[];
+    int cnt;
+    int ls = strsplit(s, line[n], Lseparator);
+    int scnt = 0;
+    string startnet;
+    for (int ln = 0; ln < ls; ln++) {
+      if (s[ln]) {
+        scnt++;
+        if (scnt == NetRow) {
+          Lnet = s[ln];
+          if (actualsigname != Lnet) {
+            sprintf(startnet, ";\nSIGNAL '%s'", Lnet);
+            actualsigname = Lnet;
+          }
+          else startnet = "\n  ";
+
+        }
+        else if (scnt == PartRow) Lpart = s[ln];
+        else if (scnt == PadRow) Lpad = s[ln];
+      }
+    }
+    string h;
+    if (scnt == 3) {
+      sprintf(h, "%s %s %s", startnet, Lpart, Lpad);
+      netscript+=h;
+    }
+  }
+  netscript+=";\n"; // close last command
+  return;
+}
+
+
+void genScriptTango(void) {
+  dlgMessageBox("Tango converter not defined!", "OK");
+  return;
+  saveinfo = "";
+  dlgRedisplay();
+  string Lnet, Lpart, Lpad;
+  netscript = "";
+  string actualsigname = "";
+  for (int n = 0; n < lines; n++) {
+    status(line[n]);
+    string s[];
+    int cnt;
+    int ls = strsplit(s, line[n], Lseparator);
+    int scnt = 0;
+    string startnet;
+    for (int ln = 0; ln < ls; ln++) {
+      if (s[ln]) {
+        scnt++;
+        if (scnt == NetRow) {
+          Lnet = s[ln];
+          if (actualsigname != Lnet) {
+            sprintf(startnet, ";\nSIGNAL '%s'", Lnet);
+            actualsigname = Lnet;
+          }
+          else startnet = "\n  ";
+
+        }
+        else if (scnt == PartRow) Lpart = s[ln];
+        else if (scnt == PadRow) Lpad = s[ln];
+      }
+    }
+    string h;
+    if (scnt == 3) {
+      sprintf(h, "%s %s %s", startnet, Lpart, Lpad);
+      netscript+=h;
+    }
+  }
+  netscript+=";\n"; // close last command
+  return;
+}
+
+
+void genScriptMentor(void) {
+  // defintion of separator for Multiwire;
+  Lseparator = ' ';
+  Wseparator = '.';
+  NetRow = 1;
+  PartRow = 2;
+  PadRow = 3;
+  saveinfo = "";
+  dlgRedisplay();
+  string Lnet, Lpart, Lpad;
+  netscript = "";
+  string actualsigname = "";
+  for (int n = 0; n < lines; n++) {
+    status(line[n]);
+    string s[];
+    int cnt;
+    int ls = strsplit(s, line[n], Lseparator);
+    int scnt = 0;
+    string startnet;
+    if (s[0] == "NET") { // check if a NET line
+      sprintf(startnet, "SIGNAL %s \n", s[1]);
+      for (int ln = 2; ln < ls; ln++) {
+        string pp[];
+        strsplit(pp, s[ln], '-');
+        startnet += " "+pp[0] + " " + pp[1] + "\n";
+      }
+      netscript+=startnet+";\n";
+    }
+  }
+  return;
+}
+
+
+void genScriptPADS2000(void) {
+  // defintion of separator for PADS 2000;
+  if (line[0] != "*PADS2000*") {
+    dlgMessageBox("it's not a *PADS2000* netlist!", "OK");
+    return;
+  }
+  Lseparator = ' ';
+  Wseparator = '.';
+  NetRow = 1;
+  PartRow = 2;
+  PadRow = 3;
+  saveinfo = "";
+  dlgRedisplay();
+  string Lnet, Lpart, Lpad;
+  netscript = "";
+  string actualsigname = "";
+  string startnet = "";
+  int startflag = 0;
+  string s[];
+  for (int n = 0; n < lines; n++) {
+    if (startflag) {
+      status(line[n]);
+      int ls = strsplit(s, line[n], Lseparator);
+      if (s[0] == "*SIGNAL*") { // check if a Signal line
+        if (!startnet) {
+          sprintf(startnet, "SIGNAL '%s' \n", s[1]);
+        }
+        else {
+          netscript += startnet+";\n";
+          sprintf(startnet, "SIGNAL '%s' \n", s[1]);
+        }
+      }
+      else if (s[0] == "*END*") { // check if a END of list
+        netscript += startnet+";\n";
+      }
+      else {
+        string pp[];
+        int cntpp = strsplit(pp, line[n], Lseparator);
+        string sp[];
+        for (int np = 0; np < cntpp; np++) {
+          strsplit(sp, pp[np], Wseparator);
+          startnet += " "+sp[0] + " " + sp[1] + "\n";
+        }
+      }
+    }
+    if (line[n] == "*NET*") {
+      startflag = 1;
+    }
+  }
+  return;
+}
+
+
+void genScriptAccel(void) {
+  // defintion of separator for Accel;
+  Lseparator = ' ';
+  Wseparator = '.';
+  saveinfo = "";
+  dlgRedisplay();
+  netscript = "";
+  string startnet = "";
+  int startflag = 0;
+  string s[];
+  string nn[];
+  for (int n = 0; n < lines; n++) {
+    status(line[n]);
+    int ls = strsplit(s, line[n], Lseparator);
+    if (s[0] == "(net") { // check if a Signal line
+      strsplit(nn, line[n], '"');
+      sprintf(startnet, ";\nSIGNAL '%s' \n", nn[1]);
+      netscript += startnet;
+    }
+    else if (s[0] == "(node") {
+      strsplit(nn, line[n], '"');
+      netscript += nn[1] + " " + nn[3] + "\n";
+    }
+  }
+  netscript += ";\n";
+  return;
+}
+
+
+void genScriptAllegro(void) {
+  // defintion of separator for allegro;
+  Lseparator = ' ';
+  Wseparator = '.';
+  NetRow = 1;
+  PartRow = 2;
+  PadRow = 3;
+  saveinfo = "";
+  dlgRedisplay();
+  string Lnet, Lpart, Lpad;
+  netscript = "";
+  string actualsigname = "";
+  string startnet = "";
+  int startflag = 0;
+  string s[];
+  for (int n = 0; n < lines; n++) {
+    if (startflag) {
+      status(line[n]);
+      int ls = strsplit(s, line[n], Lseparator);
+      if (s[0] == "$END") { // check if a END of list
+        netscript += ";\n";
+      }
+      else {
+        ls = strsplit(s, line[n], ';');
+        sprintf(startnet, "SIGNAL %s \n", s[0]);
+        netscript += startnet;
+        ls = strsplit(s, line[n], Lseparator);
+        string sp[];
+        for (int np = 1; np < ls; np++) {
+          int cntpp = strsplit(sp, s[np], Wseparator);
+          netscript += " "+sp[0] + " " + sp[1] + "\n";
+        }
+      }
+    }
+    if (line[n] == "$NETS") {
+      startflag = 1;
+    }
+  }
+  return;
+}
+
+void genScriptAllegro162(void) {  // 2010-06-17 alf
+  // (GENERATED BY: ALLEGRO 16.2 S034 (v16-2-57BX))
+  // defintion of separator for allegro;
+  Lseparator = ' ';
+  Wseparator = '.';
+  NetRow = 1;
+  PartRow = 2;
+  PadRow = 3;
+  saveinfo = "";
+  dlgRedisplay();
+  string Lnet, Lpart, Lpad;
+  netscript = "";
+  string actualsigname = "";
+  string startnet = "";
+  int startflag = 0;
+  string s[];
+  for (int n = 0; n < lines; n++) {
+    if (startflag) {
+      if (line[n] == "$NETS") {
+        netscript += ";\n";
+        startflag = 0;
+        break;
+      }
+      status(line[n]);
+      int semipos = strchr(line[n], ';');
+      if (semipos > 0) line[n][semipos] = ' ';   // replace semikolon to Space 2020-06-17 alf
+      int kommapos = strchr(line[n], ',');        // Weiterführungszeichen, dass es in dernächsten Zeile mit dem Signalnamen weiter geht.
+      if (kommapos > 0)  line[n][kommapos] = ' '; // replace komma to Space 2020-06-17 alf
+      int ls = strsplit(s, line[n], Lseparator);
+      if (s[0]) {
+        if (startflag == 1) {
+          sprintf(startnet, "SIGNAL '%s' \n", s[0]);
+          startflag++;
+        }
+        else  sprintf(startnet, ";\nSIGNAL '%s' \n", s[0]);
+        netscript += startnet;
+      }
+      string sp[];
+      for (int np = 1; np < ls; np++) {
+        if (s[np]) {                    // 2010-06-16 alf
+          int cntpp = strsplit(sp, s[np], Wseparator);
+          netscript += " "+sp[0] + " " + sp[1] + "\n";
+        }
+      }
+    }
+    if (line[n] == "$NETS") {
+      if (!startflag) startflag = 1;
+    }
+  }
+  return;
+}
+
+
+void save(string f) {
+  dlgRedisplay();
+  string fn = filesetext(f, ".scr");
+  output(fn, "wt") printf("%s", netscript);
+  sprintf(saveinfo, "Scripte saved as: %s", fn);
+  dlgRedisplay();
+  return;
+}
+
+
+string getList(string TypeName) {
+  return dlgFileOpen("Select a " + TypeName + " netlist'", path_epf[0]+"/*.*");
+}
+
+
+int autocheckFormat(void) {  // auto check CAD-Format in first 10 lines 2010-06-17 alf
+  for (int n = 0; n < 10; n++) {
+    if (strstr(line[n], "ALLEGRO 16.2") >= 0) return Allegro162;
+  }
+  return 0;
+}
+
+
+// --- main ---
+if (board) {
+  int selType = Unknown;
+  int RESULT = dlgDialog("Netlist Converter") {
+    dlgHBoxLayout {
+      dlgVBoxLayout {
+        dlgLabel(NetlistInfo, 1);
+        dlgTextEdit(text);
+      }
+      dlgVBoxLayout {
+        dlgLabel("EAGLE net script");
+        dlgTextEdit(netscript);
+      }
+    }
+    dlgHBoxLayout {
+      dlgGridLayout {
+        dlgCell(0, 0) dlgLabel("Line separator");
+        dlgCell(0, 1) dlgStringEdit(L_separator);
+        dlgCell(0, 2) dlgLabel("Word separator");
+        dlgCell(0, 3) dlgStringEdit(W_separator);
+      }
+      dlgStretch(1);
+    }
+    dlgHBoxLayout {
+      dlgGridLayout {
+        dlgCell(0, 0) dlgLabel("Net in row");
+        dlgCell(0, 1) dlgIntEdit(NetRow);
+        dlgCell(0, 3) dlgLabel("Part in row");
+        dlgCell(0, 4) dlgIntEdit(PartRow);
+        dlgCell(0, 5) dlgLabel("Pad in row");
+        dlgCell(0, 6) dlgIntEdit(PadRow);
+      }
+      dlgSpacing(200);
+      dlgStretch(1);
+    }
+    dlgHBoxLayout {
+      dlgGroup("Netlist from CAD System") {
+        for (int t = 0; t < Last; t++) {
+          dlgRadioButton(netListType[t], selType) {
+            NetlistInfo = netListType[selType]+ " Netlist";
+            dlgRedisplay();
+          }
+        }
+      }
+      dlgStretch(3);
+      dlgVBoxLayout {
+        dlgLabel("<font color=\"green\"><nobr>EAGLE NET-SCRIPT Example:</nobr></font>");
+        dlgLabel("<font color=\"blue\"><nobr>SIGNAL 'N$1' <br> X1 1<br> R2 1;<br>SIGNAL 'N$2' <br> R2 2<br> C2 1<br> R3 2;</nobr></font>");
+        dlgStretch(1);
+      }
+      dlgStretch(2);
+    }
+    dlgLabel(saveinfo, 1);
+    dlgHBoxLayout {
+      dlgPushButton("&Read list") {
+        fname = getList(netListType[selType]);
+        if (!fname) {
+          dlgMessageBox("no file selected", "OK");
+        }
+        else {
+         lines = fileread(text, fname);
+         lines = strsplit(line, text, '\n');
+         selType = autocheckFormat();
+        }
+      }
+      dlgPushButton("&Generate net script") {
+        switch(selType) {
+          case Unknown     : if(L_separator == "SPACE") Lseparator = ' ';
+                             else if(L_separator == "TAB") Lseparator = '\t';
+                             else Lseparator = L_separator[0];
+                             Wseparator = W_separator[0];
+                             genScriptUnknown();
+                             break;
+          case Multiwire   : genScriptMultiwire();
+                             break;
+//          case OrCad     : genScriptOrCad();
+                             break;
+//          case Tango     : genScriptTango();
+                             break;
+          case Mentor      : genScriptMentor();
+                             break;
+          case PADS2000    : genScriptPADS2000();
+                             break;
+          case Accel       : genScriptAccel();
+                             break;
+          case Allegro     : genScriptAllegro();
+                             break;
+          case Allegro162  : genScriptAllegro162();
+                             break;
+
+        }
+      }
+      dlgPushButton("&Run net script") {
+        if (!saveinfo) {
+          dlgMessageBox("First save the script.", "OK");
+        }
+        else {
+          if (project.schematic) {
+            dlgMessageBox("!<qt>This Script can not start if a consitence schematic loaded!<p><font color=\"red\">DO NOT CLOSE SCHEMATIC, YOU LOST CONSISTENCE!</font><qt>", "OK");
+          }
+          else   dlgAccept();
+        }
+      }
+      dlgPushButton("&Save net script") {
+        if (netscript) save(fname);
+        else dlgMessageBox("First generate script!", "OK");
+      }
+      dlgPushButton("-CANCEL") dlgReject();
+      dlgStretch(1);
+      dlgLabel(Version);
+    }
+  };
+  if (RESULT) exit("SCRIPT '" + filesetext(fname, ".scr") + "'");
+}
+
+else dlgMessageBox("!Start this ULP in board.", "OK");

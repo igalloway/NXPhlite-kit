@@ -1,0 +1,13 @@
+ Edit 'LT3493-3.dev' ;
+ Prefix 'IC' ;
+ Description '1.2A, 750kHz Step-Down Switching Regulator in 2mm x 3mm DFN' ;
+ Value off ;
+ Add LT3493-3 'G$1' next 0 (0 0) ;
+ Package 'DFN6(DCB)' 'DCB' ;
+ Technology '' ;
+ Connect 'G$1.VIN' '5' ;
+ Connect 'G$1.SW' '4' ;
+ Connect ALL 'G$1.GND' '2 7' ;
+ Connect 'G$1.FB' '1' ;
+ Connect 'G$1.!SHDN' '6' ;
+ Connect 'G$1.BOOST' '3' ;

@@ -1,0 +1,14 @@
+ Edit 'LTC3409.dev' ;
+ Prefix 'IC' ;
+ Description '600mA Low VIN Buck Regulator in 3mm _ 3mm DFN' ;
+ Value off ;
+ Add LTC3409 'G$1' next 0 (0 0) ;
+ Package 'DFN8(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.RUN' '7' ;
+ Connect ALL 'G$1.VIN' '4 3' ;
+ Connect 'G$1.SW' '6' ;
+ Connect ALL 'G$1.GND' '2 9' ;
+ Connect 'G$1.FB' '1' ;
+ Connect 'G$1.SYNC' '8' ;
+ Connect 'G$1.MODE' '5' ;

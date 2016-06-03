@@ -1,0 +1,35 @@
+[Eagle]
+Version="07 05 00"
+Globals="Globals"
+Desktop="Desktop"
+
+[Globals]
+AutoSaveProject=1
+
+[Win_1]
+Type="Schematic Editor"
+Loc="172 186 921 718"
+State=2
+Number=1
+File="singlesided.sch"
+View="-4.12902 -5.80542 184.164 269.661"
+
+[Win_2]
+Type="Board Editor"
+Loc="316 328 1064 860"
+State=2
+Number=2
+File="singlesided.brd"
+View="-1.73672 -1.3919 55.5528 38.2269"
+
+[Win_3]
+Type="Control Panel"
+Loc="108 0 1216 774"
+State=2
+Number=0
+
+[Desktop]
+Screen="2560 1024"
+Window="Win_1"
+Window="Win_2"
+Window="Win_3"

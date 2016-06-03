@@ -1,0 +1,119 @@
+#usage "[de]Change Via by Stack (Start-Layer End-Layer)<br>"
+       "<nobr>CHANGE VIA <i>Drill/Diameter/Shape/Stack</i> selektiert die Vias nur am <b>Start-Layer</b>.</nobr>"
+       "<p><nobr>"
+       "RUN change-via-by-stack Start-Layer End-Layer [[Drill [Diameter [NO] [Shape]]]] | [Newstart-Newend STACK]"
+       "</nobr><p>"
+       "RUN change-via-by-stack 1 2<br>"
+       "RUN change-via-by-stack 1 2 0.1 0.15<br>"
+       "RUN change-via-by-stack 1 2 0.1 0.15 SQUARE<br>"
+       "RUN change-via-by-stack 1 2 no square<br>"
+       "RUN change-via-by-stack 1 2 1-16 STACK<br>"
+       "Ändert Drill, Durchmesser, Shape bzw. Stacktiefe (Via-Länge) von Vias mit angegebener Stacktiefe.<br>"
+       "Wird die Option Drill bzw. Diameter nicht angegeben, so werden die "
+       "aktuell eingestellten (zuletzt mit CHANGE geänderten) Werte benutzt.<br>"
+       "Wird Shape nicht angegeben, bleibt die Form unverändert.<br>"
+       "Soll Drill bzw. Diameter nicht geändert werden, geben Sie die Option <b>NO</b> vor Shape an. "
+       "NO darf <b>nicht</b> angegeben werden, wenn Drill oder Diameter benutzt wird.<br>"
+       "Vor der Option STACK muß die neue Stacktiefe Start-End (z.B. 2-15) angegeben werden.<br>"
+       "Die Optionen können groß oder klein geschrieben werden."
+       "<p>"
+       "<author>Author alf@cadsoft.de</author>"
+       ,
+       "[en]Change Via by Stack (Start-Layer End-Layer)<br>"
+       "Changes drill, diameter, shape or via stack (via length) of vias with a given via stack.<br>"
+       "If the options Drill and/or Diameter are not used, the ULP will take the "
+       "currently valid values (previously set with the CHANGE command).<br>"
+       "If the Shape option is not given, the via shapes stay unchanged.<br>"
+       "If you want to have Drill and Diameter unchanged, use the option <b>NO</b> "
+       "before the Shape option.<br>"
+       "You must <b>not</b> use NO, if Drill or Diameter are to be changed.<br>"
+       "Define the new via stack Start-End (for example: 2-15) before the STACK option.<br>"
+       "Upper or lower case letters does not matter here."
+       "<p>"
+       "<author>Author alf@cadsoft.de</author>"
+
+
+
+string Version = "Version 1.0"; // 2007.12.04
+
+int    via_start = strtod(argv[1]);
+int    via_end = strtod(argv[2]);
+string v_shape;
+string stack = "";
+string new_stack = "";
+string script;
+
+real   v_drill = 0.0;
+real   v_diam  = 0.0;
+if (argv[3]) v_drill = strtod(argv[3]);
+if (argv[4]) v_diam = strtod(argv[4]);
+
+void set_layer() {
+  printf("GRID MM FINEST;\n");
+  printf("DISPLAY NONE;\nDISPLAY %d 18;\n", via_start );
+  return;
+}
+
+if (board) {
+  if (argc < 3) {
+    dlgMessageBox(usage + "<p>" + Version, "OK");
+    exit(-1);
+  }
+
+  if (argc == 5) {
+    stack = strupr(argv[4]);
+    if (stack == "STACK")  new_stack = argv[3];
+    else stack = "";
+  }
+
+  if (!stack) {
+    v_shape = strupr(argv[argc-1]);
+    if (v_shape == "ROUND" || v_shape == "SQUARE" || v_shape == "OCTAGON");
+    else v_shape == "";
+  }
+
+  board(B) {
+    script = filesetext(B.name, ".scr");
+    output(script, "wtD") {  // temporäres file
+      set_layer();
+      B.signals(S) {
+        S.vias(V) {
+          if (V.start == via_start && V.end == via_end) {
+            if (stack) printf("CHANGE VIA %s (%.4f %.4f);\n", new_stack, u2mm(V.x), u2mm(V.y) );
+            else {
+              if (v_shape) printf("CHANGE SHAPE %s (%.4f %.4f);\n", v_shape, u2mm(V.x), u2mm(V.y) );
+              if (strupr(argv[3]) != "NO") {
+                if (v_drill) printf("CHANGE DRIL %.4f (%.4f %.4f);\n", v_drill, u2mm(V.x), u2mm(V.y) );
+                else         printf("CHANGE DRIL (%.4f %.4f);\n", u2mm(V.x), u2mm(V.y) );
+                if (v_diam)  printf("CHANGE DIAM %.4f (%.4f %.4f);\n", v_diam, u2mm(V.x), u2mm(V.y) );
+                else         printf("CHANGE DIAM (%.4f %.4f);\n", u2mm(V.x), u2mm(V.y) );
+              }
+            }
+          }
+        }
+      }
+      printf("GRID LAST;\n");
+      printf("DISPLAY NONE ");
+      B.layers(L) if (L.visible) printf(" %d", L.number);
+      printf(";\n");
+    }
+  }
+
+dlgDialog("test") {
+  string text;
+  int t = fileread(text, script);
+  dlgTextEdit(text);
+  dlgHBoxLayout {
+    dlgPushButton("OK") dlgAccept();
+    dlgPushButton("esc") { dlgReject(); exit(-1); }
+    dlgStretch(1);
+  }
+};
+
+  exit("SCRIPT '" + script + "'\n");
+}
+
+else {
+  dlgMessageBox("Start this ULP in a Board", "OK");
+  exit(0);
+}

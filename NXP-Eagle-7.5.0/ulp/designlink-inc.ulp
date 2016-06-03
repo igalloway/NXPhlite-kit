@@ -1,0 +1,872 @@
+#usage "en: <b>DesignLink </b>"
+           "<p>"
+           "This is an include ULP needed from other DesignLink ULPs.<br>"
+           "<author>Author: support@cadsoft.de</author>"
+
+// THIS PROGRAM IS PROVIDED AS IS AND WITHOUT WARRANTY OF ANY KIND, EXPRESSED OR IMPLIED
+
+#require 5.1001
+
+string DIVersion = "1.0.7"; // 2010-07-27  reduce global variables
+                            // 2010-08-12  1.0.1 alf@cadsoft.de
+                            // 2010-08-15  1.0.2 alf@cadsoft.de
+                            //             techpacvar() berichtigt bei benutzter Platzhalterkombination "*?".
+                            // 2010-08-24  1.0.3 alf@cadsoft.de
+                            // 2010-08-30  1.0.4 alf@cadsoft.de
+
+string DILanguage = language();
+
+// For Norway the search service expects the older "no" as language, not "nb"
+if (DILanguage == "nb")
+   DILanguage = "no";
+
+string DICountry = country();
+
+if (DICountry == "GB") {
+   // According to ISO 3166 (http://www.iso.org/iso/english_country_names_and_code_elements)
+   // there is no "en_UK". Computers that use "English/Great Britain" have "en_GB".
+   // We set DICountry to the fake value of "UK" to work around this misconception in DesignLink:
+   DICountry = "UK";
+   }
+
+// Debug stuff
+int    DIDebug = 0;
+int    DIDebugXfer = 0; // Debug data transfer
+string DIDbgFile = "fdl-dbg.txt";
+string DIDbgMsg;
+
+// Configuration from eaglerc.usr
+int    DIInStock = cfgget("ULP:designlink.InStock") == "1";
+int    DIRoHS    = cfgget("ULP:designlink.RoHS")    == "1";
+string DISearchHist[];                 // History of search entries
+
+// Detect wether search params have changed
+int    DIInStockBef = DIInStock, DIRoHSBef = DIRoHS;
+string DISearchKeyBef;
+
+string DICompany = "";                 // Farnell or Newark
+string DICurrency;
+string DISearchURL = "api.element14.com"; // Unified to one URL since May 12
+string DIImageURL;                     // Still old style: One of 4 locations dependent on country :-(((
+string DIShoppingURL;
+
+int    DINrProducts;                   // nr of downloaded products
+int    DINrProductsTotal;              // nr of prod. in Farnell database
+int    DINrAccessibleProducts;         // nr of prod. that can actually be downloaded
+string DISearchResult;                 // Total result returned from PF server (XML string)
+string DIProducts[];                   // Products returned from PF server (array of XML strings)
+numeric string DIProductList[];        // Products converted to a list for displaying (part of information)
+int    DISearchOffset;                 // Offset in query
+int    DINrProductsPerPage = 50;       //
+
+// Dialog data:
+int    DIProductOffset;
+int    DINrProductsInList;
+string DIHtml = "";
+string DIAdvice = "";                  // Advice for user needed In some cases (shopping cart or library processing)
+                                       // displayed when no match
+string DIResInfo;                      // Info on search results
+int    DIProductSel = -1;              // Product currently selected
+
+// Dialog logics
+int    DIMode = 1;                     // to redisplay dialog
+int    DISkipRem;                      // Switch, to skip the rest of the search through schematic or library
+int    DICancelSearch;
+int    DIShow;                         // Show EAGLE part/device
+
+// EAGLE attribute names
+string DIAttOCFarnell = "OC_FARNELL";  // Attribute name of Farnell order code
+string DIAttOCNewark  = "OC_NEWARK";   // Attribute name of Newark order code
+string DIAttOC        = "";            // Attribute name of order code (one of the above, set later)
+string DIAttMF        = "MF";          // Attribute name of manufacturer name
+string DIAttMPN       = "MPN";         // Attribute name of manufacturer part name
+string DIUnknown      = "unknown";     // Attribute value if unknown order code
+
+int DISearchOptPac;                    // Add package name to search string
+
+// Search types
+enum { DISearchByKeyword, DISearchByOC };
+
+// The central search routine SingleSearch is used in 3 different ways
+// with slightly different dialog and behaviour:
+//  - Initial Search when walking through schematic
+//  - Search again after order list is displayed
+//  - Search through a library (library processing tool)
+enum { DIModeInitSearch, DIModeNewSearch, DIModeLbrSearch };
+
+// Language support for dialogs: German/English
+// Please keep to alphabetic sorting for better maintainability !
+string Dictionary[] = {
+  "de\v"
+  "en\v",
+  "Abbrechen\v"
+  "Cancel\v",
+  "Aktualisieren\v"
+  "Update\v",
+  "allgemeine Suche\v"
+  "general search\v",
+  "Anzahl Leiterplatten:\v"
+  "Number of PCBs:\v",
+  "Anzahl Positionen: \v"
+  "Number of list items: \v",
+  "Anzahl\tValue\tPackage\tOrdercode\tHersteller\tHerstellercode\tVerfügbarkeit\tPreis (ab)\tBeschreibung\v"     // 2010-08-27 Value/Package "/" zu TAB geaendert
+  "Quantity\tValue\tPackage\tOrder code\tManufacturer\tManuf. Code\tAvailability\tPrice (from)\tDescription\v",  //  2020-08-27 Value/Package "/" zu TAB geaendert
+  "Attribute - Anzeigeoptionen\v"
+  "Attributes - Display options\v",
+  "Auf Lager: \v"
+  "In stock: \v",
+  "Auswählen\v"
+  "Select\v",
+  "Bauteilsuche für \v"
+  "part search for \v",
+  "Beschreibung\v"
+  "Description\v",
+  "Bestellliste exportieren\v"
+  "Export order list\v",
+  "Bestellliste für \v"
+  "order list for \v",
+  "Bitte geben Sie unten einen Suchstring ein !\v"
+  "Please enter a search string below !\v",
+  "Bitte manuell suchen oder Part überspringen !\v"
+  "Please search manually or skip this part !\v",
+  "Bitte starten Sie vom Bibliotheks-Editor aus !\v"
+  "Please run this tool from the library editor !\v",
+  "Bitte starten Sie vom Schaltplan aus !\v"
+  "Please start from schematic !\v",
+  "Bitte wählen Sie einen Listeneintrag oder überspringen Sie dieses Bauteil !\v"
+  "Please select a list entry or skip this part !\v",
+  "Beenden\v"
+  "Close\v",
+  "Besuchen Sie\v"
+  "Visit\v",
+  " DesignLink Devicesuche und -anzeige - \v"
+  " DesignLink Device search and display - \v",
+  "Deviceset\tPackage\tTechnologie\tDevicename\tOrdercode-Typ\tOrdercode\tHerstellercode\tBeschreibung\v"
+  "Deviceset\tPackage\tTechnology\tDevice name\tOrder code type\tOrder code\tManuf. code\tDescription\v",
+  "Direkt zur Bestelliste\v"
+  "Directly to order list\v",
+  "Ergebnissen\v"
+  "results\v",
+  "Erzeugung der Package-Bilder zunächst !\v"
+  "Generating package images first !\v",
+  "Exportieren\v"
+  "Export\v",
+  "Export als Textdatei\v"
+  "Export as text file\v",
+  "Fehler bei Zugriff auf\v"
+  "Error while accessing\v",
+  "Hilfe\v"
+  "Help\v",
+  "Keine Anzeige\v"
+  "display none\v",
+  "Keine Treffer.\v"
+  "No matches.\v",
+  "Keine weiteren Produkte verfügbar!\v"
+  "No further products available!\v",
+  "+Manuelle Suche\v"
+  "+Manual Search\v",
+  "Mehr als ein Artikel zu diesem Ordercode gefunden!\v"
+  "Found more than one item fitting order code!\v",
+  "Mit Ordercodes: \v"
+  "With order codes: \v",
+  "Name anzeigen\v"
+  "only Name\v",
+  "Nächste\v"
+  "Next\v",
+  "Neue Suche\v"
+  "New search\v",
+  "Ordercode\tHersteller\tHerstellercode\tVerfügbarkeit\tPreis (ab)\tBeschreibung\v"
+  "Order code\tManufacturer\tManuf. code\tAvailability\tPrice (from)\tDescription\v",
+  "Ordercode-Zuweisung - \v"
+  "Order code embedding - \v",
+  "Ordercodes speichern\v"
+  "Save order codes\v",
+  "Prüfe Preis und Verfügbarkeit: \v"
+  "Check price and availability: \v",
+  "Selektion zum Warenkorb hinzufügen\v"
+  "Add selection to shopping cart\v",
+  "Speichere Ordercodes\v"
+  "Saving order codes\v",
+  "Speichern + Beenden\v"
+  "Save + Close\v",
+  "Suche\v"
+  "Searching\v",
+  "+Suchen\v"
+  "+Search\v",
+  "Suche nach \v"
+  "Searching for \v",
+  "Treffer pro Seite\v"
+  "Results per page\v",
+  "und Include \v"
+  "and include \v",
+  "Überspringen\v"
+  "Skip this\v",
+  "Verschiedene Versionen von \v"
+  "Different versions of \v",
+  "von\v"
+  "of\v",
+  "Vorige\v"
+  "Previous\v",
+  "Vorrätig\v"
+  "In stock\v",
+  "Wert anzeigen\v"
+  "only Value\v",
+  "Wert und Name anzeigen\v"
+  "Value and Name\v",
+  "Zum Warenkorb hinzufügen\v"
+  "Add to shopping cart\v",
+  "Zur Detailansicht oder erneuten Suche der Artikel bitte diese doppelklicken !\v"
+  "For detail view or new search of items please doubleclick them !\v",
+  "Zur Detailansicht oder Suche und Zuweisung eines Artikels bitte Device doppelklicken !\v"
+  "For detail view or search and assignment of a product please doubleclick device !\v",
+  "Zurück\v"
+  "Back\v"
+};
+
+string DIDlgLang = DILanguage;
+if (DIDlgLang != "de") DIDlgLang = "en";
+int DILangIdx = strstr(Dictionary[0], DIDlgLang) / 3;
+
+// Translate, based on Dictionary
+string tr(string s) {
+  string t = lookup(Dictionary, s, DILangIdx, '\v');
+  return t ? t : s;
+}
+//-----------------------------------------------------------------------------
+
+// product list head vor various representations
+string DIProductListHead = tr("Ordercode\tHersteller\tHerstellercode\tVerfügbarkeit\tPreis (ab)\tBeschreibung");
+
+/************** Functions ****************************************************/
+void InitCfg(void) {
+   string hist = cfgget("ULP:designlink.SearchHistory");
+   strsplit(DISearchHist, hist, '\t');
+}
+
+void SaveCfg(void) {
+   cfgset("ULP:designlink.SearchHistory", strjoin(DISearchHist, '\t'));
+}
+
+void InitCountryData(void)
+{
+  string CountryData[] = {
+   "DE EUR 0 de.farnell.com",
+   "AT EUR 0 at.farnell.com",
+   "CH CHF 0 ch.farnell.com",
+   "UK GBP 0 uk.farnell.com", // actually this should be GB, see above
+   "BE EUR 0 be.farnell.com",
+   "FI EUR 0 fi.farnell.com",
+   "FR EUR 0 fr.farnell.com",
+   "NL EUR 0 nl.farnell.com",
+   "NO NOK 0 no.farnell.com",
+   "SE SEK 0 se.farnell.com",
+   "DK DKK 0 dk.farnell.com",
+   "IL USD 0 il.farnell.com",
+   "IT EUR 0 it.farnell.com",
+   "ES EUR 0 es.farnell.com",
+   "AU AUD 2 au.element14.com",
+   "NZ NZD 2 nz.element14.com",
+   "PT EUR 0 pt.farnell.com",
+   "IE EUR 0 ie.farnell.com",
+   "SI EUR 0 si.farnell.com",
+   "PL PLZ 0 pl.farnell.com",
+   "HU HUF 0 hu.farnell.com",
+   "SK EUR 0 sk.farnell.com",
+   "IN INR 0 in.element14.com",
+   "BG EUR 0 bg.farnell.com",
+   "RO RON 0 ro.farnell.com",
+   "CZ CZK 0 cz.farnell.com",
+   "EE EUR 0 ee.farnell.com",
+   "LV EUR 0 lv.farnell.com",
+   "TR EUR 0 tr.farnell.com",
+   "LT EUR 0 lr.farnell.com",
+   "RU RUB 0 ru.farnell.com",
+   "CN CNY 1 cn.element14.com",
+   "HK HKD 2 hk.element14.com",
+   "SG SGD 2 sg.element14.com",
+   "MY MYR 2 my.element14.com",
+   "PH PHP 2 ph.element14.com",
+   "KR KRW 2 kr.element14.com",
+   "TW TWD 2 tw.element14.com",
+   "TH THB 2 th.element14.com",
+   "CA CAD 3 canada.newark.com",
+   "MX MXN 3 mexico.newark.com",
+   "US USD 3 www.newark.com",
+   "AS USD 3 www.newark.com"
+   };
+
+  string OldURLs[] = {  // After unification of Farnell's search APIs to only on they left this hidden dependency :-((
+    "uk.farnell.com",
+    "cn.element14.com",
+    "au.element14.com",
+    "www.newark.com"
+    };
+
+  string rx = "^" + DICountry;
+  for (int i = 0; ; i++) {
+      string cd = CountryData[i];
+      if (!cd)
+         break;
+      if (strxstr(cd, rx) == 0) {
+         DICurrency = strsub(cd, 3, 3);
+         int u = strtol(strsub(cd, 7, 1));
+         DIImageURL = OldURLs[u];
+         // In case the Newark server is the one we contact, we keep to Newark order codes
+         // Set device/part attribute keyword accordingly
+         DIAttOC = (u == 3) ? DIAttOCNewark : DIAttOCFarnell;
+         DICompany = (u == 3) ? "Newark" : "Farnell";
+         DIShoppingURL = strsub(cd, 9);
+         break;
+         }
+      }
+  if (!DICurrency || !DISearchURL) {
+     string Msg;
+     sprintf(Msg, "Country '%s' not supported.", DICountry);
+     dlgMessageBox(Msg);
+     exit(1);
+     }
+}
+
+string GetDesignLinkURL(void)
+{
+  return "https://" + DISearchURL + "/pffind/services/SearchService";
+}
+
+string GetImageURL(string Image, int Large, string vrnt)
+{
+  return Image && vrnt ? "http://" + DIImageURL + "/productimages/" + vrnt + (Large ? "standard" : "thumbnail") + Image : "";
+}
+
+string GetDataSheetURL(string Url)
+{
+  if (Url[0] == '/')
+     Url = "http://" + DISearchURL + Url;
+  return Url;
+}
+
+string B2Str(int b)
+{
+  return b ? "true" : "false";
+}
+
+string I2Str(int i) {
+   string str;
+   sprintf(str, "%d", i);
+   return str;
+}
+
+void Clear(void)
+{
+  DINrProducts = DINrProductsTotal = DINrAccessibleProducts = DIProductOffset = DISearchOffset = 0;
+  DIProductList[0] = "";
+  DIProductSel = -1;
+}
+
+int Search(string key, int search_type)
+{
+   string customerID = "CadSoft2", customerPW = "CadSoft2";  // Dummy credentials
+   string localKey = key, offset = I2Str(DISearchOffset);
+
+   if (search_type == DISearchByKeyword) {
+      // Replace special characters with according XML notation.
+      string StrRepl[] = { // string replacements
+         "&", "&amp;",     // has to be the first one!
+         "<", "&lt;",
+         ">", "&gt;"
+      };
+      int o = 0;
+      for (int x = 0; StrRepl[x]; ) {
+         o = strstr(localKey, StrRepl[x], o);
+         if (o >= 0) {
+            localKey = strsub(localKey, 0, o) + StrRepl[x + 1] + strsub(localKey, o + strlen(StrRepl[x]));
+            o += strlen(StrRepl[x + 1]);
+         }
+         else {
+            x += 2;
+            o = 0;
+         }
+      }
+      // Store current user settings in Eaglerc
+      cfgset("ULP:designlink.InStock", DIInStock ? "1" : "0");
+      cfgset("ULP:designlink.RoHS",    DIRoHS    ? "1" : "0");
+   }
+   // Build the XML query string (SOAP)
+   string TimeStamp = t2string(time(), "Uyyyy-MM-ddThh:mm:ss.000");
+   string Signature = fdlsignature(((search_type == DISearchByKeyword) ? "searchByKeyword" : "searchByPremierFarnellPartNumber") +
+                                   TimeStamp, customerPW);
+   string Query = "<soapenv:Envelope  xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"  xmlns:v1=\"http://pf.com/soa/services/v1\">\n"
+                  " <soapenv:Header>\n"
+                  "   <v1:userInfo>\n"
+                  "     <v1:signature>" + Signature + "</v1:signature>\n"
+                  "     <v1:timestamp>" + TimeStamp + "</v1:timestamp>\n"
+                  "     <v1:locale>" + DILanguage + "_" + DICountry + "</v1:locale>\n"
+                  "   </v1:userInfo>\n"
+                  "   <v1:accountInfo>\n"
+                  "     <v1:customerId>" + customerID + "</v1:customerId>\n"
+                  "   </v1:accountInfo>\n"
+                  " </soapenv:Header>\n"
+                  " <soapenv:Body>\n";
+   // Differences in the query for both cases. Rest remains the same.
+   if (search_type == DISearchByKeyword)
+      Query +=    "   <v1:keywordParameter>\n"
+                  "     <v1:keyword>" + localKey + "</v1:keyword>\n"
+                  "     <v1:offset>" + offset + "</v1:offset>\n"
+                  "     <v1:numberOfResults>" + I2Str(DINrProductsPerPage) + "</v1:numberOfResults>\n"
+                  "      <v1:RefinementParameters>\n"
+                  "        <v1:inStock>" + B2Str(DIInStock) + "</v1:inStock>\n"
+                  "        <v1:rohsComplaint>" + B2Str(DIRoHS) + "</v1:rohsComplaint>\n"
+                  "      </v1:RefinementParameters>\n"
+                  "    </v1:keywordParameter>\n";
+   else
+      Query +=   "   <v1:premierFarnellPartNumbers>\n"
+                 "     <v1:Sku>" + localKey + "</v1:Sku>\n"
+                 "    </v1:premierFarnellPartNumbers>\n";
+   Query +=      "  </soapenv:Body>\n"
+                 "</soapenv:Envelope>\n";
+
+   DIHtml = tr("Suche") + " <b>" + localKey + "</b>" + " ...";
+   if (!DIMode) dlgRedisplay(); // Omit Redisplay if we are not really in a dialog context !
+   if (DIDebugXfer)
+      output("fdlQuery.html", "wb") printf("%s", Query);
+
+   // Here we go !
+   int rv = netpost(DISearchResult, GetDesignLinkURL() + "?callinfo.apiKey=" +
+                    strsub("sf4kqy6u29tkt95gg5a3wej" + 122 + Signature, 0, 24), Query);
+
+   if (DIDebugXfer)
+      output("fdlResponse.html", "wb") printf("%s", DISearchResult);
+
+   // Error handling
+   if (rv < 0) {
+      string FaultString = "";
+      if (strlen(DISearchResult) > 1)
+        FaultString = xmltext(DISearchResult, "soapenv:Envelope/soapenv:Body/soapenv:Fault/faultstring");
+      // This indicates that a search by OC failed. Don't treat this as an error !
+      // Accessing a record with an invalid key (from outside) must not throw an exception !
+      if ((search_type == DISearchByOC) && (FaultString == "SearchServiceException")) {
+        DISearchResult = "";
+        return 1;
+      }
+      if (FaultString)
+         DISearchResult = FaultString;
+      sprintf(DIHtml, tr("Fehler bei Zugriff auf") + " '%s':\n\n%s\n\n%s", GetDesignLinkURL(), neterror(), DISearchResult);
+      DISearchResult = "";
+      return 0;
+   }
+   return 1;
+}
+
+int FilteredSearch(string key, int search_type)
+{
+   int nrUnfiltProducts;
+   string unfiltProducts[];
+   int nrProductsTarget;
+   int ret = 1;
+
+   if (DIInStock != DIInStockBef || DIRoHS != DIRoHSBef || key != DISearchKeyBef)
+      Clear();
+
+   nrProductsTarget = DIProductOffset + DINrProductsPerPage;
+   if (nrProductsTarget < DINrProducts) return 1;
+
+   while ((DISearchOffset < DINrAccessibleProducts || DISearchOffset == 0) && DINrProducts < nrProductsTarget) {
+      ret = Search(key, search_type);
+      if (ret == 0 || strlen(DISearchResult) <= 1) break;
+      DINrProductsTotal = strtol(xmltext(DISearchResult, "soapenv:Envelope/soapenv:Body/ns1:" +
+                                         (search_type == DISearchByKeyword ? "keywordSearchReturn" : "premierFarnellPartNumberReturn") +
+                                         "/ns1:numberOfResults"));
+      DINrAccessibleProducts = min(500, DINrProductsTotal);
+      nrUnfiltProducts = xmlelements(unfiltProducts, DISearchResult, "soapenv:Envelope/soapenv:Body/ns1:" +
+                                     (search_type == DISearchByKeyword ? "keywordSearchReturn" : "premierFarnellPartNumberReturn") +
+                                     "/ns1:products");
+      // Filtering
+      for (int i = 0; i < nrUnfiltProducts; ++i)
+         if (search_type != DISearchByKeyword || DICompany == "Newark" ||
+             strtol(xmltext(unfiltProducts[i], "ns1:products/ns1:stock/ns1:status")) != -4)  // Product no longer stocked
+            DIProducts[DINrProducts++] = unfiltProducts[i];
+
+      DISearchOffset += DINrProductsPerPage;
+      if (search_type != DISearchByKeyword) break; // No repeated search nec. because no filtering
+   }
+   // Remember settings
+   DIInStockBef = DIInStock;
+   DIRoHSBef = DIRoHS;
+   DISearchKeyBef = key;
+   return ret;
+}
+
+void Result2List(void)
+{
+   if (strlen(DISearchResult) <= 1)
+      return;
+   DINrProductsInList = min(DINrProducts - DIProductOffset, DINrProductsPerPage);
+   DIProductList[DINrProductsInList] = "";
+   for (int i = DINrProductsInList; --i >= 0; ) {
+      int prIdx = DIProductOffset + i;
+      string Prices[];
+      int nrPrices = xmlelements(Prices, DIProducts[prIdx], "ns1:products/ns1:prices");
+      string Price;
+      for (int j = nrPrices; --j >= 0; ) {
+         string p1 = xmltext(Prices[j], "ns1:prices/ns1:cost");
+         if (p1 && (!Price || strtod(p1) < strtod(Price)))
+            Price = p1;
+      }
+      DIProductList[i] =
+          xmltext(DIProducts[prIdx], "ns1:products/ns1:sku") + "\t"
+        + xmltext(DIProducts[prIdx], "ns1:products/ns1:vendorName") + "\t"
+        // + xmltext(DIProducts[prIdx], "ns1:products/ns1:productStatus") + "\t" // Filter criterion ?
+        + xmltext(DIProducts[prIdx], "ns1:products/ns1:translatedManufacturerPartNumber") + "\t"
+        + xmltext(DIProducts[prIdx], "ns1:products/ns1:inv") + "\t"
+        + Price + "\t"
+        + xmltext(DIProducts[prIdx], "ns1:products/ns1:displayName");
+   }
+  // Update result info
+  DIResInfo = "";
+  if (DINrProductsInList > 0)
+     // Rounded or exact value, dependent on where we are
+     sprintf(DIResInfo, "%d - %d " + tr("von") +
+             (DISearchOffset >= DINrProductsTotal ? "" : " ~") + " %d " + tr("Ergebnissen"),
+             DIProductOffset + 1, DIProductOffset + DINrProductsInList,
+             DISearchOffset >= DINrProductsTotal ? DINrProducts : DINrProductsTotal/10 * 10);
+   DIProductSel = -2; // the first item after sort
+}
+
+// Display HTML content.
+void ShowSelection(void)
+{
+  int huge_quantity = 1000000; // Indicator for "or higher"...
+
+  if (!DINrProducts) {
+     DIHtml = tr("Keine Treffer.") + "<p>\n";
+     DIHtml += DIAdvice;
+     return;
+     }
+  if (DIProductSel < 0)
+     return;
+
+  string p = DIProducts[DIProductOffset + DIProductSel];
+  if (p) {
+     string Attributes[];
+     int nAttributes = xmlelements(Attributes, p, "ns1:products/ns1:attributes");
+
+     string AttributeList;
+     for (int i = 0; i < nAttributes; ++i)
+         AttributeList += "    <li> " + xmltext(Attributes[i], "ns1:attributes/ns1:attributeLabel")
+                               + ": " + xmltext(Attributes[i], "ns1:attributes/ns1:attributeValue")
+                                      + xmltext(Attributes[i], "ns1:attributes/ns1:attributeUnit")
+                                      + "</li>\n";
+     string PricesList;
+     {
+       string Prices[];
+       int nPrices = xmlelements(Prices, p, "ns1:products/ns1:prices");
+       for (int j = 0; j < nPrices; ++j) {
+           string Cost = xmltext(Prices[j], "ns1:prices/ns1:cost");
+           if (Cost) {
+              string n1 = xmltext(Prices[j], "ns1:prices/ns1:from"),
+                     n2 = xmltext(Prices[j], "ns1:prices/ns1:to");
+              if (strtol(n2) >= huge_quantity)
+                 n2 = "+";
+              else
+                 n2 = "&nbsp;-&nbsp;" + n2 + "&nbsp;";
+              PricesList += "       <tr>\n"
+                            "        <td>" + n1 + n2 + "</td>\n"
+                            "        <td>" + Cost + "</td>\n"
+                            "       </tr>\n";
+              }
+           }
+     }
+     DIHtml = "<style type=\"text/css\">\n"
+              " .tableblock {\n"
+              "     background-color: #A0A0A0;\n"
+              " }\n"
+              " .tabledata {\n"
+              "     background-color: #F0F0F0;\n"
+              "     padding: 2;\n"
+              " }\n"
+              "</style>\n"
+              ;
+
+     DIHtml +=  "<h2>" + xmltext(p, "ns1:products/ns1:displayName") + "</h2>";
+     string ImageUrl = GetImageURL(xmltext(p, "ns1:products/ns1:image/ns1:baseName"), 1, xmltext(p, "ns1:products/ns1:image/ns1:vrntPath")),
+            DataSheet = xmlelement(p, "ns1:products/ns1:datasheets");
+     DIHtml +=  "<table>\n"
+                " <tr>\n"
+                "  <td>\n";
+     if (ImageUrl)
+        DIHtml +=
+              "   <img src=\"" + ImageUrl + "\">\n";
+     if (DataSheet)
+        DIHtml +=
+              "   <p>\n"
+              "    <a href=\"" + GetDataSheetURL(xmltext(DataSheet, "ns1:datasheets/ns1:url")) + "\">\n"
+              "    " + xmltext(DataSheet, "ns1:datasheets/ns1:description") + "</a>\n"
+              "   </p>\n";
+     DIHtml +=  "  </td>\n"
+              "  <td>\n"
+              "   <dl>\n"
+              "    <dt>Manufacturer:</dt>\n"
+              "    <dd style=\"text-align: left;\">" + xmltext(p, "ns1:products/ns1:vendorName") + "</dd>\n"
+              "    <dt>Order Code:</dt>\n"
+              "    <dd>" + xmltext(p, "ns1:products/ns1:sku") + "</dd>\n"
+              "    <dt>Manufacturer Part No:</dt>\n"
+              "    <dd>" + xmltext(p, "ns1:products/ns1:translatedManufacturerPartNumber") + "</dd>\n"
+              "   </dl>\n"
+              "   <p>RoHS: <strong>  "  + xmltext(p, "ns1:products/ns1:rohsStatusCode") + "</strong></p>\n"
+              "   <dl>\n"
+              "    <dt>Description</dt>\n"
+              "   </dl>\n"
+              "   <ul>\n"
+              "    <li>" + xmltext(p, "ns1:products/ns1:displayName") + "</li>\n"
+                   + AttributeList +
+              "   </ul>\n"
+              "  </td>\n"
+              "  <td>\n"
+              "   <table class=\"tableblock\">\n"
+              "    <tr>\n"
+              "     <td class=\"tabledata\">\n"
+              "      <h4>Availability</h4>\n"
+              "      <table width=\"100\%\" style=\"background:#FFFFFF\">\n"
+              "       <tr>\n"
+              "        <td>\n"
+              "         <p>\n"
+              "          <b>Availability</b>: " + xmltext(p, "ns1:products/ns1:inv") + "<br>\n"
+              "         </p>\n"
+              "         <p>\n"
+              "          <b>Price For:</b> " + xmltext(p, "ns1:products/ns1:packSize") + " " + xmltext(p, "ns1:products/ns1:unitOfMeasure") +
+              "         </p>\n"
+              "         <p>\n"
+              "          <b>Minimum Order Quantity:</b> " + xmltext(p, "ns1:products/ns1:translatedMinimumOrderQuality") +
+              "         </p>\n"
+              "         <p>\n"
+              "          <b>Order Multiple:</b> " + xmltext(p, "ns1:products/ns1:translatedMinimumOrderQuality") +
+              "         </p>\n"
+              "        </td>\n"
+              "       </tr>\n"
+              "      </table>\n"
+              "     </td>\n"
+              "    </tr>\n"
+              "    <tr>\n"
+              "     <td class=\"tabledata\">\n"
+              "      <h4>Price (" + DICurrency + ")</h4>\n"
+              "      <table width=\"100\%\" style=\"background:#FFFFFF\">\n"
+              "       <tr>\n"
+              "        <th width=\"44\%\">Qty</th>\n"
+              "        <th>List Price</th>\n"
+              "       </tr>\n"
+                      + PricesList +
+              "      </table>\n"
+              "     </td>\n"
+              "    </tr>\n"
+              "   </table>\n"
+              "  </td>\n"
+              " </tr>\n"
+              "</table>\n";
+     }
+}
+
+// Only search by keyword
+void DoSearch(string keyword)
+{
+  if (FilteredSearch(keyword, DISearchByKeyword)) {
+     Result2List();
+     ShowSelection();
+  }
+  // Remember settings
+  DIInStockBef = DIInStock;
+  DIRoHSBef = DIRoHS;
+  DISearchKeyBef = keyword;
+}
+
+string SingleSearch(int dlg_mode, string dlg_head, string description, string image,
+                    int start_search_mode, string singlekey, string displaykey) {
+  // Without treating the help text here local maintenance of it is a nightmare !
+  string help[] = {
+    "<b>Bauteilsuche</b><br>"
+    "Gehen Sie schrittweise durch die Bauteiltypen Ihres Schaltplans und suchen "
+    "nach passenden Artikeln in Farnell's Produktkatalog.<br>"
+    "Pro Bauteiltyp werden zunächst Suchergebnisse anhand des Bauteil-Value angezeigt. "
+    "Befindet sich ein geeigneter Farnell-Artikel darunter, können Sie diesen "
+    "per Button oder Doppelklick auswählen.<br>"
+    "Wenn nicht, können Sie eine beliebige <i>manuelle Suche</i> starten und dann auswählen.<br>"
+    "Nach der Auswahl gelangen Sie zum nächsten Bauteiltyp. "
+    "Mit <i>Überspringen</i> kommen Sie ohne Auswahl weiter. "
+    "Bauteiltypen, die anhand des Value kein Suchergebnis liefern, werden automatisch übersprungen. "
+    "Wenn Sie alle Bauteiltypen durchgegangen sind oder auch mit dem Button <i>Direkt zur Bestelliste</i> "
+    "gelangen Sie zur Bestellliste, von der aus Sie direkt bei Farnell ordern können. "
+    "Sie können Ihre Auswahl vorher noch beliebig ändern. "
+    "<p><b>Hersteller-Bibliotheken mit Ordercodes</b><br>"
+    "Für Bauteile aus Hersteller-Bibliotheken, die bereits mit Farnell-Ordercodes versehen sind, "
+    "erübrigt sich diese Suche und der entsprechende Farnell-Artikel wird automatisch in die "
+    "Bestellliste übernommen. "
+    "<p><b>Alternative Suche mit Value und Package</b><br>"
+    "Anstatt nur mit dem Bauteil-Value können Sie die automatische Suche auch mit Value und Package "
+    "durchführen. Sie erreichen dies, in dem Sie <br><i>" + filename(argv[0]) + "</i> mit der Option "
+    "-sop (search option package) aufrufen."
+    "<p><b>Hinweis zu Internet-Verbindungseinstellungen</b><br>"
+    "Falls Sie über einen <b>Proxy</b> auf das Internet zugreifen, passen Sie bitte die Einstellungen "
+    "im Control Panel unter Hilfe / Auf Update prüfen / Konfigurieren entsprechend an."
+    ,
+    "<b>Part search</b><br>"                                                                                             +
+    "Step through the part types of your schematic and search for according articles in "                                +
+    DICompany + "'s product catalog.<br>"                                                                                +
+    "For each part type, search results fitting to the part value are displayed at first. "                              +
+    "If there's an appropriate article from " + DICompany + " among them you can choose it by button or mouse click.<br>"+
+    "If not, you can start an arbitrary <i>manual search</i> and select then.<br>"                                       +
+    "After selection you get to the next part type. "                                                                    +
+    "With <i>Skip this</i> you proceed without a choice. "                                                               +
+    "Part types with no search results based on the part value are skipped automatically. "                              +
+    "After going through all part types or by pressing <i>Directly to order list</i> "                                   +
+    "you get to the order list where you can load it to a " + DICompany + " shopping cart. "                               +
+    "You can still change your selection before."                                                                        +
+    "<p><b>Manufacturer libraries with order codes</b><br>"                                                              +
+    "This search is not necessary for parts from manufacturer libraries with " + DICompany + " order codes. "            +
+    "The corresponding " + DICompany + " article is taken automatically to the order list."                              +
+    "<p><b>Alternative search by value and package</b><br>"                                                              +
+    "Instead of search by part value you can do the automatic search by value and package. "                             +
+    "You achieve this by starting <i>" + filename(argv[0]) + "</i> with option -sop (search option package)."
+    "<p><b>Hint on internet settings</b><br>"
+    "If you access the internet by a <b>proxy</b>, please adjust the settings in the Control Panel under "
+    "Help / Check for Update / Configure accordingly."
+  };
+  DIProductSel = -1;
+  string key = displaykey;
+  int ok = 1;                    // Wether search worked or not
+
+  if (!((start_search_mode == DISearchByOC) && (singlekey == DIUnknown))) { // Avoid search with an unknown OC !
+    ok = FilteredSearch(singlekey, start_search_mode);
+    Result2List();
+  }
+
+  if (DINrProducts > 0)
+    DIProductSel = 0;
+  // If it's the initial search and no products have been found don't display the dialog (and go to next item)
+  // The same for initial search by OC: If OC is there, everything is clear.
+  // Search must have worked (ok=1). Otherwise user needs to be informed !
+  if (ok && (dlg_mode == DIModeInitSearch) && ((DINrProducts == 0) || (start_search_mode == DISearchByOC)) )
+      return (DINrProducts == 0) ? "" : DIProductList[0];
+  else {
+    DIMode = 0;              // For displaying search message
+    if (ok) ShowSelection(); // Prepares Html string for display
+    int dlg_ret = dlgDialog(dlg_head) {
+      dlgVBoxLayout {
+        if (dlg_mode == DIModeLbrSearch) {
+          dlgLabel("<b>" + tr("Suche nach ") + (DICountry == "US" ? "NEWARK" : "FARNELL") +
+                   " Code </b>(" + GetDesignLinkURL() + ")");
+        }
+        dlgHBoxLayout dlgSpacing(800);
+        dlgHBoxLayout {
+          dlgTextView(DIHtml);  // Gleich anzeigen...
+          dlgVBoxLayout dlgSpacing(400);  // flines
+        }
+        dlgListView(DIProductListHead ,DIProductList, DIProductSel)
+          if (dlgSelectionChanged()) ShowSelection();
+          else dlgAccept();
+        dlgGroup(tr("Beschreibung") + " EAGLE Part/Device:") {
+          dlgHBoxLayout {
+            dlgLabel(description);
+            if (image) dlgLabel(image);
+          }
+        }
+        dlgHBoxLayout {
+          dlgStringEdit(key, DISearchHist, 9);
+          dlgPushButton(tr("+Manuelle Suche")) {
+            Clear();
+            DoSearch(key);
+          }
+        }
+        dlgHBoxLayout {
+          dlgPushButton(tr("Auswählen")) {
+            if (DIProductSel < 0) dlgMessageBox(
+              tr("Bitte wählen Sie einen Listeneintrag oder überspringen Sie dieses Bauteil !"), "OK");
+            else dlgAccept();
+          }
+
+          dlgPushButton(tr("Überspringen")) {
+            DIProductSel = -1;
+            dlgAccept();
+          }
+          dlgStretch(1);
+          if (dlg_mode == DIModeLbrSearch) {
+             dlgPushButton(tr("Vorige"))
+                if (DIProductOffset > 0) {
+                   DIProductOffset -= DINrProductsPerPage;
+                   DoSearch(key);
+                }
+             dlgLabel(DIResInfo, 1);
+             dlgPushButton(tr("Nächste"))
+                if (DIProductOffset + DINrProductsPerPage < DINrAccessibleProducts) {
+                   DIProductOffset += DINrProductsPerPage;
+                   DoSearch(key);
+                }
+                else
+                   dlgMessageBox(tr("Keine weiteren Produkte verfügbar!"));
+            dlgStretch(1);
+          }
+          if (dlg_mode == DIModeInitSearch) // In case of initial search offer help
+            dlgPushButton(tr("Hilfe") + "...")
+              dlgMessageBox(help[DILangIdx]);
+          string button_text;
+          if (dlg_mode == DIModeInitSearch) button_text = tr("Direkt zur Bestelliste");
+          else button_text = tr("Zurück");
+          dlgPushButton(button_text) {
+            dlgAccept();
+            if (dlg_mode == DIModeInitSearch) DISkipRem = 1;
+            else DICancelSearch = 1;
+          }
+        }
+      }
+    };
+    DIMode = 1; // Reset
+    // User pressed the "x" close button:
+    // This means: No selection, no change of data in case of search from order list
+    // In case of the initial search, assume/respect that the user wants to leave DL
+    // Pro: He should have a possibility to leave. Otherwise he'd have to go directly to orderlist
+    // first (involving unintended searches) before he can close.
+    // Con: He may click without being aware that all his previous decisions are lost.
+    // This is less likely as we are not providing a close button here.
+    if (dlg_ret == -1) {
+      if (dlg_mode == DIModeInitSearch)
+        exit(EXIT_SUCCESS);
+      DIProductSel = -1;
+      DICancelSearch = 1;
+    }
+    return (DIProductSel < 0 ? "" : DIProductList[DIProductSel]);
+  }
+}
+
+// --- replace package and technology text holder ----
+string techpacvar(string devsetname, string devname, string tech, string pacname) {
+  if (tech == "''") tech = "";
+  if (pacname == "''") pacname = "";
+  if (devname == "''") devname = "";
+  string s[];
+  int cnt;
+  cnt = strsplit(s, devsetname, '*');
+  if (cnt > 1) {
+    if (cnt == 2) {
+      if (!s[0]) {
+        devsetname = tech + s[1];
+      }
+      else if (!s[1]) {
+        devsetname = s[0] + tech;
+      }
+      else devsetname = s[0] + tech + s[1];
+    }
+  }
+  else devsetname += tech;
+
+  cnt = strsplit(s, devsetname, '?');
+  if (cnt > 1) {
+    if (cnt == 2) {
+      if (!s[0]) {
+        devsetname = devname + s[1];
+      }
+      else if (!s[1]) {
+        devsetname = s[0] + devname;
+      }
+      else devsetname = s[0] + devname + s[1];
+    }
+  }
+  else devsetname += devname;
+  return devsetname;
+}

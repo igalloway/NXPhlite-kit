@@ -1,0 +1,25 @@
+#usage "<b>run a SCRIPT through all schematics in a directory</b><p>\n"
+       "Load any schematic from the project directory and execute the SCRIPT.<p>"
+       "<author>Author: alf@cadsoft.de</author><p>"
+
+string a[], cmd;
+
+//-------- main program --------------------------------------------------
+if  (schematic) {
+  schematic(S) {
+    string sch_path = filedir(S.name);
+    string ScriptFile = dlgFileOpen("Select a SCRIPT to start in all Schematics", "", "*.scr");
+    if (!ScriptFile) exit(0);
+    int n = fileglob(a, sch_path + "*.sch");
+    if (n) {
+      for (int xl = 0; xl < n; xl++) {
+        string h;
+        sprintf(h, "EDIT '" + sch_path + filename(a[xl]) + "';\nSCRIPT '" + ScriptFile + "';\n");
+        cmd += h;
+      }
+    }
+  }
+  exit (cmd);
+}
+
+else dlgMessageBox("Start this ULP from a Schematic", "OK");

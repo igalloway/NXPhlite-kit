@@ -1,0 +1,1161 @@
+
+#usage "en:<b>export 3d-data from board to IDF-FileFormat</b><p>"
+       "Layer 50 contains the 3D board dimension, Layer 57 and 58 store the height info"
+	   "for top and bottom mounted parts respectively. If these layers don't exist in your"
+	   "design the ULP can create them for you."
+       "More info can be found here: .../eagle.../doc/generate_3d_data_eng.pdf<br>"
+       "<author>Original author: Uploaded by Neubacher Andreas from Commend International GmbHh<br>"
+       "co-Author: alf@cadsoft.de</author><p>"
+
+       ,
+       "de:<b>export 3d-data from board to IDF-FileFormat</b><p>"
+       "Im Layer 50 mu&szlig; eine Kopie der Boardkontour des Layer 20 angelegt werden. Die Wirebreite in Micron "
+       "ergibt die Boarddicke in mm.<br>"
+       "Die Bordkontour kann entweder im Board lebst oder in einem Package angelegt werden, es muß nur die "
+       "obenstehende Bedingung eingehalten werden.<br>"
+       "Um in einem Board einen Durchbruch zu erzeugen, kann man entweder im Board selbst oder in einem Package "
+       "eine Kontur mit der Wirebreite von 0 im Layer 50 anlegen.<br>"
+       "<author>Original author: Uploaded by Neubacher Andreas from Commend International GmbHh<br>"
+       "co-Author: alf@cadsoft.de</author><p>"
+
+#require 6.0600
+string UlpVersion = "2.3";
+
+// string Docuemantpath = "Weiter Infos finden sie im Dokumentenordner unter " + path_doc[0] + "/generate_3d_data_eng.pdf<br>";
+string Docuemantpath = "Weiter Infos finden sie im Dokumentenordner unter " + "/generate_3d_data_eng.pdf<br>";
+
+
+//############################################################################
+// Author: Jorge Garcia
+// Version |     Date   |  log
+//---------+------------+-----------------------------------------------------
+// v2.1    | 2015-11-03 |  - Changed layers to 50, 57 and 58.
+//                         - Added a function to check for the existence of these layers. If not found gives the option to create them.
+//
+// v2.3    | 2015-11-16 |  - Fixed mirroring issue in FreeCAD
+//
+// Author: Teunis van Beelen
+// Version |     Date   |  log
+//---------+------------+-----------------------------------------------------
+// v2.2    | 2015-11-10 |  - Make sure that parts that are placed on the bottom are mirrored correctly.
+//
+// v2.0    | 2015-05-20 |  - Changed layers to 150, 157 and 158.
+//                         - Canged filename extensions from .IDL to .emp  and .IDB to .emn.
+//                         - Write the unmodified packagenames to the IDF files.
+//                         - Fixed the code to select a directory for the IDF files.
+//
+//
+// Author: Andy Neubacher
+// Version |     Date   |  log
+//---------+------------+-----------------------------------------------------
+// v1.9    | 2014-04-08 |  - Now can change the filedirectory an filename
+//                           select Top and or Bottom side of parts to export
+// v1.8    | 2014-04-01 |  - Cutout und Koordinaten berichtigt (nur beim ersten Wire, Anfang und Endkoordinate ausgeben)
+//                           dann immer nur die 2. Koordinate bis die erste Koordinate wieder erreicht ist.
+//                         - LoopCounter für geschlossene Konturen (Durchbruch/Cutout) wieder berichtigt.
+//
+// v1.7    | 2014-01-20 |  - draw also pad-holes
+// v1.6    | 2013-12-19 |  - LoopCounter für geschlossene Konturen (Durchbruch/Cutout).
+//                           Die Bedingung für die Erkennung der einzelnen Konturen ist:
+//                           1. Die allererste Kontour im Layer 50 ist die Boardkontur,
+//                              was bedeutet, diese Kontour muss als allererste Kontur gezeichnet werden.
+//                           2. Jede weitere Kontur wird als Cutout betrachtet, und es wird keine Überprüfung
+//                              vorgenommen, ob diese Kontur innerhalb oder ausserhalb der Board-Dimension ist.
+//                           3. Jede Kontur muss durchgehend gezeichnet und geschlossen sein.
+//                              Das bedeutet, man darf innerhalb einer Kontur nicht an beliebigen Punkten
+//                              das (WIRE) zeichnen unterbrechen, und an einer anderen Stelle wieder beginnen,
+//                              also dem vorher unterbrochenen *Ende* entgegen zeichnen.
+//
+// v1.5    | 2013-12-18 |  - file renamed and now without version, for use in Text-Menu
+//         |            |  - draw board cutout
+//         |            |  - ++CutoutNumSegments change to CutoutNumSegments++
+//                           alf@cadsoft.de
+// v1.4    | 2013-12-11 |  - correct Board outline Curve
+//         |            |  - correct Pre- to Post-Increment in all Functions
+//         |            |  - fixed by Angelo.Cuccato@bogen-electronic.com
+// v1.3    | 2013-03-14 |  - correct using ARC coorinates
+// v1.2    | 2013-01-14 |  - Link in description to download page  - fixes by alf@cadsoft.de
+// v1.1    | 2012-12-04 |  - korrect Loop Label for contours in layer Dimension - fixes by alf@cadsoft.de
+// v1.0    | 2012-08-20 |  - more resolution %.6f of coordinates   - fixes by alf@cadsoft.de
+// v0.9    | 2012-02-08 |  - used function u2mm() for Z-axis value - fixes by alf@cadsoft.de
+//         |            |
+// v0.8    | 2011-05-31 |  - changed characters that caused import problems
+//         |            |  - changed output file extension to .emn and .emp
+//         |            |  - fixes by morten@riftlabs.com
+//         |            |
+// v0.7    | 2006-10-24 |  - outline of board can also be drawn direct in brd-file
+//         |            |  - any hole is taken from devices and board direct
+//         |            |  - close open polygons on request
+//         |            |  - drill vias on request
+//         |            |  - bugfix : error if device contains more than one poly on top and bottom
+//         |            |  - bugfix : sorting of points possible failed if polygon was open
+//         |            |  - bugfix : partheights on bottomlayer were ignored
+// v0.6    | 2006-08-31 |  now multiple partheights are possible
+// v0.5    | 2006-08-25 |  modification to 'RIR-standard'
+// v0.4    | 2005-11-09 |  1st export of a real board+parts successfull
+// v0.3    | 2005-11-03 |  correct mirrors at top and bottom side
+// v0.2    | 2005-10-21 |  1st working IDF-data
+// v0.1    | 2005-09-30 |  start of project
+//---------+------------+-----------------------------------------------------
+//
+// HOWTO:
+// Create your board outline on layer 50.
+// In your library, draw the component outlines on layer 57 (tCad) and use the line thickness to set component height.
+// 1000 mic = 1 mm (e.g. if your grid is in mm, then a line thickness of 0.001 equals a component height of 1 mm).
+// More info can be found here: ftp://ftp.cadsoft.de/eagle/userfiles/ulp/generate_3d_data_eng.pdf
+//
+//############################################################################
+
+
+int    Layer3dBoardDimension = 50;
+int    tLayer3Ddata = 57;
+int    bLayer3Ddata = 58;
+int    SelectSide[] = { 1, 1 };   // select Part output on side Top / Bottom
+int    maxCutoutLineWidth = 0;    // -->> is linewidth 0.0 -> line is a cutout ??
+string UlpName = filename(argv[0]);  // gets ulp name
+
+
+// partoptions
+int    NumParts;            // number of parts
+string PartName[];        // name of part
+
+// vars for polygon calculation
+int   NumSegments = 0;      // number of points
+int   PointX1[];            // start x
+int   PointY1[];            // start y
+int   PointX2[];            // end x
+int   PointY2[];            // end y
+int   SegmentType[];        // LINE, ARC, CIRCLE
+real  SegmentCurve[];       // used by ARCs : - if drawn CCW,  + if drawn CW
+int   SegmentWidth[];       // linewitdh = partheight
+
+int   CutoutNumSegments = 0;
+int   CutoutPointX1[];         // start x
+int   CutoutPointY1[];         // start y
+int   CutoutPointX2[];         // end x
+int   CutoutPointY2[];         // end y
+int   CutoutSegmentType[];     // LINE, ARC, CIRCLE
+int   CutoutSegmentCurve[];    // used by ARCs : -180 if drawn CCW,  +180 if drawn CW
+int   CutoutSegmentWidth[];    // linewitdh = partheight
+
+int   LoopCounter = 0;         // 2015-04-02 für Boardoutline und Cutoutline
+
+
+enum { LINE = 1, ARC = 2, CIRCLE = 3 };
+enum { CUTOUT = 0, OUTLINE = -1 };
+enum { false = 0, true = 1};
+string Type[];
+       Type[0]      =  "0";
+       Type[LINE]   = "LINE";
+       Type[ARC]    = "ARC";
+       Type[CIRCLE] = "CIRCLE";
+
+// vars for library
+int    NumPacInLib = 0;               // number of pacs in library
+int    PacIn_LIB_heights[];           // if 0 = only one partheight, if != 0 more than one height
+real   PacIn_LIB_angle[];             // rotation of part in board
+string PacIn_LIB_name[];              // names of pack's in library
+int    PacIn_LIB_Device_mountside[];  // TOP, BOTTOM
+string PacIn_LIB_SubPart_mountside[]; // mountside of subparts
+
+
+int NumCutouts = 0;                   // number of holes in the pcb (drills, millings)
+int OutlineInDeviceFound = false;     // is outline drawn in device symbol
+
+int  CloseOpenPoly = false;           // close polygon if gap is smaller than ...mm
+real MaxGapWidth = 0.1;               // value of maximum gap to close
+
+int  DrillViaHoles = true;            // drill via-holes in pcb
+real MinViaHoleDia = 0.254;           // diameter of drill
+
+
+////////////////////////////////////////////////////
+void CheckForIDFLayers() {
+  int LayerSum = 0;
+  int ButtonClicked;
+  string command;
+  board(B) {
+    B.layers(L) {                     // this lets the ULP know which layers are missing
+	  if(L.number == Layer3dBoardDimension){
+	    LayerSum += 1;
+	  }
+	  if(L.number == tLayer3Ddata){
+	    LayerSum += 2;
+	  }
+	  if(L.number == bLayer3Ddata){
+	    LayerSum += 4;
+	  }
+	}
+  }
+  switch(LayerSum) {
+    case 0:
+	  //None of the layers where found all three need to be created
+	  ButtonClicked = dlgMessageBox("Missing layers 50,57,58. These are used to define the 3D properties of your design. Would you like to create them? Once the layers have been created run the ULP again to produce your IDF output.","&Yes","&No");
+	  if(ButtonClicked == 0){
+	    sprintf(command, "LAYER %d 3dBoardDimension;LAYER %d t3Ddata;LAYER %d b3Ddata;",Layer3dBoardDimension,tLayer3Ddata,bLayer3Ddata);
+		exit(command);
+	  }
+	  else{
+	    exit(0);
+	  }
+	  break;
+	case 1:
+	  //Only Layer3dBoardDimension was found the other two need to be made
+	  ButtonClicked = dlgMessageBox("Missing layers 57,58. These are used to define the 3D properties of your design. Would you like to create them? Once the layers have been created run the ULP again to produce your IDF output.","&Yes","&No");
+	  if(ButtonClicked == 0){
+	    sprintf(command, "LAYER %d t3Ddata;LAYER %d b3Ddata;",tLayer3Ddata,bLayer3Ddata);
+		exit(command);
+	  }
+	  else{
+	    exit(0);
+	  }
+	  break;
+	case 2:
+	  //Only tLayer3Ddata was found the other two need to be made
+	  ButtonClicked = dlgMessageBox("Missing layers 50,58. These are used to define the 3D properties of your design. Would you like to create them? Once the layers have been created run the ULP again to produce your IDF output.","&Yes","&No");
+	  if(ButtonClicked == 0){
+	    sprintf(command, "LAYER %d 3dBoardDimension;LAYER %d b3Ddata;",Layer3dBoardDimension,bLayer3Ddata);
+		exit(command);
+	  }
+	  else{
+	    exit(0);
+	  }
+	  break;
+	case 3:
+	  //Layers Layer3dBoardDimension and tLayer3Ddata were found the other needs to be made
+	  ButtonClicked = dlgMessageBox("Missing layers 58. These are used to define the 3D properties of your design. Would you like to create them? Once the layers have been created run the ULP again to produce your IDF output.","&Yes","&No");
+	  if(ButtonClicked == 0){
+	    sprintf(command, "LAYER %d b3Ddata;",bLayer3Ddata);
+		exit(command);
+	  }
+	  else{
+	    exit(0);
+	  }
+	  break;
+	case 4:
+	  //Only bLayer3Ddata was found the other two need to made
+	  ButtonClicked = dlgMessageBox("Missing layers 50,57. These are used to define the 3D properties of your design. Would you like to create them? Once the layers have been created run the ULP again to produce your IDF output.","&Yes","&No");
+	  if(ButtonClicked == 0){
+	    sprintf(command, "LAYER %d 3dBoardDimension;LAYER %d t3Ddata;",Layer3dBoardDimension,tLayer3Ddata);
+		exit(command);
+	  }
+	  else{
+	    exit(0);
+	  }
+	  break;
+	case 5:
+	  //Layers Layer3dBoardDimension and bLayer3Ddata were found the other needs to be made
+	  ButtonClicked = dlgMessageBox("Missing layers 57. These are used to define the 3D properties of your design. Would you like to create them? Once the layers have been created run the ULP again to produce your IDF output.","&Yes","&No");
+	  if(ButtonClicked == 0){
+	    sprintf(command, "LAYER %d t3Ddata;",tLayer3Ddata);
+		exit(command);
+	  }
+	  else{
+	    exit(0);
+	  }
+	  break;
+	case 6:
+	  //Layers tLayer3Ddata and bLayer3Ddata were found the other one needs to be made
+	  ButtonClicked = dlgMessageBox("Missing layers 50. These are used to define the 3D properties of your design. Would you like to create them? Once the layers have been created run the ULP again to produce your IDF output.","&Yes","&No");
+	  if(ButtonClicked == 0){
+	    sprintf(command, "LAYER %d 3dBoardDimension;",Layer3dBoardDimension);
+		exit(command);
+	  }
+	  else{
+	    exit(0);
+	  }
+	  break;
+	case 7:
+	  //All layers were found nothing need to be done
+	  break;
+  }
+}
+
+////////////////////////////////////////////////////
+void CollectPartData(UL_BOARD brd) { //   read out all parts
+  NumParts = 0;
+  brd.elements(E) {
+    PartName[NumParts] = E.name;
+    PacIn_LIB_angle[NumParts] = -1;  // fill with invalid rotation and ...
+    PacIn_LIB_Device_mountside[NumParts] = -1;   // fill with invalid mountside (mirror)   for "void IDF_LibaryElectrical(UL_BOARD BRD)" function
+    PacIn_LIB_heights[NumParts] = 0; // part is only one package
+    NumParts++;
+  }
+}
+
+////////////////////////////////////////////////////
+void IDF_Circle(int x1, int y1, int x2, int y2, int type) {       // output circle to file in IDF format
+  int loopcount = 0;
+  if(type == CUTOUT)  loopcount = NumCutouts; // 2013-12-19
+  printf("%d %.6f %.6f 0\n", loopcount, u2mm(x1), u2mm(y1));
+  printf("%d %.6f %.6f 360\n", loopcount, u2mm(x2), u2mm(y2));
+  return;
+}
+
+////////////////////////////////////////////////////
+void IDF_Arc(int x1, int y1, int x2, int y2, real angle, int type, int first) {   // output arc to file in IDF format
+  int loopcount = 0;
+  if(type == CUTOUT) loopcount = NumCutouts; // 2013-12-19
+  if (first) printf("%d %.6f %.6f 0\n", loopcount, u2mm(x1), u2mm(y1));
+  printf("%d %.6f %.6f %.1f\n", loopcount, u2mm(x2), u2mm(y2), angle);
+  return;
+}
+
+////////////////////////////////////////////////////
+void IDF_Line(int x1, int y1, int x2, int y2, int type, int first) {         // output line to file in IDF format
+  int loopcount = 0;
+  if(type == CUTOUT) loopcount = NumCutouts; // 2013-12-19
+  if (first) printf("%d %.6f %.6f 0\n", loopcount, u2mm(x1), u2mm(y1));
+  printf("%d %.6f %.6f 0\n", loopcount, u2mm(x2), u2mm(y2));
+  return;
+}
+
+////////////////////////////////////////////////////
+void OutputLines(int originx, int originy, int type, int mirrorval) {       // write to file
+  int first = 1;
+  int i = 0;
+  int startx = PointX1[i];
+  int starty = PointY1[i];
+  if(mirrorval)
+  {
+    mirrorval = -1;
+  }
+  else
+  {
+    mirrorval = 1;
+  }
+  for(i = 0; i < NumSegments; i++) {
+    NumCutouts = LoopCounter;
+    switch(SegmentType[i]) {
+      case LINE   : IDF_Line((PointX1[i]-originx)*mirrorval, PointY1[i]-originy, (PointX2[i]-originx)*mirrorval, PointY2[i]-originy, type, first);
+                    first = 0; // nur die erste Koordinate wird mit xy1 und xy2 ausgegeben, alles weiteren nur yx2,
+                               // bis zum Ende sprich schliessen der Schleife
+                    break;
+      case ARC    : IDF_Arc((PointX1[i]-originx)*mirrorval, PointY1[i]-originy, (PointX2[i]-originx)*mirrorval, PointY2[i]-originy, SegmentCurve[i], type, first);
+                    first = 0; // nur die erste Koordinate wird mit xy1 und xy2 ausgegeben, alles weiteren nur yx2,
+                               // bis zum Ende sprich schliessen der Schleife
+                    break;
+      case CIRCLE : IDF_Circle(PointX1[i]-originx, PointY1[i]-originy, PointX2[i]-originx, PointY2[i]-originy, type);
+                    LoopCounter++;
+                    NumCutouts = LoopCounter;
+                    startx = PointX1[i+1];
+                    starty = PointY1[i+1];
+                    first = 1;
+                    break;
+      default     : string s;
+                    sprintf(s, "Unknown type in Segment %d", i);
+                    if (dlgMessageBox(s, "OK", "esc") != 0) exit(-182);
+    }
+    if (startx == PointX2[i] && starty == PointY2[i]) {
+      first = 1;  // beim Anfang eine neuen Kontour wieder beie Koordinatenpaare ausgeben
+      startx = PointX1[i+1];
+      starty = PointY1[i+1];
+      LoopCounter++; // die Schleife (Kontur) ist geschlossen. Bedingung siehe in oben.
+    }
+  }
+  return;
+}
+
+////////////////////////////////////////////////////
+void OutputBoardOutLines(int originx, int originy, int type) {  // write to file :: type ist hier irrelevant
+  int first = 1;
+  int i = 0;
+  int startx = PointX1[i];
+  int starty = PointY1[i];
+  for(i = 0; i < NumSegments; i++) {
+    NumCutouts = LoopCounter;
+    switch(SegmentType[i]) { // 2013-12-18
+      case LINE   : IDF_Line(PointX1[i]-originx, PointY1[i]-originy, PointX2[i]-originx, PointY2[i]-originy, CUTOUT, first);
+                    first = 0; // nur die erste Koordinate wird mit xy1 und xy2 ausgegeben, alles weiteren nur yx2,
+                               // bis zum Ende sprich schliessen der Schleife
+                    break;
+      case ARC    : IDF_Arc(PointX1[i]-originx, PointY1[i]-originy, PointX2[i]-originx, PointY2[i]-originy, SegmentCurve[i], CUTOUT, first);
+                    first = 0; // nur die erste Koordinate wird mit xy1 und xy2 ausgegeben, alles weiteren nur yx2,
+                               // bis zum Ende sprich schliessen der Schleife
+                    break;
+      case CIRCLE : IDF_Circle(PointX1[i]-originx, PointY1[i]-originy, PointX2[i]-originx, PointY2[i]-originy, CUTOUT);
+                    LoopCounter++;
+                    NumCutouts = LoopCounter;
+                    startx = PointX1[i+1];
+                    starty = PointY1[i+1];
+                    first = 1;
+                    break;
+      default     : string s;
+                    sprintf(s, "Unknown type in Segment %d", i);
+    }
+    if (startx == PointX2[i] && starty == PointY2[i]) {
+      first = 1;  // beim Anfang eine neuen Kontour wieder beie Koordinatenpaare ausgeben
+      startx = PointX1[i+1];
+      starty = PointY1[i+1];
+      LoopCounter++; // die Schleife (Kontur) ist geschlossen. Bedingung siehe in oben.
+    }
+  }
+  return;
+}
+
+void OutputBoardCutOutLines(int originx, int originy, int type) {  // write to file :: type ist hier irrelevant
+  int first = 1;
+  int i = 0;
+  int startx = CutoutPointX1[i];
+  int starty = CutoutPointY1[i];
+  for(i = 0; i < CutoutNumSegments; i++) {
+    NumCutouts = LoopCounter;
+    switch(CutoutSegmentType[i]) { // 2013-12-18
+      case LINE   : IDF_Line(CutoutPointX1[i]-originx, CutoutPointY1[i]-originy, CutoutPointX2[i]-originx, CutoutPointY2[i]-originy, CUTOUT, first);
+                    first = 0; // nur die erste Koordinate wird mit xy1 und xy2 ausgegeben, alles weiteren nur yx2,
+                    // bis zum Ende sprich schliessen der Schleife
+                    break;
+      case ARC    : IDF_Arc(CutoutPointX1[i]-originx, CutoutPointY1[i]-originy, CutoutPointX2[i]-originx, CutoutPointY2[i]-originy, CutoutSegmentCurve[i], CUTOUT, first);
+                    first = 0; // nur die erste Koordinate wird mit xy1 und xy2 ausgegeben, alles weiteren nur yx2,
+                    // bis zum Ende sprich schliessen der Schleife
+                    break;
+      case CIRCLE : IDF_Circle(CutoutPointX1[i]-originx, CutoutPointY1[i]-originy, CutoutPointX2[i]-originx, CutoutPointY2[i]-originy, CUTOUT);
+                    LoopCounter++;
+                    NumCutouts = LoopCounter;
+                    startx = CutoutPointX1[i+1];
+                    starty = CutoutPointY1[i+1];
+                    first = 1;
+                    break;
+      default     : string s;
+                    sprintf(s, "Unknown type in Segment %d", i);
+    }
+    if (startx == CutoutPointX2[i] && starty == CutoutPointY2[i]) {
+      first = 1;  // beim Anfang eine neuen Kontour wieder beie Koordinatenpaare ausgeben
+      startx = CutoutPointX1[i+1];
+      starty = CutoutPointY1[i+1];
+      LoopCounter++; // die Schleife (Kontur) ist geschlossen. Bedingung siehe in oben.
+    }
+  }
+  return;
+}
+
+////////////////////////////////////////////////////
+int IsPointEqual (int x1, int y1, int x2, int y2) {  // really need a func-description ??
+  if(x1 == x2 && y1 == y2) return true;
+  return false;
+}
+
+////////////////////////////////////////////////////
+real getPartHeight() {                     // returns maximum partlevel
+  real ret = u2mm(SegmentWidth[0])*1000.0; // 2012-02-08
+  return ret;
+}
+
+////////////////////////////////////////////////////
+int IsPointInCircle(int target_x, int target_y, int circle_x, int circle_y, real radius) {
+  real dist,a,b;
+  a = abs(target_y-circle_y);
+  b = abs(target_x-circle_x);
+  // calculate distance
+  dist = sqrt(a*a + b*b);
+  if(dist <= radius) return true;
+  return false;
+}
+
+////////////////////////////////////////////////////
+//int GetArcOptions(UL_WIRE w) {                             // is arc drawn CW or CCW
+//  if(IsPointEqual(w.x1, w.y1, w.x2, w.y2))  return (w.arc.angle1 - w.arc.angle2);
+//  else  return (w.arc.angle2 - w.arc.angle1);
+//}
+
+////////////////////////////////////////////////////
+int DataOnLayerPresent(UL_ELEMENT E, int layer) {
+  E.package.circles(CIR) { // circle found
+    if(CIR.layer == layer && CIR.width > maxCutoutLineWidth)  return true;
+  }
+  E.package.wires(W) {
+    if(W.arc) {         // arc found
+      if(W.layer == layer && W.width > maxCutoutLineWidth) return true;
+    }
+    else {             // straight line found
+      if(W.layer == layer && W.width > maxCutoutLineWidth) return true;
+    }
+  }
+  return false;    // no 3d-data on given layer found
+}
+
+////////////////////////////////////////////////////
+void CollectRemainingPoints(int start, int nr) {
+  int i;
+  for(i = 0; i < nr; i++) {
+    PointX1[i] = PointX1[i+start];
+    PointY1[i] = PointY1[i+start];
+    PointX2[i] = PointX2[i+start];
+    PointY2[i] = PointY2[i+start];
+    SegmentType[i] = SegmentType[i+start];
+    SegmentCurve[i] = SegmentCurve[i+start];
+    SegmentWidth[i] = SegmentWidth[i+start];
+  }
+  NumSegments = nr;
+  return;
+}
+
+////////////////////////////////////////////////////
+int SortPointsEx (void) {     // sort all points to a continous polygon
+  int i;
+  int ptfound;
+  int ResultPointX1[];        // start x
+  int ResultPointY1[];        // start y
+  int ResultPointX2[];        // end x
+  int ResultPointY2[];        // end y
+  int ResultSegmentType[];    // SegmentType
+  int ResultSegmentCurve[];   // options of segment (only used for ARCs)
+  int ResultSegmentWidth[];   // width of line
+  int PointUsed[];
+  enum { NOT_FOUND = 0, FOUND = 1, ERROR = 2 };
+  enum { NOT_USED = 0, USED = 1 };
+  for(i = 0; i < NumSegments; i++)  PointUsed[i] = NOT_USED;
+
+  ResultPointX1[0] = PointX1[0];  // startpoint
+  ResultPointY1[0] = PointY1[0];
+  ResultPointX2[0] = PointX2[0];
+  ResultPointY2[0] = PointY2[0];
+  ResultSegmentType[0] = SegmentType[0];
+  ResultSegmentWidth[0] = SegmentWidth[0];
+  ResultSegmentCurve[0] = SegmentCurve[0];
+  PointUsed[0] = USED;
+
+  for(int x=1; x<NumSegments; x++) {
+    i = 1;
+    ptfound = NOT_FOUND;
+    do {
+      if(!PointUsed[i]) {
+        // search left point of segment in list
+        if( IsPointEqual(PointX1[i], PointY1[i], ResultPointX2[x-1], ResultPointY2[x-1]) ) { // x1,y1 = startpoint  |  x2,y2 = endpoint
+          ptfound = FOUND;
+          PointUsed[i] = USED;
+          ResultPointX1[x] = PointX1[i];
+          ResultPointY1[x] = PointY1[i];
+          ResultPointX2[x] = PointX2[i];
+          ResultPointY2[x] = PointY2[i];
+          ResultSegmentType[x] = SegmentType[i];
+          ResultSegmentWidth[x] = SegmentWidth[i];
+          ResultSegmentCurve[x] = SegmentCurve[i];
+        }
+
+        // search right point of segment in list
+        if( IsPointEqual(PointX2[i], PointY2[i], ResultPointX2[x-1], ResultPointY2[x-1]) ) { // x2,y2 = startpoint  |  x1,y1 = endpoint
+          ptfound = FOUND;
+          PointUsed[i] = USED;
+          ResultPointX1[x] = PointX2[i];
+          ResultPointY1[x] = PointY2[i];
+          ResultPointX2[x] = PointX1[i];
+          ResultPointY2[x] = PointY1[i];
+          ResultSegmentType[x] = SegmentType[i];
+          ResultSegmentWidth[x] = SegmentWidth[i];
+          ResultSegmentCurve[x] = SegmentCurve[i] * (-1);    // swap also drawing direction of ARC (clockwise, counter-clockwise)
+        }
+      }  // point used
+      // checked full array ?
+      if(i++ >= (NumSegments-1)) {
+        if(ptfound != FOUND) ptfound = ERROR;
+      }
+    } while(ptfound == NOT_FOUND);
+    // if point was not found -> end sorting of points
+    if (ptfound == ERROR) break;
+  }  // for NumSegments
+  // count how many points are not used
+  int n;
+  int NumPointsUsed = 0;
+  for(i=0; i < NumSegments; i++)  {
+    if(PointUsed[i] == USED) NumPointsUsed++;
+  }
+  // copy not used points to end of ResultPoint[]
+  for(i = NumSegments-1; i >= NumPointsUsed; i--) {
+    for(n = 0; n < NumSegments; n++) {
+      if(PointUsed[n] == NOT_USED) { // copy if point is not used
+        PointUsed[n] = USED;
+        ResultPointX1[i] = PointX1[n];
+        ResultPointY1[i] = PointY1[n];
+        ResultPointX2[i] = PointX2[n];
+        ResultPointY2[i] = PointY2[n];
+        ResultSegmentCurve[i] = SegmentCurve[n];
+        ResultSegmentType[i] = SegmentType[n];
+        ResultSegmentWidth[i] = SegmentWidth[n];
+        break;
+      }
+    }
+  }
+  // copy back sorted list
+  for(i=0; i<NumSegments;  i++) {
+    PointX1[i] = ResultPointX1[i];
+    PointY1[i] = ResultPointY1[i];
+    PointX2[i] = ResultPointX2[i];
+    PointY2[i] = ResultPointY2[i];
+    SegmentType[i] = ResultSegmentType[i];
+    SegmentCurve[i] = ResultSegmentCurve[i];
+    SegmentWidth[i] = ResultSegmentWidth[i];
+  }
+  return NumSegments-NumPointsUsed;    // return number of pending points
+} // SortPointsEx
+
+////////////////////////////////////////////////////
+void CloseOpenPolygon (void) {
+  int i, LineAdded;
+  int RemainingPoints, LastPoint;
+  do  {
+    LineAdded = false;
+    RemainingPoints = SortPointsEx();
+    LastPoint = NumSegments - RemainingPoints - 1;
+
+    if(RemainingPoints) {   // only search for gaps if remainingpoints != 0
+      for(i=LastPoint+1; i<NumSegments; i++) {   // start from last+1 poly-segment -> search for points within circle
+        if(IsPointInCircle(PointX1[i], PointY1[i], PointX2[LastPoint], PointY2[LastPoint], mm2u(MaxGapWidth))) { // 2012-02-08
+          PointX1[NumSegments] = PointX2[LastPoint];  // add new line with start at last-point
+          PointY1[NumSegments] = PointY2[LastPoint];
+          PointX2[NumSegments] = PointX1[i];
+          PointY2[NumSegments] = PointY1[i];
+          SegmentType[NumSegments] = LINE;
+          SegmentWidth[NumSegments] = SegmentWidth[LastPoint];
+          SegmentCurve[NumSegments++] = 0; // 2013-12-11
+          LineAdded = true;
+          break;    // point within circle found and added -> escape from "for"-loop
+        }
+        if(IsPointInCircle(PointX2[i], PointY2[i], PointX2[LastPoint], PointY2[LastPoint], mm2u(MaxGapWidth))) { // 2012-02-08
+          PointX1[NumSegments] = PointX2[LastPoint];  // add new line with start at last-point
+          PointY1[NumSegments] = PointY2[LastPoint];
+          PointX2[NumSegments] = PointX2[i];
+          PointY2[NumSegments] = PointY2[i];
+          SegmentType[NumSegments] = LINE;
+          SegmentWidth[NumSegments] = SegmentWidth[LastPoint];
+          SegmentCurve[NumSegments++] = 0; // 2013-12-11
+          LineAdded = true;
+          break;    // point within circle found and added -> escape from "for"-loop
+        }
+      }
+    }
+  } while(LineAdded);    // resort points and close gaps  if new line added
+  // finished correct -> but is polygon closed ?!? (firstpoint and lastpoint may no be the same coordinate !)
+  if(IsPointEqual(PointX1[0], PointY1[0], PointX2[LastPoint], PointY2[LastPoint]) == false) { // poly closed ?
+    if(IsPointInCircle(PointX1[0], PointY1[0], PointX2[LastPoint], PointY2[LastPoint], mm2u(MaxGapWidth))) { // 2012-02-08
+      PointX1[NumSegments] = PointX2[LastPoint];  // add new line with start at last-point
+      PointY1[NumSegments] = PointY2[LastPoint];
+      PointX2[NumSegments] = PointX1[0];
+      PointY2[NumSegments] = PointY1[0];
+      SegmentType[NumSegments] = LINE;
+      SegmentWidth[NumSegments] = SegmentWidth[LastPoint];
+      SegmentCurve[NumSegments++] = 0; // 2013-12-11
+    }
+  }
+  return;
+}
+
+////////////////////////////////////////////////////
+int SortPoints(string ElementName) {    // sort all points to a continous polygon
+  int LastPoint, RemainingPoints;
+  // close open polygon
+  if (CloseOpenPoly) CloseOpenPolygon();
+  // do final sorting
+  RemainingPoints = SortPointsEx();
+  // check if polygon is closed
+  LastPoint = NumSegments - RemainingPoints - 1;
+  if (LastPoint < 0) {
+    dlgMessageBox("!Negativ Index in function SortPoints().", "OK");
+    exit(-472);
+  }
+  if(IsPointEqual(PointX1[0], PointY1[0], PointX2[LastPoint], PointY2[LastPoint]) == false) {
+    if(SegmentType[0] != CIRCLE) {
+      string x;
+      int pt_x, pt_y;
+      pt_x = PointX2[LastPoint];
+      pt_y = PointY2[LastPoint];
+      sprintf(x,"!%s contains an open polygon !\n\ncoordinate : X= %.6f[mm], Y= %.6f[mm]", ElementName, u2mm(pt_x), u2mm(pt_y));
+      if (dlgMessageBox(x, "OK", "Show") != 0) {
+        sprintf(x, "WIN (%.6fmm %.6fmm);\n", u2mm(pt_x), u2mm(pt_y));
+        exit(x);
+      }
+    }
+  }
+  return RemainingPoints;
+}
+
+////////////////////////////////////////////////////
+void IDF_LibaryHeader(UL_BOARD BRD) {              //->   create header of libary
+  int t = time();
+  string date;
+  string sourceID;
+  sprintf(date, "%d/%02d/%02d.%02d:%02d:%02d", t2year(t), t2month(t), t2day(t), t2hour(t), t2minute(t), t2second(t));
+  sprintf(sourceID, "Commend International >%s %s %s<", UlpName, UlpVersion, EAGLE_SIGNATURE); // 2013-01-14
+  printf(".HEADER\n");
+  printf("LIBRARY_FILE 3.0 \"%s\" %s 1\n", sourceID, date);
+  printf(".END_HEADER\n");
+  return;
+}
+
+////////////////////////////////////////////////////
+int CollectLibOutlineSegments(UL_ELEMENT E, int layer) {   // get all segments of elements on 3D-layer
+  NumSegments=0;
+  E.package.circles(CIR) {     // create circles
+    if(CIR.layer == layer && CIR.width > maxCutoutLineWidth) {
+      PointX1[NumSegments] = CIR.x;
+      PointY1[NumSegments] = CIR.y;
+      PointX2[NumSegments] = CIR.x + CIR.radius;
+      PointY2[NumSegments] = CIR.y;
+      SegmentType[NumSegments] = CIRCLE;
+      SegmentWidth[NumSegments] = CIR.width;
+      SegmentCurve[NumSegments++] = 0; // 2013-12-11
+    }
+  }
+  E.package.wires(W) {
+    if(W.curve) {      // create arcs
+      if(W.layer == layer && W.width > maxCutoutLineWidth) {
+        PointX1[NumSegments] = W.x1;  // 2013-03-14 use wire coordinate, not arc!
+        PointY1[NumSegments] = W.y1;
+        PointX2[NumSegments] = W.x2;
+        PointY2[NumSegments] = W.y2;
+        SegmentType[NumSegments] = ARC;
+        SegmentWidth[NumSegments] = W.width;
+        SegmentCurve[NumSegments++] = W.curve; //GetArcOptions(W);
+      }
+    }
+    else {             // create straight lines
+      if(W.layer == layer && W.width > maxCutoutLineWidth) {
+        PointX1[NumSegments] = W.x1;
+        PointY1[NumSegments] = W.y1;
+        PointX2[NumSegments] = W.x2;
+        PointY2[NumSegments] = W.y2;
+        SegmentType[NumSegments] = LINE;
+        SegmentWidth[NumSegments] = W.width;
+        SegmentCurve[NumSegments++] = 0;  // 2013-12-11
+      }
+    }
+  }
+  if(NumSegments != 0) {    // show warningbox if element contains no 3d-data
+    if(layer == bLayer3Ddata) {      // is given layer the bottom layer -> mirror
+      for(int i=0; i<NumSegments; i++) {    // swap x-coordinate for bottom parts
+        PointX1[i] = E.x - ((E.x - PointX1[i])*(1)); //These lines were originall -1, adjusted for FreeCAD import
+        PointX2[i] = E.x - ((E.x - PointX2[i])*(1));
+      }
+    }
+  }
+  return NumSegments;
+}
+
+////////////////////////////////////////////////////
+void IDF_LibaryElectrical(UL_BOARD BRD) {   //->   create electrical parts (R, C, IC, ...)
+  int i,x,inlib,NrOfPolygon;
+  int RemainingPoints;
+  string MountSide[] = {"TOP", "BOTTOM"};
+  int layer[] = { tLayer3Ddata, bLayer3Ddata };
+
+  for(i=0;i<NumParts;i++) {
+    BRD.elements(E) {
+      inlib = 0;
+      for(x=0; x<NumPacInLib; x++) {   // check if new package
+        if(PacIn_LIB_name[x] == E.package.name &&
+           PacIn_LIB_angle[x] == E.angle &&
+           PacIn_LIB_Device_mountside[x] == E.mirror
+          ) inlib = 1;
+      }
+
+      inlib = 0;  // !!!!!!!!!!!!!
+
+      if(E.name == PartName[i] && inlib == 0) {   // is package still in LIB-file
+        NrOfPolygon = 0;
+        if(DataOnLayerPresent(E, bLayer3Ddata))   NrOfPolygon=1; // if poly on bot-side found start from "1"
+        for(int tb=0;tb<2;tb++){
+          if(CollectLibOutlineSegments(E, layer[tb]) && SelectSide[tb]) { // only add package to lib if line-segments in layer found
+            do {
+              RemainingPoints = SortPoints(E.name);  // returns number of open/not_used points
+              NumSegments -= RemainingPoints;        // calculate nr of correct/used points in poly
+              // more than one outline in device present ?
+              if((NrOfPolygon == 0) && (RemainingPoints != 0)) NrOfPolygon=1;
+              printf(".ELECTRICAL\n");
+//              printf("%s_ANGLE%.1f_%s.%d CI_LIB MM %.6f\n", E.package.name, E.angle, MountSide[tb], NrOfPolygon, getPartHeight());
+//              printf("%s_ANGLE%.1f_%s.%d %s MM %.6f\n", E.package.name, E.angle, MountSide[tb], NrOfPolygon, E.name, getPartHeight());
+              printf("%s %s MM %.6f\n", E.package.name, E.name, getPartHeight());
+              OutputLines(E.x, E.y, OUTLINE, E.mirror);      // add package to libfile -> subract given offsets ->  E.x, E.y
+              printf(".END_ELECTRICAL\n");
+              CollectRemainingPoints(NumSegments, RemainingPoints);
+              PacIn_LIB_heights[NumPacInLib] = NrOfPolygon;             // 0=package has only 1 poly; >0 package has more than one poly-outline
+              PacIn_LIB_name[NumPacInLib] = E.package.name;             // mark that package is now in LIB-file
+              PacIn_LIB_Device_mountside[NumPacInLib] = E.mirror;       // safe top- or bottom-side
+              PacIn_LIB_SubPart_mountside[NumPacInLib] = MountSide[tb];  // safe mountside of subparts
+              PacIn_LIB_angle[NumPacInLib++] = E.angle;                 // safe angle of partplacement
+              if(RemainingPoints != 0 || NrOfPolygon != 0)  NrOfPolygon++;
+            } while(RemainingPoints != 0);    // get multiple outline with multiple partheights
+          }
+        }
+      }
+    }
+  }
+  return;
+}
+
+////////////////////////////////////////////////////
+void IDF_LibaryMechanical(UL_BOARD BRD) {             //->   create mechanical parts (drills, holes, ...)
+  // not implemented yet
+  return;
+}
+
+////////////////////////////////////////////////////
+int CollectBoardOutlineSegments(UL_BOARD BRD) {             //++   get all segments of boardoutline
+  NumSegments = 0;
+  // first search board outline in board direct
+  BRD.circles(CIR) {
+    if(CIR.layer == Layer3dBoardDimension) {
+      if (CIR.width > maxCutoutLineWidth) {
+        PointX1[NumSegments] = CIR.x;
+        PointY1[NumSegments] = CIR.y;
+        PointX2[NumSegments] = CIR.x + CIR.radius;
+        PointY2[NumSegments] = CIR.y;
+        SegmentType[NumSegments] = CIRCLE;
+        SegmentWidth[NumSegments] = CIR.width;
+        SegmentCurve[NumSegments++] = 0;
+      }
+      else {
+        CutoutPointX1[CutoutNumSegments] = CIR.x;
+        CutoutPointY1[CutoutNumSegments] = CIR.y;
+        CutoutPointX2[CutoutNumSegments] = CIR.x + CIR.radius;
+        CutoutPointY2[CutoutNumSegments] = CIR.y;
+        CutoutSegmentType[CutoutNumSegments]   = CIRCLE;
+        CutoutSegmentWidth[CutoutNumSegments]  = CIR.width;
+        CutoutSegmentCurve[CutoutNumSegments++] = 0;
+      }
+    }
+  }
+  BRD.wires(W) {
+    if(W.layer == Layer3dBoardDimension) {
+      if (W.width > maxCutoutLineWidth) {
+        if(W.curve) {    // create arcs board-outline board
+          PointX1[NumSegments] = W.x1; // 2013-03-14 use direct wire coordinate, not arc-coordinate
+          PointY1[NumSegments] = W.y1;
+          PointX2[NumSegments] = W.x2;
+          PointY2[NumSegments] = W.y2;
+          SegmentType[NumSegments] = ARC;
+          SegmentWidth[NumSegments] = W.width;
+          SegmentCurve[NumSegments] = W.curve; // GetArcOptions(W);
+        }
+        else {           // create straight lines board-outline board
+          PointX1[NumSegments] = W.x1;
+          PointY1[NumSegments] = W.y1;
+          PointX2[NumSegments] = W.x2;
+          PointY2[NumSegments] = W.y2;
+          SegmentType[NumSegments] = LINE;
+          SegmentWidth[NumSegments] = W.width;
+          SegmentCurve[NumSegments] = 0;
+        }
+        NumSegments++;
+      }
+      else {
+        if(W.curve) {    // create arcs board-outline board
+          CutoutPointX1[CutoutNumSegments] = W.x1;
+          CutoutPointY1[CutoutNumSegments] = W.y1;
+          CutoutPointX2[CutoutNumSegments] = W.x2;
+          CutoutPointY2[CutoutNumSegments] = W.y2;
+          CutoutSegmentType[CutoutNumSegments] = ARC;
+          CutoutSegmentWidth[CutoutNumSegments] = W.width;
+          CutoutSegmentCurve[CutoutNumSegments] = W.curve; //GetArcOptions(W);
+        }
+        else {
+          CutoutPointX1[CutoutNumSegments] = W.x1;
+          CutoutPointY1[CutoutNumSegments] = W.y1;
+          CutoutPointX2[CutoutNumSegments] = W.x2;
+          CutoutPointY2[CutoutNumSegments] = W.y2;
+          CutoutSegmentType[CutoutNumSegments] = LINE;
+          CutoutSegmentWidth[CutoutNumSegments] = W.width;
+          CutoutSegmentCurve[CutoutNumSegments] = 0;
+        }
+        CutoutNumSegments++;
+      }
+    }
+  }
+  // second search board outline in packages
+  BRD.elements(E) {
+    E.package.circles(CIR) {  // create board-outline of package-libary
+      if(CIR.layer == Layer3dBoardDimension) {
+        PointX1[NumSegments] = CIR.x;
+        PointY1[NumSegments] = CIR.y;
+        PointX2[NumSegments] = CIR.x + CIR.radius;
+        PointY2[NumSegments] = CIR.y;
+        SegmentType[NumSegments] = CIRCLE;
+        SegmentWidth[NumSegments] = CIR.width;
+        SegmentCurve[NumSegments++] = 0;
+      }
+    }
+  }
+  BRD.elements(E) {
+    E.package.wires(W) {
+      if(W.layer == Layer3dBoardDimension) {
+        if (W.width > maxCutoutLineWidth) {
+          if(W.curve) {  // create arcs board-outline of package-libary
+            PointX1[NumSegments] = W.x1;
+            PointY1[NumSegments] = W.y1;
+            PointX2[NumSegments] = W.x2;
+            PointY2[NumSegments] = W.y2;
+            SegmentType[NumSegments] = ARC;
+            SegmentWidth[NumSegments] = W.width;
+            SegmentCurve[NumSegments] = W.curve; // GetArcOptions(W);
+          }
+          else {         // create straight lines board-outline of package-libary
+            PointX1[NumSegments] = W.x1;
+            PointY1[NumSegments] = W.y1;
+            PointX2[NumSegments] = W.x2;
+            PointY2[NumSegments] = W.y2;
+            SegmentType[NumSegments] = LINE;
+            SegmentWidth[NumSegments] = W.width;
+            SegmentCurve[NumSegments] = 0;
+          }
+          NumSegments++;
+        }
+        else {
+          if(W.curve) {  // create arcs board-cutout of package-libary
+            CutoutPointX1[CutoutNumSegments] = W.x1;
+            CutoutPointY1[CutoutNumSegments] = W.y1;
+            CutoutPointX2[CutoutNumSegments] = W.x2;
+            CutoutPointY2[CutoutNumSegments] = W.y2;
+            CutoutSegmentType[CutoutNumSegments] = ARC;
+            CutoutSegmentWidth[CutoutNumSegments] = W.width;
+            CutoutSegmentCurve[CutoutNumSegments] = W.curve; //GetArcOptions(W);
+          }
+          else {         // create line board-cutout of package-libary
+            CutoutPointX1[CutoutNumSegments] = W.x1;
+            CutoutPointY1[CutoutNumSegments] = W.y1;
+            CutoutPointX2[CutoutNumSegments] = W.x2;
+            CutoutPointY2[CutoutNumSegments] = W.y2;
+            CutoutSegmentType[CutoutNumSegments] = LINE;
+            CutoutSegmentWidth[CutoutNumSegments] = W.width;
+            CutoutSegmentCurve[CutoutNumSegments] = 0;
+          }
+          CutoutNumSegments++;
+        }
+      }
+    }
+  }
+
+  if(NumSegments == 0) {
+    string error;
+    sprintf(error,"!No board-outline on layer %d found !", Layer3dBoardDimension);
+    dlgMessageBox(error);
+    exit(-771);
+  }
+  return NumSegments;
+}
+
+
+////////////////////////////////////////////////////
+void IDF_BoardHeader(UL_BOARD BRD) {  //-##  create header of boardfile
+  int t = time();
+  string date;
+  string sourceID;
+
+  sprintf(date, "%d/%02d/%02d.%02d:%02d:%02d", t2year(t), t2month(t), t2day(t), t2hour(t), t2minute(t), t2second(t));
+  sprintf(sourceID, "Commend International >%s %s %s<", UlpName, UlpVersion, EAGLE_SIGNATURE);
+  printf(".HEADER\n");
+  printf("BOARD_FILE 3.0 \"%s\" %s 1\n", sourceID, date);
+  printf("\"%s\" MM\n", filename(BRD.name));
+  printf(".END_HEADER\n");
+  return;
+}
+
+////////////////////////////////////////////////////
+void IDF_BoardOutline(UL_BOARD BRD) {  //-##   create outline of board
+  // get outline
+  CollectBoardOutlineSegments(BRD);
+  SortPoints("Board-Outline");         // boardname
+  // draw outline
+  printf(".BOARD_OUTLINE UNOWNED\n");
+  printf("%.6f\n", getPartHeight());
+  OutputBoardOutLines(0, 0, OUTLINE);    // subract given offsets ->  E.x, E.y
+  OutputBoardCutOutLines(0, 0, OUTLINE);
+  printf(".END_BOARD_OUTLINE\n");
+  LoopCounter = 0;
+  return;
+}
+
+////////////////////////////////////////////////////
+void IDF_BoardPlaceParts(UL_BOARD BRD) {   //-##   mount parts on board
+  int i, inlib;
+  string MountSide[] = {"TOP","BOTTOM"};
+  printf(".PLACEMENT\n");
+  BRD.elements(E) {
+    inlib = 0;
+    for(i=0; i<NumPacInLib; i++) {   // check if elements was found in libary
+      if(PacIn_LIB_name[i] == E.package.name && PacIn_LIB_Device_mountside[i] == E.mirror && PacIn_LIB_angle[i] == E.angle) {
+        inlib = 1;
+        break;
+      }
+    }
+    if(inlib) {   // only add part if part is in lib-file
+      if(PacIn_LIB_heights[i] == 0) {     // part has only one height
+//        printf("%s_ANGLE%.1f_%s.0 CI_LIB %s.0\n", E.package.name, E.angle, PacIn_LIB_SubPart_mountside[i], E.name);
+//        printf("%s_ANGLE%.1f_%s.0 %s %s.0\n", E.package.name, E.angle, PacIn_LIB_SubPart_mountside[i], E.name, E.name);
+        printf("%s %s %s.0\n", E.package.name, E.name, E.name);
+        printf("%.6f %.6f 0 0 %s PLACED\n", u2mm(E.x), u2mm(E.y), MountSide[E.mirror]);
+      }
+      else {     // part has multiple heights -> more than one part on same x/y position
+        int lib_start = i;
+        do {
+//          printf("%s_ANGLE%.1f_%s.%d CI_LIB %s.%d\n", E.package.name, E.angle, PacIn_LIB_SubPart_mountside[lib_start], PacIn_LIB_heights[lib_start], E.name, PacIn_LIB_heights[lib_start]);
+          printf("%s_ANGLE%.1f_%s.%d %s %s.%d\n", E.package.name, E.angle, PacIn_LIB_SubPart_mountside[lib_start], PacIn_LIB_heights[lib_start], E.name, E.name, PacIn_LIB_heights[lib_start]);
+          printf("%.6f %.6f 0 0 %s PLACED\n", u2mm(E.x), u2mm(E.y), PacIn_LIB_SubPart_mountside[lib_start]);
+          lib_start++;
+        }while(PacIn_LIB_heights[lib_start] > 1);
+      }
+    }
+  }
+  printf(".END_PLACEMENT\n");
+  return;
+}
+
+////////////////////////////////////////////////////
+void IDF_BoardHoles(UL_BOARD BRD) {             //-##   create holes in board (cutout, partholes, ...)
+  printf(".DRILLED_HOLES\n");
+  // drill holes from board direct
+  BRD.holes(H)
+    printf("%.6f %.6f %.6f NPTH BOARD Other UNOWNED\n", u2mm(H.drill), u2mm(H.x), u2mm(H.y));
+  // drill holes from elements
+  BRD.elements(E) {
+    E.package.holes(H)
+      printf("%.6f %.6f %.6f NPTH BOARD Other UNOWNED\n", u2mm(H.drill), u2mm(H.x), u2mm(H.y));
+  }
+  // drill pad(holes) from elements 2014-01-20
+  BRD.elements(E) {
+    E.package.contacts(C)
+      if (C.pad)
+        if (u2mm(C.pad.drill) > MinViaHoleDia)
+          printf("%.6f %.6f %.2f PTH BOARD Other UNOWNED\n", u2mm(C.pad.drill), u2mm(C.pad.x), u2mm(C.pad.y));
+  }
+  // drill big via's
+  BRD.signals(S) {
+    S.vias(V) {
+      if((DrillViaHoles == true) && (u2mm(V.drill) > MinViaHoleDia))    // drill via-hole
+        printf("%.6f %.6f %.6f PTH BOARD VIA UNOWNED\n", u2mm(V.drill), u2mm(V.x), u2mm(V.y));
+    }
+  }
+  printf(".END_DRILLED_HOLES\n");
+  return;
+}
+
+////////////////////////////////////////////////////
+void IDF_CreateLibaryFile(UL_BOARD BRD, string fname) { //  create libary for the IDF-board
+  output(fname, "wt") {
+    IDF_LibaryHeader(BRD);
+    IDF_LibaryElectrical(BRD);
+    IDF_LibaryMechanical(BRD);
+  }
+  return;
+}
+
+////////////////////////////////////////////////////
+void IDF_CreateBoardFile(UL_BOARD BRD, string fname) {  //  create boardfile with parts of libary
+  output(fname, "wt") {
+    IDF_BoardHeader(BRD);
+    IDF_BoardOutline(BRD);
+    IDF_BoardHoles(BRD);
+    IDF_BoardPlaceParts(BRD);
+  }
+  return;
+}
+
+
+////////////////////////////////////////////////////
+void DisplayHelp(void) {    //  show helptext
+  dlgDialog("Generate 3D IDF data")  {
+    dlgLabel("Version " + UlpVersion);
+    dlgHBoxLayout dlgSpacing(500);
+    dlgHBoxLayout {
+      dlgVBoxLayout dlgSpacing(200);
+      dlgTextView(usage);
+    }
+    dlgLabel(Docuemantpath);
+    dlgHBoxLayout {
+      dlgStretch(1);
+      dlgPushButton("-Back") dlgReject();
+    }
+  };
+  return;
+}
+
+////////////////////////////////////////////////////
+//   S T A R T   of   U L P
+//
+if (board) {
+  int proceed = 0;
+  string FileDirectoryName;
+  string FilenamePanel;
+  string FileNameIDB; // Board
+  string FileNameIDL; // Library
+  CheckForIDFLayers();
+  board(BRD) {
+    FileDirectoryName = filedir(BRD.name);
+    FileNameIDB = filesetext(filename(BRD.name), ".emn");
+    FileNameIDL = filesetext(filename(BRD.name), ".emp");
+  }
+  dlgDialog("Generate 3D data format (IDF-file)") {
+    dlgHBoxLayout {
+      dlgGroup(" settings ") {
+        dlgGridLayout {
+          dlgCell(0,0) dlgCheckBox("close polygon if gap is smaller than   : ", CloseOpenPoly);
+          dlgCell(0,1) dlgRealEdit(MaxGapWidth);
+          dlgCell(0,2) dlgLabel(" mm");
+
+          dlgCell(1,0) dlgCheckBox("drill via-holes if via is bigger than  : ", DrillViaHoles);
+          dlgCell(1,1) dlgRealEdit(MinViaHoleDia);
+          dlgCell(1,2) dlgLabel(" mm");
+
+          dlgCell(2,0) dlgCheckBox("Export top parts",  SelectSide[0]);
+          dlgCell(3,0) dlgCheckBox("Export bottom parts",  SelectSide[1]);
+        }
+      }
+    }
+    dlgGridLayout {
+      dlgCell(1,0)  dlgLabel("Output Directory:");
+      dlgCell(1,1)  dlgLabel(FileDirectoryName, 1);
+      dlgCell(1,2)  {
+                      dlgPushButton("Browse") {
+                        string fdn = dlgDirectory("Save IDF file", FileDirectoryName);
+                        if (fdn) {
+                          int len = strlen(fdn);
+                          if (fdn[len - 1] != '/') fdn+="/"; // dlgDirectory gibt den Pfad ohne abschliessenden Slash zurück!
+                          FileDirectoryName = fdn;
+                        }
+                      }
+                    }
+      dlgCell(2,0)  dlgLabel("Filename IDB (Board)");
+      dlgCell(2,1)  dlgStringEdit(FileNameIDB);
+      dlgCell(2,2)  {
+                      dlgPushButton("Browse") {
+                        string fdb = dlgFileSave("Save IDF file", FileDirectoryName, "IDF files (*.emn)");
+                        if (fdb) {
+                          FileNameIDB = filename(fdb);
+                          if(strchr(FileNameIDB, '.') < 0)    // add fileextension if missing
+                            FileNameIDB += ".emn";
+                          FileNameIDL = filesetext(FileNameIDB, ".emp");
+                        }
+                      }
+                    }
+      dlgCell(3,0)  dlgLabel("Filename IDL (Library)");
+      dlgCell(3,1)  dlgStringEdit(FileNameIDL);
+      dlgCell(3,2)  {
+                      dlgPushButton("Browse") {
+                        string fdl = dlgFileSave("Save IDF file", FileDirectoryName, "IDF files (*.emp)");
+                        if (fdl) {
+                          FileNameIDL = filename(fdl);
+                          if(strchr(FileNameIDL, '.') < 0)    // add fileextension if missing
+                            FileNameIDL += ".emp";
+                          FileNameIDB = filesetext(FileNameIDL, ".emn");
+                        }
+                      }
+                    }
+    }
+    dlgHBoxLayout {
+      dlgPushButton("OK") { proceed = 1; dlgAccept(); }
+      dlgPushButton("Cancel") dlgReject();
+      dlgStretch(1);
+      dlgLabel("Version: " + UlpVersion);
+      dlgPushButton("Help") DisplayHelp();
+    }
+  };
+  if(proceed)  {
+    project.board(BRD) {
+      CollectPartData(BRD);    // read out data from BRD
+      IDF_CreateLibaryFile(BRD, FileDirectoryName + FileNameIDL);
+      IDF_CreateBoardFile(BRD, FileDirectoryName + FileNameIDB);
+    }
+  }
+}
+else {
+  dlgMessageBox(usage + "<hr><b>ERROR: No board!</b><p>\nThis program can only work in the layout editor.");
+  exit(0);
+}

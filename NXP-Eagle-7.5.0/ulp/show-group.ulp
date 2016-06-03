@@ -1,0 +1,39 @@
+#usage "Show group from schematic/board in board/schematic<p>"
+       "<author>Author: alf@cadsoft.de</author>"
+
+string Version = "1.0.0"; // 2012-03-28
+
+string Cmd = "SHOW ";
+int cnt = 0;
+
+if (schematic) {
+  if (project.board) project.board(B) {
+    B.elements(E) {
+      if (ingroup(E)) {
+        Cmd += " " + E.name;
+        cnt++;
+      }
+    }
+  }
+}
+
+else if (board) {
+  if (project.schematic) project.schematic(SCH) {
+    SCH.parts(P) {
+      P.instances(I) {
+        if (ingroup(I)) {
+          Cmd += " " + P.name;
+          cnt++;
+          break;
+        }
+      }
+    }
+  }
+}
+
+else dlgMessageBox("!Start this ULP in a board or schematic.", "OK");
+
+if(!cnt) {
+  dlgMessageBox("!No group selected.", "OK");
+}
+exit(Cmd);

@@ -1,0 +1,292 @@
+#usage "en:<qt><nobr>Generate 3D data for export <b>generate_3d_data</b>v13.ulp on the current package.</nobr><p>"
+       "<p>"
+       "<author>Author: alf@cadsoft.de</author></qt>"
+       ,
+       "de:<qt><nobr>Erzeuge die Daten für die 3D-Ausgabe des <b>generate_3d_data</b>(v13).ulp</b> in dem "
+       "geladenen Package.</nobr><p>"
+       "RUN gen-3D-pac-idf [<i>high-top high-bottom</i>]<p>"
+       "<i><b>high top</b> <b>high bottom</b></i> == mm. Die tatsächliche Höhe des Bauteil.<br>"
+       "Beachten Sie auch die interne Auflösung von Eagle V6 (3.125 Nanometer), und daß WIRE immer eine "
+       "Breite von 2 Einheiten benötigen. Dadurch ergeben sich WIRE-Breiten mit einem mehrfachen von "
+       "6.25 Nanometer.<p>"
+       "<p>"
+       "Es werden nur Objekte (WIRE/RECT) im Layer 21/51 & 22/52 im Layr 57/58 nachgezeichnet.<br>"
+       "Das <b>generate_3d_data_v13.ulp</b> von <author>Herrn Naubacher</author> benutzt die Layer 57 und 58, "
+       "um die Daten für die 3. Dimension (Z-Achse) im .PAC zu hinterlegen.<br>"
+       "Das <b>generate_3d_data</b>(v13).ulp liest im Board diese Daten (WIRE-Breite) und multipliziert sie mit 1000. "
+       "Der Trick ist, die Linienbreite der Bestückungsdruck (Layer 57 für Top und Layer 58 für Bottom) "
+       "in micrometer abzulegen. Diese dünnen Linien stören später die grafische Ansicht nicht, wenn goße Werte "
+       "für die 3. Dimension (Z-Achse) angegeben werden müssen, und man mit DISPLAY 57 58 die komplette Zeichnung "
+       "(alle Layer) anzeigt."
+       "Da die Lötbeinchen typischerweise mit RECT gezeichnet werden, bietet sich an, für RECT eine eigene "
+       "Höhenangabe zu berücksichtigen, wobei hier das Problem besteht, das EAGLE an einem Koorinatenpaar nur "
+       "eine Wirebreite zulässt. Hier muß dafür gesorgt werden, daß WIRE im Layer 57/58 die die gleiche "
+       "ausrichtung besitzen aber unterschiedlich breit sein müssen (wegen Z) nicht an den gleichen Koordinaten "
+       "beginnen bzw. Enden wie die RECTs. EAGLE würde sonst die Wirekoordinaten integrieren und eine "
+       "resultierende Wirebreite erzeugen. Es muß also dafür gesorgt werden, das die unterschiedlichen Wirebreiten "
+       "mindestens mit einen Versatz von einer Eagle-Einheit (3.125nanometer) gezeichnet werden.<b>"
+       "<author>Author: alf@cadsoft.de</author></qt>"
+
+string Verison = "1.0.2"; // 2013-01-14 alf@cadsoft.de
+                          // 2013-04-23 now with menu
+                          // 2014-03-13 draw also RECT as wire with "high" as line
+
+int Test = 0;
+
+// Benutzung : Xneu(X, Y, X-drehpunkt, Y-drehpunkt, UserWinkel)
+real Xneu(real Xalt, real Yalt, real Xorigin, real Yorigin, real UserWinkel) {
+  real RADIUS = sqrt(((Xalt - Xorigin) * (Xalt - Xorigin)) + ((Yalt - Yorigin) * (Yalt - Yorigin)));
+  real WinkelNeu;
+  /* alter Cosinus Winkel = (Xalt - Xorigin) / RADIUS; */
+  if ((Xalt > Xorigin) && (Yalt >= Yorigin)) {               /* Quadrant 1 */
+    WinkelNeu = acos((Xalt - Xorigin) / RADIUS) * 57.29578 + UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * cos(rad));
+  }
+  if ((Xalt < Xorigin) && (Yalt >= Yorigin)) {               /* Quadrant 2 */
+    WinkelNeu = acos((Xalt - Xorigin) / RADIUS) * 57.29578 + UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * cos(rad));
+  }
+  if ((Xalt < Xorigin) && (Yalt < Yorigin)) {                /* Quadrant 3 */
+    WinkelNeu = 360 - acos((Xalt - Xorigin) / RADIUS) * 57.29578 + UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * cos(rad));
+  }
+  if ((Xalt > Xorigin) && (Yalt < Yorigin)) {                /* Quadrant 4 */
+    WinkelNeu = 360 - acos((Xalt - Xorigin) / RADIUS) * 57.29578 + UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * cos(rad));
+  }
+  if ((Xalt == Xorigin) && (Yalt == Yorigin)) {              /* Ursprung   */
+    WinkelNeu = (Xalt - Xorigin) + UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * cos(rad));
+  }
+  if ((Xalt == Xorigin) && (Yalt > Yorigin)) {               /* 90°        */
+    WinkelNeu = (Xalt - Xorigin + 90) + UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * cos(rad));
+  }
+  if ((Xalt == Xorigin) && (Yalt < Yorigin)) {               /* 270°       */
+    WinkelNeu = (Xalt - Xorigin + 270)+ UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * cos(rad));
+  }
+}
+
+// Benutzung : Yneu(X, Y, X-drehpunkt, Y-drehpunkt, UserWinkel)
+real Yneu(real Xalt, real Yalt, real Xorigin, real Yorigin, real UserWinkel) {
+  real RADIUS = sqrt(((Xalt - Xorigin) * (Xalt - Xorigin)) + ((Yalt - Yorigin) * (Yalt - Yorigin)));
+  real WinkelNeu;
+  /* alter Cosinus Winkel = (Xalt - Xorigin) / RADIUS; */
+
+  if ((Xalt > Xorigin) && (Yalt >= Yorigin)) {       /* Quadrant 1 */
+    WinkelNeu = acos((Xalt - Xorigin) / RADIUS) * 57.29578 + UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * sin(rad));
+  }
+  if ((Xalt < Xorigin) && (Yalt >= Yorigin)) {       /* Quadrant 2 */
+    WinkelNeu = acos((Xalt - Xorigin) / RADIUS) * 57.29578 + UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * sin(rad));
+  }
+  if ((Xalt < Xorigin) && (Yalt < Yorigin)) {        /* Quadrant 3 */
+    WinkelNeu = 360 - acos((Xalt - Xorigin) / RADIUS) * 57.29578 + UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * sin(rad));
+  }
+  if ((Xalt > Xorigin) && (Yalt < Yorigin)) {        /* Quadrant 4 */
+    WinkelNeu = 360 - acos((Xalt - Xorigin) / RADIUS) * 57.29578 + UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * sin(rad));
+  }
+  if ((Xalt == Xorigin) && (Yalt == Yorigin)) {      /* Ursprung   */
+    WinkelNeu = (Xalt - Xorigin) + UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * sin(rad));
+  }
+  if ((Xalt == Xorigin) && (Yalt > Yorigin)) {       /* 90°        */
+    WinkelNeu = (Xalt - Xorigin + 90) + UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * sin(rad));
+  }
+  if ((Xalt == Xorigin) && (Yalt < Yorigin)) {       /* 270°       */
+    WinkelNeu = (Xalt - Xorigin + 270) + UserWinkel;
+    real rad = PI / 180 * WinkelNeu;
+    return (RADIUS * sin(rad));
+  }
+}
+
+if (package) {
+  real Ztop =  strtod(argv[1]);
+  real Zbottom = strtod(argv[1]);
+
+  if (argc == 1) {
+    int optg, optb;
+    dlgDialog("IDF 3D Package") {
+      dlgLabel(usage);
+      dlgLabel("<hr>");
+      dlgHBoxLayout {
+        dlgGridLayout {
+          dlgCell( 0, 0) dlgLabel("&Z high top mm");
+          dlgCell( 0, 1) dlgRealEdit(Ztop);
+          dlgCell( 1, 0) dlgLabel("&Z high bottom mm");
+          dlgCell( 1, 1) dlgRealEdit(Zbottom);
+
+        }
+        dlgStretch(1);
+      }
+      dlgHBoxLayout {
+        dlgPushButton("+OK") {
+          Ztop /= 1000;
+          Zbottom /= 1000;
+          if (Ztop >= u2mm(2) || Zbottom >= u2mm(2) ) {
+            dlgAccept();
+          }
+          else {
+            if (language() != "de") {
+              dlgMessageBox("First type in a real value for Z of Top and/or Bottom.", "OK");
+            }
+            else {
+              dlgMessageBox("Geben Sie zuerst einen (gültigen) Wert für die Höhe Z von Top bzw. Bottom ein.", "OK");
+            }
+          }
+        }
+        dlgPushButton("-CANCEL") { dlgReject(); exit(0); }
+        dlgStretch(1);
+      }
+    };
+  }
+
+  string cmd, s;
+  string cmdl = "";
+  int layer3dt, layer3db;
+
+  library(LIB) LIB.layers(LAY) {
+    if(LAY.number == 57) layer3dt = LAY.number;
+    if(LAY.number == 58) layer3db = LAY.number;
+  }
+  if (!layer3dt && !layer3db) {
+    layer3dt = 57;
+    layer3db = 58;
+    cmdl = "LAYER 57 t3D; SET COLOR_LAYER 57 6; SET FILL_LAYER 57 5; LAYER 58 b3D; SET COLOR_LAYER 58 5; SET FILL_LAYER 58 4;";
+  }
+
+  if (Ztop < u2mm(2)) {
+    string h, com;
+
+    if (language() != "de") {
+      sprintf(h, "!The calculated value for Z-top %.9f is < %.9fmm", Ztop, u2mm(2));
+      com = "CANCEL";
+    }
+    else {
+      sprintf(h, "!Der umgerechnete Wert für Z-top %.9f ist < %.9fmm", Ztop, u2mm(2));
+      com = "ABBRUCH";
+    }
+    dlgMessageBox(h, com);
+    exit(-1);
+  }
+  if (Ztop < u2mm(2)) {
+    string h, com;
+
+    if (language() != "de") {
+      sprintf(h, "!The calculated value for Z-bottom %.9f is < %.9fmm", Ztop, u2mm(2));
+      com = "CANCEL";
+    }
+    else {
+      sprintf(h, "!Der umgerechnete Wert für Z-bottom %.9f ist < %.9fmm", Ztop, u2mm(2));
+      com = "ABBRUCH";
+    }
+    dlgMessageBox(h, com);
+    exit(-1);
+  }
+  package(P) {
+    //sprintf(cmd, "Display NONE 1 16 17 18 20 23 25 27 57;\nSET WIRE_BEND 2;\n");
+    cmd += cmdl;
+    P.rectangles(R) {
+      real rectcenterx = u2mm((R.x1 + R.x2) / 2);
+      real rectcentery = u2mm((R.y1 + R.y2) / 2);
+       if (R.layer == 21 || R.layer == 51) {
+        sprintf(s, "LAYER %d;\nWIRE %.9fmm (%.9fmm %.9fmm ) (%.9fmm %.9fmm ) (%.9fmm %.9fmm ) (%.9fmm %.9fmm ) (%.9fmm %.9fmm );\n",
+                layer3dt,
+                Ztop,
+                Xneu(u2mm(R.x1) - rectcenterx, u2mm(R.y1) - rectcentery, 0, 0, R.angle) + rectcenterx,
+                Yneu(u2mm(R.x1) - rectcenterx, u2mm(R.y1) - rectcentery, 0, 0, R.angle) + rectcentery,
+
+                Xneu(u2mm(R.x1) - rectcenterx, u2mm(R.y2) - rectcentery, 0, 0, R.angle) + rectcenterx,
+                Yneu(u2mm(R.x1) - rectcenterx, u2mm(R.y2) - rectcentery, 0, 0, R.angle) + rectcentery,
+
+                Xneu(u2mm(R.x2) - rectcenterx, u2mm(R.y2) - rectcentery, 0, 0, R.angle) + rectcenterx,
+                Yneu(u2mm(R.x2) - rectcenterx, u2mm(R.y2) - rectcentery, 0, 0, R.angle) + rectcentery,
+
+                Xneu(u2mm(R.x2) - rectcenterx, u2mm(R.y1) - rectcentery, 0, 0, R.angle) + rectcenterx,
+                Yneu(u2mm(R.x2) - rectcenterx, u2mm(R.y1) - rectcentery, 0, 0, R.angle) + rectcentery,
+
+                Xneu(u2mm(R.x1) - rectcenterx, u2mm(R.y1) - rectcentery, 0, 0, R.angle) + rectcenterx,
+                Yneu(u2mm(R.x1) - rectcenterx, u2mm(R.y1) - rectcentery, 0, 0, R.angle) + rectcentery
+             );
+        cmd += s;
+      }
+      else if (R.layer == 22 || R.layer == 52) {
+        sprintf(s, "LAYER %d;\nWIRE %.9fmm (%.9fmm %.9fmm ) (%.9fmm %.9fmm ) (%.9fmm %.9fmm ) (%.9fmm %.9fmm ) (%.9fmm %.9fmm );\n",
+                layer3db,
+                Zbottom,
+                Xneu(u2mm(R.x1) - rectcenterx, u2mm(R.y1) - rectcentery, 0, 0, R.angle) + rectcenterx,
+                Yneu(u2mm(R.x1) - rectcenterx, u2mm(R.y1) - rectcentery, 0, 0, R.angle) + rectcentery,
+
+                Xneu(u2mm(R.x1) - rectcenterx, u2mm(R.y2) - rectcentery, 0, 0, R.angle) + rectcenterx,
+                Yneu(u2mm(R.x1) - rectcenterx, u2mm(R.y2) - rectcentery, 0, 0, R.angle) + rectcentery,
+
+                Xneu(u2mm(R.x2) - rectcenterx, u2mm(R.y2) - rectcentery, 0, 0, R.angle) + rectcenterx,
+                Yneu(u2mm(R.x2) - rectcenterx, u2mm(R.y2) - rectcentery, 0, 0, R.angle) + rectcentery,
+
+                Xneu(u2mm(R.x2) - rectcenterx, u2mm(R.y1) - rectcentery, 0, 0, R.angle) + rectcenterx,
+                Yneu(u2mm(R.x2) - rectcenterx, u2mm(R.y1) - rectcentery, 0, 0, R.angle) + rectcentery,
+
+                Xneu(u2mm(R.x1) - rectcenterx, u2mm(R.y1) - rectcentery, 0, 0, R.angle) + rectcenterx,
+                Yneu(u2mm(R.x1) - rectcenterx, u2mm(R.y1) - rectcentery, 0, 0, R.angle) + rectcentery
+             );
+        cmd += s;
+      }
+    }
+    P.wires(W) {
+      if (W.layer == 21 || W.layer == 51) {
+        sprintf(s, "Layer %d;\nWIRE %.9fmm (%.9fmm %.9fmm ) %+.3f (%.9fmm %.9fmm );\n",
+                    layer3dt,
+                    Ztop,
+                    u2mm(W.x1), u2mm(W.y1), W.curve, u2mm(W.x2), u2mm(W.y2)
+               );
+        cmd += s;
+      }
+      else if (W.layer == 22 || W.layer == 52) {
+        sprintf(s, "Layer %d;\nWIRE %.9fmm (%.9fmm %.9fmm ) %+.3f (%.9fmm %.9fmm );\n",
+                    layer3db,
+                    Zbottom,
+                    u2mm(W.x1), u2mm(W.y1), W.curve, u2mm(W.x2), u2mm(W.y2)
+               );
+        cmd += s;
+      }
+    }
+  }
+  if (Test) {
+    dlgDialog("3D IDF test") {
+      dlgHBoxLayout dlgSpacing(600);
+      dlgHBoxLayout {
+        dlgVBoxLayout dlgSpacing(600);
+        dlgTextEdit(cmd);
+      }
+      dlgHBoxLayout {
+        dlgPushButton("ok") dlgAccept();
+        dlgPushButton("esc") { dlgReject(); exit(-273); }
+        dlgStretch(1);
+      }
+    };
+  }
+  exit(cmd);
+}
+
+else {
+  if (language() == "de") dlgMessageBox("Starten Sie das ULP in einem Package (Bibliothek)", "OK");
+  else dlgMessageBox("Start this ULP in a package (library)", "OK");
+}

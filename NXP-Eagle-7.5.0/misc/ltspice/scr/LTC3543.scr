@@ -1,0 +1,14 @@
+ Edit 'LTC3543.dev' ;
+ Prefix 'IC' ;
+ Description '600mA Synchronous Step Down Buck Regulator with PLL, Soft-Start and Spread Spectrum' ;
+ Value off ;
+ Add LTC3543 'G$1' next 0 (0 0) ;
+ Package 'DFN6(DCB)' 'DCB' ;
+ Technology '' ;
+ Connect 'G$1.RUN' '5' ;
+ Connect 'G$1.VIN' '6' ;
+ Connect 'G$1.SW' '1' ;
+ Connect 'G$1.GND' '7' ;
+ Connect 'G$1.FB' '4' ;
+ Connect 'G$1.MODE' '3' ;
+ Connect 'G$1.CAP' '2' ;

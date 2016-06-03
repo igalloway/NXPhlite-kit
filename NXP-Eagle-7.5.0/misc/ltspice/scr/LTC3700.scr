@@ -1,0 +1,17 @@
+ Edit 'LTC3700.dev' ;
+ Prefix 'IC' ;
+ Description 'Constant Frequency Step-Down DC/DC Controller with LDO Regulator' ;
+ Value off ;
+ Add LTC3700 'G$1' next 0 (0 0) ;
+ Package 'MSOP10(MS)' 'MS' ;
+ Technology '' ;
+ Connect 'G$1.LDO' '2' ;
+ Connect 'G$1.ITH/RUN' '10' ;
+ Connect 'G$1.VIN2' '1' ;
+ Connect 'G$1.FB2' '3' ;
+ Connect 'G$1.VIN' '7' ;
+ Connect 'G$1.GND' '5' ;
+ Connect 'G$1.FB' '9' ;
+ Connect 'G$1.PGOOD' '4' ;
+ Connect 'G$1.SENSE-' '8' ;
+ Connect 'G$1.PGATE' '6' ;

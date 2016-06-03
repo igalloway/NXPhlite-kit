@@ -1,0 +1,252 @@
+#usage "en:Place a text <b>Spiceorder xx</b> at all pins in symbol.<p>"
+       "To simulate a schematic in LTspice IV, you can export the schematic and "
+       "the symbols of a library t a LTspice .asc file format with export-ltspice.ulp.<br>"
+       "To simulate in Spice, the pins must have a SpiceOrder.<br>"
+       "To assigning the spiceorder unique to a pin, you must place the text SiceOrder xx "
+       "on the coordinate of the pin on the layer 99 SpiceOrder.<br>"
+       "<i>SpiceOrder</i> is a reserved name<br>"
+       "<i>xx</i> ist the number<br>"
+       "You can use this ulp in device- and symbol-editor. If you start the ulp in a device, "
+       "all used symbols of this device can place the spiceorder, if you start the ulp in a symbol, "
+       "only this symbol will be edit.<br"
+       "<author>Author alf@cadsoft.de</author>"
+       ,
+       "de:Platziere einen Text <b>SpiceOrder xx</b> an jedem Pin im Symbol<p>"
+       "Um einen Schaltplan in LTspive IV simulieren zu können, kann man mit dem "
+       "export-ltspice.ulp einen Schaltplan so wie die Symbole der Bibliothek "
+       "im LTspice .asc Format augeben.<br>"
+       "Zum simulieren in Spice, muß für jeden Pin die SpiceOrder angegeben werden. "
+       "Um die SpiceOrder eindeutig zuzuordnen, muß man im Symbol an jedem Pin "
+       "(Koordinate des Pin) im Layer 99 SpiceOrder einen entsprtechenden Text "
+       "platzieren."
+       "<p>"
+       "<b><i>SpiceOrder</i></b> ist ein reservierter Name.<br>"
+       "<b><i>xx</i></b> ist die Nummer."
+       "<p>"
+       "Dieses ULP kann sowohl im Device-Editor wie im Symbol-Editor gestartet werden. "
+       "Wird es im Device-Editor gestartet, denn kann man allen Symbolen die im Device "
+       "benutzt werden die SpiceOrder zuweisen. Im Symbol-Editor gestartet nur dem Symbol "
+       "das man gerade im Editor geladen hat."
+       "<p>"
+       "<author>Author alf@cadsoft.de</author>"
+
+string Version = "1.0.,0"; // 2012-06-28 alf@cadsoft.de
+
+string SpiceOrder = "SpiceOrder";
+
+string PinName[], GateName[], Symbols[], SpiceOrderNum[];
+string List[];
+int    PinX[], PinY[];
+int    CntPin = 0;
+
+int    OrderExist[];
+int    OrderExistCollect = 0;
+
+int    LayerSpiceOrder = 99;    // Die Zuordnung der Pins zu der SpiceOrder geschieht über den Text SpiceOrderXX
+                                // und wird als Text in diesem Layer abgelegt!
+int    ColorViolett = 5;
+string DefLayerSpiceLayer = "";  // if not exist this layer
+
+int test = 0; // test option zum debuggen
+
+/*** functions ***/
+string checkapostroph(string s) {  // da der ganze String in ' eingeschlossen wird,
+                                   // müssen die Apostrophen verdoppelt werden.
+  string t[];
+  int cnt;
+  cnt = strsplit(t, s, '\''); // check Apostroph
+  if (cnt > 1) {
+    s = "";
+    for (int i = 0; i < cnt; i++) {
+      if (i == 0) {
+        if (t[i]) s += t[i];
+      }
+      else if (i) s += "''" + t[i];
+    }
+  }
+ return s;
+}
+
+
+void genLine(int n) {
+  sprintf(List[n], "%d\t%s\t%s\t%s\t%s\t%.4f\t%.4f", n, Symbols[n], GateName[n], PinName[n], SpiceOrderNum[n], u2mil(PinX[n]), u2mil(PinY[n]));
+  return;
+}
+
+
+void getOrderText(UL_SYMBOL S) {
+  S.texts(T) {
+    if (T.layer == LayerSpiceOrder) {
+      string s[];
+      int cnt = strsplit(s, T.value, ' ');
+      if (s[0] == SpiceOrder) {
+        S.pins(P) {
+          int found = 0;
+          for (int n = 0; n < CntPin; n++) {
+            if (T.x == PinX[n] && T.y == PinY[n] && S.name == Symbols[n]) {
+              sprintf(s[2] , "%d %s %.4f %.4f / %.4f %.4f", n, PinName[n], u2mil(P.x), u2mil(P.y), u2mil(PinX[n]), u2mil(PinX[n]));
+              SpiceOrderNum[n] = s[1];
+              genLine(n);
+              found = 1;
+              OrderExist[n] = 1;
+              OrderExistCollect = 1;
+              break;
+            }
+          }
+          if (found) break;
+        }
+      }
+    }
+  }
+  return;
+}
+
+
+int checkGsymbolName(string symname) {
+  int exist = 0;
+  for (int n = 0; n < CntPin; n++) {
+    if (Symbols[n] == symname) {
+      exist = 1;
+      break;
+    }
+  }
+  return exist;
+}
+
+
+int genScript(void) {
+  string cmd, s;
+  string gate = "";
+
+  for (int n = 0; n < CntPin; n++ ) {
+    if (gate != GateName[n] || symbol) {  // || symbol, um aus einem Symbol heraus die SpiceOrder zu definieren
+      sprintf(s, "Edit '%s.SYM';\nGRID MIL 100 1;\n", checkapostroph(Symbols[n]));
+      cmd+=s;
+      sprintf(s, "LAYER %d SpiceOrder;\n", LayerSpiceOrder);
+      cmd+=s;
+      sprintf(s, "SET COLOR_LAYER %d %d;\n", LayerSpiceOrder, ColorViolett);  // SET COLOR_LAYER layer color;
+      cmd+=s;
+      sprintf(s, "DISPLAY NONE %d;\n", LayerSpiceOrder);
+      cmd+=s;
+      sprintf(s, "CHANGE Size 16;\nLayer %d;\n", LayerSpiceOrder);
+      cmd+=s;
+      sprintf(s, "CHANGE Align Center;\n");
+      cmd+=s;
+      gate = GateName[n];
+    }
+    if (OrderExist[n] ) {
+      sprintf(s, "DELETE (%.4f %.4f);\n", u2mil(PinX[n]), u2mil(PinY[n]) );
+      cmd+=s;
+    }
+    if (!SpiceOrderNum[n]) {
+      dlgMessageBox("First define SpiceOrder!", "OK");
+      return 0;
+    }
+    sprintf(s, "TEXT 'SpiceOrder %s' R0 (%.4f %.4f);\n", SpiceOrderNum[n], u2mil(PinX[n]), u2mil(PinY[n]) );
+    cmd+=s;
+  }
+  sprintf(s, "DISPLAY ALL;\n");
+  cmd+=s;
+  if (test) {
+    dlgDialog("Test") {
+      dlgHBoxLayout dlgSpacing(600);
+      dlgHBoxLayout {
+        dlgVBoxLayout dlgSpacing(600);
+        dlgTextEdit(cmd);
+      }
+
+      dlgHBoxLayout {
+        dlgPushButton("OK") dlgAccept();
+        dlgPushButton("esc") { dlgReject(); exit(-99); }
+      }
+
+    };
+  }
+  exit(cmd);
+}
+
+
+void getSymbolPin(string sname, string gname) {
+  library(L) {
+    L.symbols(SYM) {
+      if (SYM.name == sname) {
+        SYM.pins(P) {
+          PinName[CntPin] = P.name;
+          Symbols[CntPin] = SYM.name;
+          PinX[CntPin] = P.x;
+          GateName[CntPin] = gname;
+          PinY[CntPin] = P.y;
+          genLine(CntPin);
+          CntPin++;
+        }
+        getOrderText(SYM);
+        break;
+      }
+    }
+  }
+  return;
+}
+
+
+void getSpiceOrder(int n) {
+  string neworder = SpiceOrderNum[n];
+  dlgDialog("Get Spiceorder") {
+    dlgGridLayout {
+      dlgCell(0, 0) dlgHBoxLayout { dlgStretch(1); dlgLabel("Symbol:"); }
+      dlgCell(0, 1) dlgLabel(Symbols[n]);
+      dlgCell(1, 0) dlgHBoxLayout { dlgStretch(1); dlgLabel("Gate:"); }
+      dlgCell(1, 1) dlgLabel(GateName[n]);
+      dlgCell(2, 0) dlgHBoxLayout { dlgStretch(1); dlgLabel("Pin:"); }
+      dlgCell(2, 1) dlgLabel(GateName[n]+ "." + PinName[n]);
+      dlgCell(3, 0) dlgLabel("Spiceorder ");
+      dlgCell(3, 1) dlgStringEdit(neworder);
+    }
+    dlgHBoxLayout {
+      dlgPushButton("+OK") dlgAccept();
+      dlgPushButton("-CANCEL") { dlgReject(); return; }
+    }
+  };
+  SpiceOrderNum[n] = neworder;
+  genLine(n);
+  return;
+}
+
+
+/*** main ***/
+if (deviceset || symbol) {
+  if (deviceset) {
+    deviceset(DV) {
+      DV.gates(G) {
+        if (!checkGsymbolName(G.symbol.name)) {
+          getSymbolPin(G.symbol.name, G.name);
+        }
+      }
+    }
+  }
+  if (symbol) {
+    symbol(S) {
+      if (!checkGsymbolName(S.name)) {
+        getSymbolPin(S.name, "");
+      }
+    }
+  }
+  int sel;
+  dlgDialog("Spiceorder") {
+    dlgHBoxLayout dlgSpacing(500);
+    dlgHBoxLayout {
+      dlgVBoxLayout dlgSpacing(500);
+      dlgListView("#\tSymbol\tGate\tPin\tSpiceorder\tX\tY", List, sel) getSpiceOrder(sel);
+    }
+
+    if (OrderExistCollect) dlgLabel("<font color=\"red\">ATTENTION: SpiceOrder exist!</font>");
+
+    dlgHBoxLayout {
+      dlgPushButton("+OK") { if(genScript()) dlgAccept(); }
+      dlgPushButton("-CANCEL") { dlgReject(); exit(-1); }
+      dlgStretch(1);
+      dlgPushButton("&Help") dlgMessageBox(usage, "OK");
+    }
+  };
+}
+
+else dlgMessageBox("Start this ULP in Deviceset!", "OK");

@@ -1,0 +1,65 @@
+#usage "en: <nobr>Set values of all elements of a selected group.</nobr><p>"
+       "RUN cmd-change-value-group VALUE [PREFIX]<br>"
+       "<author>support@cadsoft.de</author>"
+       ,
+       "de: <nobr>Setzt die Values aller Bauteile einer definierten Gruppe.</nobr><p>"
+       "RUN cmd-change-value-group VALUE [PREFIX]<br>"
+       "<author>support@cadsoft.de</author>"
+
+#require 6.0500
+
+string Version = "Version 1.0.1"; // 2013-08-22 alf@cadsoft.de
+
+string cmd, s;
+string newValue = argv[1];
+string Prefix = strupr(argv[2]);
+int grp = 0;
+
+if (!newValue) {
+  if (language() == "de") dlgMessageBox(usage + "<p>Kein VALUE angegeben.<p>", "OK");
+  else  dlgMessageBox(usage + "<p>No VALUE specified.<p>", "OK");
+  exit(-1);
+}
+
+int chkPref(string name, string pfix) {
+  if (!pfix) return 1;
+  else if (strstr(name, pfix) == 0) return 1;
+  return 0;
+}
+
+if (sheet) {
+  sheet(S) {
+    S.instances(I) {
+      if (ingroup(I)) {
+        grp = 1;
+        if (chkPref(I.part.name, Prefix)) {
+          sprintf(s, "VALUE %s %s;\n", I.part.name, newValue);
+          cmd+= s;
+        }
+      }
+    }
+  }
+}
+
+else if(board) {
+  board(B) {
+    B.elements(E) {
+      if (ingroup(E)) {
+        grp = 1;
+        if (chkPref(E.name, Prefix)) {
+          sprintf(s, "VALUE %s %s;\n", E.name, newValue);
+          cmd+= s;
+        }
+      }
+    }
+  }
+}
+
+else dlgMessageBox("Starten Sie dieses ULP in einem SCH- oder BRD-Editor!", "OK");
+
+if (!grp) {
+  if (language() == "de") dlgMessageBox("Keine Gruppe definiert!", "OK");
+  else dlgMessageBox("No group selected!", "OK");
+  exit(-1);
+}
+exit (cmd);

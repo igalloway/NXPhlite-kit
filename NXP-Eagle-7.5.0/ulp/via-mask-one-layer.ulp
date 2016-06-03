@@ -1,0 +1,299 @@
+#usage "en:<b>Generate a one-sided stop mask in layer tStop or bStop with a given width beginning at the drill's edge.</b>\n"
+       "<p>"
+       "In order to delete all mask data objects in the stop layer, which may result from a previous run of this ULP, display none "
+       "except the Stop layer and use GROUP and DELETE."
+       "<p>"
+       "<author>Author: support@cadsoft.de</author>"
+       ,
+       "de:<b>Generiert eine einseitige Lötstop-Maske auf dem Layer tStop oder bStop mit einer angegebenen Breite ab der Bohrlochkante.</b>\n"
+       "<p>"
+       "Um bereits vorhandene Maskendaten z.B. aus einem vorhergehenden Start des ULPs zu löschen, schalten Sie alle Layer bis auf den "
+       "gewünschten aus, und löschen sie mit GROUP und DELETE."
+       "<p>"
+       "<author>Author: support@cadsoft.de</author>"
+
+// THIS PROGRAM IS PROVIDED AS IS AND WITHOUT WARRANTY OF ANY KIND, EXPRESSED OR IMPLIED
+
+string DruFile       = "";
+string DRUvalues[];
+int    DRUlcnt       = 0;
+int    StopLimitLine = 0;
+string LayerStack    = "";
+real   LabmlViaStopLimit = 0.0;
+
+real   MaxViaDrill = 0;
+string LayerName[];
+int    UsedLayerstack[];
+int    CoreLayer = 0;
+
+
+int    StopMaskLayer;
+string Cmd;
+
+numeric string ListVDrillsT[];
+int    VDrillsT[];
+int    CntVdrillsT = 0;
+numeric string ListVDrillsB[];
+int    VDrillsB[];
+int    CntVdrillsB = 0;
+
+// delete trailing zeros
+string delkommanull(string v) {
+  for (int n = strlen(v)-1; n; n--) {
+    if(v[n] == '0') v[n] = 0;
+    else return v;
+  }
+  return v;
+}
+
+// get Design Rules
+string get_DesignRules(string bfile) {  // read boardname.dru
+  DruFile = filesetext(bfile, ".dru");
+  string f[];
+  int fcnt = fileglob(f, DruFile);
+  string h;
+  if (!argv[1]) {
+    string cmd;
+    sprintf(cmd, "DRC SAVE '%s';\nRUN '%s' '%s';", DruFile, argv[0], DruFile);
+    exit(cmd);
+  }
+  DRUlcnt = fileread(DRUvalues, DruFile);  // get Design Rules
+  string s[];
+  int n;
+  int x;
+  for (int line = 0; line < DRUlcnt; line++) {
+    n = strsplit(s, DRUvalues[line], ' ');
+
+    if (s[0] == "layerSetup") {
+      LayerStack = s[2];
+      // layerSetup = ([2:1+2*15+16:15])
+      string laySetupStr = s[2];
+      for (int l = 0; l < strlen(laySetupStr); l++) {
+        if (!isdigit(laySetupStr[l])) laySetupStr[l] = ' ';
+      }
+      string ulayers[];
+      int cntl = strsplit(ulayers, laySetupStr, ' ');
+      int lasttoplayer = 0;
+      for (int n = 0; n < cntl; n++) {
+        int lnr = strtol(ulayers[n]);
+        UsedLayerstack[lnr] = 1;
+        if (lnr < 9 && lasttoplayer < lnr) lasttoplayer = lnr;
+      }
+      CoreLayer = lasttoplayer+1;  // der Kern
+    }
+    /* mlViaStopLimit = 0.3mm */
+    else if (s[0] == "mlViaStopLimit") {
+      StopLimitLine = line;
+      real mlViaStopLimit = strtod(s[2]);
+      if(strstr(s[2], "mil") > 0) {
+        x = mil2u(mlViaStopLimit);
+        mlViaStopLimit = u2mm(x);
+      }
+      LabmlViaStopLimit = mlViaStopLimit;
+    }
+  }
+  return DruFile;
+}
+
+void savedru(void) {
+  string s[];
+  int n = strsplit(s, DRUvalues[StopLimitLine], ' ');
+  string v;
+  sprintf(v, "%f", LabmlViaStopLimit);
+  sprintf(s[2], "%smm", delkommanull(v));
+  DRUvalues[StopLimitLine] = strjoin(s, ' ');
+  output(DruFile, "wt") {
+    for (int line = 0; line < DRUlcnt; line++) {
+      printf("%s\n", DRUvalues[line]);
+    }
+  }
+  string cmd;
+  sprintf(cmd, "DRC LOAD '%s';\nRUN '%s' '%s';", DruFile, argv[0], DruFile);
+  exit(cmd);
+}
+
+string changeoversize(string line) {
+  string s[];
+  int n = strsplit(s, line, '\t');
+  real oversize = strtod(s[1]);
+  dlgDialog("Oversize drill") {
+    dlgLabel("Drill " + s[0]);
+    dlgHBoxLayout {
+      dlgLabel("Oversize");
+      dlgRealEdit(oversize, 0, 10);
+      dlgStretch(1);
+    }
+    dlgHBoxLayout {
+      dlgStretch(1);
+      dlgPushButton("+OK") {
+        sprintf(s[1], "%f", oversize);
+        s[1] = delkommanull(s[1]);
+        line = strjoin(s, '\t');
+        dlgAccept();
+      }
+      dlgPushButton("-CANCEL") dlgReject();
+      dlgStretch(1);
+    }
+  };
+  return line;
+}
+
+void getvaluemenu(void) {
+  string sMaxViaDrill;
+  string vdrill;
+  sprintf(vdrill, "%f", MaxViaDrill);
+  sprintf(sMaxViaDrill, "Found max Via-Drill = %smm", delkommanull(vdrill));
+  string vLabmlViaStopLimit;
+  sprintf(vLabmlViaStopLimit, "%f", LabmlViaStopLimit);
+  string info = "";
+  if (LabmlViaStopLimit < MaxViaDrill) {
+    sprintf(info, "<nobr>Max. via drill diameter = %smm<br>DRC Parameter for Limit = %smm </nobr><br>" +
+                  "<font color=\"red\">Set Limit in DRC to %s</font>",
+                   delkommanull(vdrill),  delkommanull(vLabmlViaStopLimit), delkommanull(vdrill)
+           );
+  }
+  int selt = -1;
+  int selb = -1;
+  int srt  =  1;
+  int Result = dlgDialog("Generate stop mask for VIA") {
+    /*
+    dlgHBoxLayout {
+      dlgLabel("Layer-Stack");
+      dlgLabel(LayerStack);
+      dlgStretch(1);
+    }
+    dlgHBoxLayout {
+      dlgLabel(sMaxViaDrill);
+      dlgStretch(1);
+    }
+    */
+    dlgHBoxLayout {
+      dlgLabel("Mask Stop-Limit");
+      dlgRealEdit(LabmlViaStopLimit);
+      dlgLabel("mm");
+      dlgStretch(1);
+    }
+    if (LabmlViaStopLimit < MaxViaDrill) {
+      dlgGroup("DRC settings") {
+        dlgHBoxLayout {
+          dlgLabel(info);
+          dlgStretch(1);
+          dlgPushButton("Set, Save and Load DRU") {
+            LabmlViaStopLimit = MaxViaDrill;
+            savedru();
+          }
+        }
+      }
+    }
+    dlgGroup("Set stop mask") {
+      dlgHBoxLayout {
+        dlgVBoxLayout {
+          dlgRadioButton("tStop", StopMaskLayer);
+          dlgListView("Top Drill\toversize", ListVDrillsT, selt, srt) ListVDrillsT[selt] = changeoversize(ListVDrillsT[selt]);
+        }
+        dlgVBoxLayout {
+          dlgRadioButton("bStop", StopMaskLayer);
+          dlgListView("Bot.Drill\toversize", ListVDrillsB, selb, srt) ListVDrillsB[selb] = changeoversize(ListVDrillsB[selb]);
+        }
+      }
+    }
+    dlgHBoxLayout {
+      dlgPushButton("+OK") dlgAccept();
+      dlgPushButton("-Cancel") dlgReject();
+      dlgStretch(1);
+      dlgPushButton("Help") dlgMessageBox(usage);
+    }
+  };
+  if (!Result) exit(0);
+  return;
+}
+
+real oversize(string line) {
+  string s[];
+  int cnt = strsplit(s, line, '\t');
+  return strtod(s[1]);
+}
+
+real getoversize(int drill, int lay) {
+  int n;
+  if (lay == 29) {
+    for (int n = 0; n < CntVdrillsT; n++) {
+      if (drill == VDrillsT[n]) return oversize(ListVDrillsT[n]);
+    }
+  }
+  else if (lay = 30) {
+    for (int n = 0; n < CntVdrillsB; n++) {
+      if (drill == VDrillsB[n]) return oversize(ListVDrillsB[n]);
+    }
+  }
+  dlgMessageBox("Error, no drills found!", "OK");
+  exit(-230);
+}
+
+void  drawmask(int x, int y, int diameter, int lay) {
+  real stopmaskoversize = getoversize(diameter, lay);
+  real radius = u2mm(diameter) / 2 + stopmaskoversize;
+  string s;
+  sprintf(s, "CIRCLE 0 (%.4fmm %.4fmm) (%.4fmm %.4fmm) ;\n",
+              u2mm(x), u2mm(y), u2mm(x) + radius, u2mm(y) );
+  Cmd += s;
+  return;
+}
+
+void adddrill(int drill, int lay) {
+  if (lay == 1) {
+    for (int n = 0; n < CntVdrillsT; n++) {
+      if (drill == VDrillsT[n]) return;
+    }
+    VDrillsT[CntVdrillsT++] = drill;
+    return;
+  }
+  else if (lay = 16) {
+    for (int n = 0; n < CntVdrillsB; n++) {
+      if (drill == VDrillsB[n]) return;
+    }
+    VDrillsB[CntVdrillsB++] = drill;
+    return;
+  }
+  return;
+}
+
+if (board) board(B) {
+  B.signals(S) {
+    S.vias(V) {
+      if(V.start == 1 || V.end == 16 ) {
+        if (MaxViaDrill < u2mm(V.drill)) MaxViaDrill = u2mm(V.drill);
+        if (V.start == 1 ) adddrill(V.drill, 1);
+        else if (V.end == 16) adddrill(V.drill, 16);
+      }
+    }
+  }
+  int n;
+  string v;
+  for (n = 0; n < CntVdrillsT; n++) {
+    sprintf(v, "%f", u2mm(VDrillsT[n]));
+    sprintf(ListVDrillsT[n], "%s\t0.0", delkommanull(v));
+  }
+  for (n = 0; n < CntVdrillsB; n++) {
+    sprintf(v, "%f", u2mm(VDrillsB[n]));
+    sprintf(ListVDrillsB[n], "%s\t0.0", delkommanull(v));
+  }
+
+  string dru_file = get_DesignRules(B.name);  // read Designrules
+  getvaluemenu();
+  int masklayer;
+  if (!StopMaskLayer) masklayer = 29;
+  else masklayer = 30;
+  sprintf(Cmd, "Layer %d ;\nchange layer %d;\n", masklayer, masklayer);
+  B.signals(S) {
+    S.vias(V) {
+      if(V.start == 1 && StopMaskLayer == 0 || V.end == 16 && StopMaskLayer == 1) {
+        drawmask(V.x, V.y, V.drill, masklayer);
+      }
+    }
+  }
+  exit(Cmd);
+}
+
+else dlgMessageBox("Start this ULP in a Board!", "OK");
+exit(0);

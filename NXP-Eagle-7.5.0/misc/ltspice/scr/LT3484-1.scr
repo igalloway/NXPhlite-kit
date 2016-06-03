@@ -1,0 +1,13 @@
+ Edit 'LT3484-1.dev' ;
+ Prefix 'IC' ;
+ Description 'Photoflash Capacitor Chargers' ;
+ Value off ;
+ Add LT3484-1 'G$1' next 0 (0 0) ;
+ Package 'DFN6(DCB)' 'DCB' ;
+ Technology '' ;
+ Connect 'G$1.!DONE' '1' ;
+ Connect 'G$1.VBAT' '6' ;
+ Connect 'G$1.VIN' '3' ;
+ Connect ALL 'G$1.SW' '4 5' ;
+ Connect 'G$1.GND' '7' ;
+ Connect 'G$1.CHARGE' '2' ;

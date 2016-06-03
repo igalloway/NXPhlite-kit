@@ -1,0 +1,15 @@
+ Edit 'LT3494A.dev' ;
+ Prefix 'IC' ;
+ Description 'Micropower Low Noise Boost Converters with Output Disconnect' ;
+ Value off ;
+ Add LT3494A 'G$1' next 0 (0 0) ;
+ Package 'DFN8(DDB)' 'DDB' ;
+ Technology '' ;
+ Connect 'G$1.VOUT' '7' ;
+ Connect 'G$1.VCC' '3' ;
+ Connect 'G$1.SW' '1' ;
+ Connect ALL 'G$1.GND' '9 2' ;
+ Connect 'G$1.FB' '6' ;
+ Connect 'G$1.!SHDN' '5' ;
+ Connect 'G$1.CTRL' '4' ;
+ Connect 'G$1.CAP' '8' ;

@@ -1,0 +1,13 @@
+ Edit 'LTC3526B-2.dev' ;
+ Prefix 'IC' ;
+ Description '500mA 2MHz Synchronous Step-Up DC/DC Converters in 2mm x 2mm DFN' ;
+ Value off ;
+ Add LTC3526B-2 'G$1' next 0 (0 0) ;
+ Package 'DFN6(DC)' 'DC' ;
+ Technology '' ;
+ Connect 'G$1.VOUT' '6' ;
+ Connect 'G$1.VIN' '3' ;
+ Connect 'G$1.SW' '1' ;
+ Connect ALL 'G$1.GND' '2 7' ;
+ Connect 'G$1.FB' '5' ;
+ Connect 'G$1.!SHDN' '4' ;

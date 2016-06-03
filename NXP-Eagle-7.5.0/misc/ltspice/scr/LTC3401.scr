@@ -1,0 +1,17 @@
+ Edit 'LTC3401.dev' ;
+ Prefix 'IC' ;
+ Description '1A, 3MHz Micropower Synchronous Boost Converter' ;
+ Value off ;
+ Add LTC3401 'G$1' next 0 (0 0) ;
+ Package 'MSOP10(MS)' 'MS' ;
+ Technology '' ;
+ Connect 'G$1.VC' '9' ;
+ Connect 'G$1.RT' '1' ;
+ Connect 'G$1.VOUT' '7' ;
+ Connect 'G$1.VIN' '3' ;
+ Connect 'G$1.SW' '4' ;
+ Connect 'G$1.GND' '5' ;
+ Connect 'G$1.FB' '8' ;
+ Connect 'G$1.PGOOD' '6' ;
+ Connect 'G$1.!SHDN' '10' ;
+ Connect 'G$1.MODE' '2' ;

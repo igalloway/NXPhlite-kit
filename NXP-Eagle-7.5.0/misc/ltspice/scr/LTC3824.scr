@@ -1,0 +1,17 @@
+ Edit 'LTC3824.dev' ;
+ Prefix 'IC' ;
+ Description 'High Voltage Step-Down Controller With 40_A Quiescent Current' ;
+ Value off ;
+ Add LTC3824 'G$1' next 0 (0 0) ;
+ Package 'MSOP10(MSE)' 'MSE' ;
+ Technology '' ;
+ Connect 'G$1.VC' '4' ;
+ Connect 'G$1.SS' '6' ;
+ Connect 'G$1.VCC' '8' ;
+ Connect ALL 'G$1.GND' '1 11' ;
+ Connect 'G$1.FB' '5' ;
+ Connect 'G$1.SENSE' '7' ;
+ Connect 'G$1.MODE' '2' ;
+ Connect 'G$1.GATE' '9' ;
+ Connect 'G$1.RSET' '3' ;
+ Connect 'G$1.CAP' '10' ;

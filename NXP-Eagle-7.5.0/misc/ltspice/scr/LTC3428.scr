@@ -1,0 +1,17 @@
+ Edit 'LTC3428.dev' ;
+ Prefix 'IC' ;
+ Description '4A, 2MHz Dual Phase Step-Up DC/DC Converter in 3mm _ 3mm DFN' ;
+ Value off ;
+ Add LTC3428 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.VC' '5' ;
+ Connect 'G$1.VOUT' '3' ;
+ Connect 'G$1.PGNDB' '10' ;
+ Connect ALL 'G$1.PGNDA' '11 1' ;
+ Connect 'G$1.VIN' '8' ;
+ Connect 'G$1.FB' '6' ;
+ Connect 'G$1.SWA' '2' ;
+ Connect 'G$1.SWB' '9' ;
+ Connect 'G$1.!SHDN' '4' ;
+ Connect 'G$1.AGND' '7' ;

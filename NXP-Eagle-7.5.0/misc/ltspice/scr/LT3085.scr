@@ -1,0 +1,18 @@
+ Edit 'LT3085.dev' ;
+ Prefix 'IC' ;
+ Description 'Adjustable 500mA Single Resistor Low Dropout Regulator' ;
+ Value off ;
+ Add LT3085 'G$1' next 0 (0 0) ;
+ Package 'MSOP8(MS8E)' 'MS8E' ;
+ Technology '' ;
+ Connect 'G$1.SET' '4' ;
+ Connect ALL 'G$1.IN' '7 8' ;
+ Connect ALL 'G$1.OUT' '9 3 2 1' ;
+ Connect 'G$1.VCNTRL' '5' ;
+# Connect 'G$1.NC' '6' ;
+ Package 'DFN6(DCB)' 'DCB' ;
+ Technology '' ;
+ Connect 'G$1.SET' '3' ;
+ Connect ALL 'G$1.IN' '5 6' ;
+ Connect ALL 'G$1.OUT' '7 2 1' ;
+ Connect 'G$1.VCNTRL' '4' ;

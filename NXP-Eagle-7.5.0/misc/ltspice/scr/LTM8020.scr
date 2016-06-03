@@ -1,0 +1,13 @@
+ Edit 'LTM8020.dev' ;
+ Prefix 'IC' ;
+ Description '200mA, 36V DC/DC uModule' ;
+ Value off ;
+ Add LTM8020 'G$1' next 0 (0 0) ;
+ Package 'LGA21(V)' 'V' ;
+ Technology '' ;
+ Connect ALL 'G$1.VIN' 'A1 A2' ;
+ Connect ALL 'G$1.GND' 'E5 E4 E3 E2 D5 D4 D3 D2 D1 C2' ;
+ Connect ALL 'G$1.OUT' 'C5 C4 B5 B4 A5 A4' ;
+ Connect 'G$1.ADJ' 'E1' ;
+ Connect 'G$1.!SHDN' 'C1' ;
+ Connect 'G$1.BIAS' 'C3' ;

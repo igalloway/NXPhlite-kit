@@ -1,0 +1,18 @@
+ Edit 'LTC3413.dev' ;
+ Prefix 'IC' ;
+ Description '3A, 2MHz Monolithic Synchronous Regulator for DDR/QDR Memory Termination' ;
+ Value off ;
+ Add LTC3413 'G$1' next 0 (0 0) ;
+ Package 'TSSOP16BA(FE)' 'FE' ;
+ Technology '' ;
+ Connect 'G$1.RT' '5' ;
+ Connect 'G$1.ITH' '3' ;
+ Connect ALL 'G$1.PGND' '12 13 17' ;
+ Connect ALL 'G$1.SW' '11 10 14 15' ;
+ Connect 'G$1.FB' '4' ;
+ Connect 'G$1.PGOOD' '2' ;
+ Connect 'G$1.SVIN' '1' ;
+ Connect 'G$1.SGND' '8' ;
+ Connect 'G$1.VREF' '6' ;
+ Connect 'G$1.RUN/SS' '7' ;
+ Connect ALL 'G$1.PVIN' '9 16' ;

@@ -1,0 +1,13 @@
+ Edit 'LTC3803.dev' ;
+ Prefix 'IC' ;
+ Description 'Constant Frequency Current Mode Flyback DC/DC Controller in ThinSOT' ;
+ Value off ;
+ Add LTC3803 'G$1' next 0 (0 0) ;
+ Package 'SOT6(S6)' 'S6' ;
+ Technology '' ;
+ Connect 'G$1.NGATE' '6' ;
+ Connect 'G$1.ITH/RUN' '1' ;
+ Connect 'G$1.VCC' '5' ;
+ Connect 'G$1.GND' '2' ;
+ Connect 'G$1.FB' '3' ;
+ Connect 'G$1.SENSE' '4' ;

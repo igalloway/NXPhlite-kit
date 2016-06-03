@@ -1,0 +1,15 @@
+ Edit 'LT3489.dev' ;
+ Prefix 'IC' ;
+ Description '2MHz Boost DC/DC Converter with 2.5A Switch and Soft-Start' ;
+ Value off ;
+ Add LT3489 'G$1' next 0 (0 0) ;
+ Package 'MSOP8(MS8E)' 'MS8E' ;
+ Technology '' ;
+ Connect 'G$1.VC' '1' ;
+ Connect 'G$1.SS' '8' ;
+ Connect 'G$1.VIN' '6' ;
+ Connect 'G$1.SW' '5' ;
+ Connect ALL 'G$1.GND' '9 4' ;
+ Connect 'G$1.FB' '2' ;
+ Connect 'G$1.COMP' '7' ;
+ Connect 'G$1.!SHDN' '3' ;

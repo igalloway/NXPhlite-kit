@@ -1,0 +1,146 @@
+#usage "<b>Change PREFIX of parts in schematic</b><p>"
+       "RUN change-prefix-sch [old] [new]<br>"
+       "<author>Author: alf@cadsoft.de</author>"
+
+// THIS PROGRAM IS PROVIDED AS IS AND WITHOUT WARRANTY OF ANY KIND, EXPRESSED OR IMPLIED
+
+string Version = "ULP Version 1.0.0";  // 2010.11.16 alf@cadsoft.de
+
+int    actual_sheet = 0;
+
+string ChangeOldPrefix = argv[1];
+string ChangeNewPrefix = argv[2];
+
+string cmd;
+string s;
+
+int    test = 0;
+if (argv[3] == "?") test = 1;
+
+int GetNumberIndex(string Name) {
+  int l = strlen(Name) - 1;
+  for (int i = l; i >= 0; --i) {
+    if (!isdigit(Name[i]))
+      return i < l ? i + 1 : -1;
+    }
+  return 0;
+}
+
+
+string getprefix(string name) {     // Prefix of Device
+  int num = GetNumberIndex(name);
+  if (num < 1) return name;
+  else {
+    string pfx = name;
+    pfx[num] = 0;
+    return pfx;
+  }
+}
+
+
+void setgridmilllayer (void) {
+  sprintf(s, "GRID MIL 100 OFF;\n");
+  cmd += s;
+  sprintf(s, "DISPLAY NONE 94 -95 -96;\n");
+  cmd += s;
+  return;
+}
+
+
+void restorevisiblelayer(UL_SCHEMATIC S) {
+  sprintf(s, "DISP NONE ");
+  cmd += s;
+  S.layers(L) {
+     if (L.visible) {
+        sprintf(s, "%d ", L.number);
+        cmd += s;
+        }
+     }
+  cmd += ";\n";
+  return;
+}
+
+
+if (schematic) {
+  if (ChangeOldPrefix && ChangeNewPrefix) {   // ist alter und neuer Prefix angegeben?
+  }
+  else {
+    int Result = dlgDialog("Change PREFIX Schematic") {
+      dlgHBoxLayout {
+        dlgLabel("Change &old PREFIX ");
+        dlgStringEdit(ChangeOldPrefix);
+        dlgLabel(" with &new PREFIX ");
+        dlgStringEdit(ChangeNewPrefix);
+        dlgStretch(1);
+      }
+
+      dlgHBoxLayout {
+        dlgPushButton("+&OK") dlgAccept();
+        dlgSpacing(15);
+        dlgPushButton("-Cancel") dlgReject();
+        dlgSpacing(15);
+        dlgLabel(Version);
+        dlgStretch(1);
+      }
+    };
+    if (!Result) exit (0);
+  }
+  ChangeOldPrefix = strupr(ChangeOldPrefix);
+  ChangeNewPrefix = strupr(ChangeNewPrefix);
+
+  sheet(SH) actual_sheet = SH.number;  // die aktuelle Schaltplanseite
+
+  schematic(S) {
+    setgridmilllayer ();
+    int l = 1;
+    int chk;
+    int issheet = 0;
+    S.parts(P) {
+      if (P.device.package) {    // nur Bauteiel mit Package, also keine Supply-Symbole etc.
+        int n = GetNumberIndex(P.name);
+        if (n > 0) {
+          if (getprefix(P.name) == ChangeOldPrefix) {
+            P.instances(I) {
+              if (I.sheet) {  // kann keine Namen aendern von Parts, wenn das Gate nicht auf einer Seite platziert ist!
+                              // Beachte ADD-Level REQUEST!
+                if (issheet != I.sheet) {
+                issheet = I.sheet;
+                sprintf(s, "EDIT .S%d;\n", I.sheet);
+                cmd += s;
+                }
+                sprintf(s, "NAME '%s' (%.4f %.4f);\n", ChangeNewPrefix + strsub(P.name, n), u2mil(I.x), u2mil(I.y) );
+                cmd += s;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    sprintf(s, "GRID MIL 100;\n");
+    cmd += s;
+    sprintf(s, "EDIT .S%d;\n", actual_sheet);
+    cmd += s;
+    restorevisiblelayer(S);
+
+    string fname = filesetext(S.name, "~change-prefix.scr");
+    output(fname, "wtD") printf("%s", cmd);
+    if (test) {
+      dlgDialog("Script-Show") {
+        dlgTextEdit(cmd);
+        dlgHBoxLayout {
+          dlgPushButton("+OK") dlgAccept();
+          dlgPushButton("-esc") { dlgReject(); exit(-999); }
+          dlgStretch(1);
+        }
+      };
+    }
+    exit ("SCRIPT '" + fname + "';");
+  }
+}
+
+else {
+   dlgMessageBox("Start this ULP in a Schematic");
+   exit (0);
+}

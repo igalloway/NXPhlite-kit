@@ -1,0 +1,1483 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE eagle SYSTEM "eagle.dtd">
+<eagle version="6.3">
+<drawing>
+<settings>
+<setting alwaysvectorfont="no"/>
+<setting verticaltext="up"/>
+</settings>
+<grid distance="100" unitdist="mil" unit="mil" style="lines" multiple="1" display="yes" altdistance="0.01" altunitdist="inch" altunit="inch"/>
+<layers>
+<layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
+<layer number="2" name="Route2" color="1" fill="3" visible="no" active="yes"/>
+<layer number="3" name="Route3" color="4" fill="3" visible="no" active="yes"/>
+<layer number="4" name="Route4" color="1" fill="4" visible="no" active="yes"/>
+<layer number="5" name="Route5" color="4" fill="4" visible="no" active="yes"/>
+<layer number="6" name="Route6" color="1" fill="8" visible="no" active="yes"/>
+<layer number="7" name="Route7" color="4" fill="8" visible="no" active="yes"/>
+<layer number="8" name="Route8" color="1" fill="2" visible="no" active="yes"/>
+<layer number="9" name="Route9" color="4" fill="2" visible="no" active="yes"/>
+<layer number="10" name="Route10" color="1" fill="7" visible="no" active="yes"/>
+<layer number="11" name="Route11" color="4" fill="7" visible="no" active="yes"/>
+<layer number="12" name="Route12" color="1" fill="5" visible="no" active="yes"/>
+<layer number="13" name="Route13" color="4" fill="5" visible="no" active="yes"/>
+<layer number="14" name="Route14" color="1" fill="6" visible="no" active="yes"/>
+<layer number="15" name="Route15" color="4" fill="6" visible="no" active="yes"/>
+<layer number="16" name="Bottom" color="1" fill="1" visible="yes" active="yes"/>
+<layer number="17" name="Pads" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="18" name="Vias" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="19" name="Unrouted" color="6" fill="1" visible="yes" active="yes"/>
+<layer number="20" name="Dimension" color="15" fill="1" visible="yes" active="yes"/>
+<layer number="21" name="tPlace" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="22" name="bPlace" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="23" name="tOrigins" color="15" fill="1" visible="yes" active="yes"/>
+<layer number="24" name="bOrigins" color="15" fill="1" visible="yes" active="yes"/>
+<layer number="25" name="tNames" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="26" name="bNames" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="27" name="tValues" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="28" name="bValues" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="29" name="tStop" color="7" fill="3" visible="no" active="yes"/>
+<layer number="30" name="bStop" color="7" fill="6" visible="no" active="yes"/>
+<layer number="31" name="tCream" color="7" fill="4" visible="no" active="yes"/>
+<layer number="32" name="bCream" color="7" fill="5" visible="no" active="yes"/>
+<layer number="33" name="tFinish" color="6" fill="3" visible="no" active="yes"/>
+<layer number="34" name="bFinish" color="6" fill="6" visible="no" active="yes"/>
+<layer number="35" name="tGlue" color="7" fill="4" visible="no" active="yes"/>
+<layer number="36" name="bGlue" color="7" fill="5" visible="no" active="yes"/>
+<layer number="37" name="tTest" color="7" fill="1" visible="no" active="yes"/>
+<layer number="38" name="bTest" color="7" fill="1" visible="no" active="yes"/>
+<layer number="39" name="tKeepout" color="4" fill="11" visible="yes" active="yes"/>
+<layer number="40" name="bKeepout" color="1" fill="11" visible="yes" active="yes"/>
+<layer number="41" name="tRestrict" color="4" fill="10" visible="yes" active="yes"/>
+<layer number="42" name="bRestrict" color="1" fill="10" visible="yes" active="yes"/>
+<layer number="43" name="vRestrict" color="2" fill="10" visible="yes" active="yes"/>
+<layer number="44" name="Drills" color="7" fill="1" visible="no" active="yes"/>
+<layer number="45" name="Holes" color="7" fill="1" visible="no" active="yes"/>
+<layer number="46" name="Milling" color="3" fill="1" visible="no" active="yes"/>
+<layer number="47" name="Measures" color="7" fill="1" visible="no" active="yes"/>
+<layer number="48" name="Document" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="49" name="Reference" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="51" name="tDocu" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="52" name="bDocu" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="91" name="Nets" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="92" name="Busses" color="1" fill="1" visible="yes" active="yes"/>
+<layer number="93" name="Pins" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="94" name="Symbols" color="4" fill="1" visible="yes" active="yes"/>
+<layer number="95" name="Names" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="96" name="Values" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="97" name="Info" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="98" name="Guide" color="6" fill="1" visible="yes" active="yes"/>
+<layer number="99" name="SpiceOrder" color="5" fill="1" visible="yes" active="yes"/>
+</layers>
+<library>
+<description>LT-Spice library generated with :&lt;br&gt;
+import-ltspice.ulp&lt;br&gt;
+from: E:/Programme/LTC/LTspiceIV/lib/sym/Misc/*.asy&lt;br&gt;
+at 12.06.2012 10:26:07
+&lt;p&gt;
+2N5458.DEV&lt;br&gt;
+2N7002.DEV&lt;br&gt;
+BATTERY.DEV&lt;br&gt;
+CELL.DEV&lt;br&gt;
+DIAC.DEV&lt;br&gt;
+DIP8.DEV&lt;br&gt;
+DIP10.DEV&lt;br&gt;
+DIP14.DEV&lt;br&gt;
+DIP16.DEV&lt;br&gt;
+DIP20.DEV&lt;br&gt;
+EPOLY.DEV&lt;br&gt;
+EUROPEANCAP.DEV&lt;br&gt;
+EUROPEANPOLCAP.DEV&lt;br&gt;
+EUROPEANRESISTOR.DEV&lt;br&gt;
+FIXEDIND.DEV&lt;br&gt;
+JUMPER.DEV&lt;br&gt;
+NE555.DEV&lt;br&gt;
+NEONBULB.DEV&lt;br&gt;
+NIGBT.DEV&lt;br&gt;
+PENTODE.DEV&lt;br&gt;
+PIGBT.DEV&lt;br&gt;
+SCR.DEV&lt;br&gt;
+TETRODE.DEV&lt;br&gt;
+TOWTOM2.DEV&lt;br&gt;
+TRIAC.DEV&lt;br&gt;
+TRIODE.DEV&lt;br&gt;
+URC.DEV&lt;br&gt;
+URC2.DEV&lt;br&gt;
+XTAL.DEV&lt;br&gt;
+XVARISTOR.DEV&lt;br&gt;</description>
+<packages>
+<package name="BR210S">
+<description>&lt;B&gt;DIODE&lt;/B&gt;&lt;p&gt;
+2-lead molded, vertical</description>
+<wire x1="5.08" y1="-1.143" x2="4.953" y2="-4.064" width="0.1524" layer="21"/>
+<wire x1="4.699" y1="-4.318" x2="4.953" y2="-4.064" width="0.1524" layer="21"/>
+<wire x1="4.699" y1="-4.318" x2="-4.699" y2="-4.318" width="0.1524" layer="21"/>
+<wire x1="-4.953" y1="-4.064" x2="-4.699" y2="-4.318" width="0.1524" layer="21"/>
+<wire x1="-4.953" y1="-4.064" x2="-5.08" y2="-1.143" width="0.1524" layer="21"/>
+<circle x="-4.4958" y="-3.7084" radius="0.254" width="0" layer="21"/>
+<pad name="T1" x="-2.54" y="-2.54" drill="1.016" shape="long" rot="R90"/>
+<pad name="T2" x="2.54" y="-2.54" drill="1.016" shape="long" rot="R90"/>
+<text x="-5.08" y="-6.0452" size="1.27" layer="25" ratio="10">&gt;NAME</text>
+<text x="-5.08" y="-7.62" size="1.27" layer="27" ratio="10">&gt;VALUE</text>
+<rectangle x1="-5.334" y1="-0.762" x2="5.334" y2="0" layer="21"/>
+<rectangle x1="-5.334" y1="-1.27" x2="-3.429" y2="-0.762" layer="21"/>
+<rectangle x1="-3.429" y1="-1.27" x2="-1.651" y2="-0.762" layer="51"/>
+<rectangle x1="3.429" y1="-1.27" x2="5.334" y2="-0.762" layer="21"/>
+<rectangle x1="1.651" y1="-1.27" x2="3.429" y2="-0.762" layer="51"/>
+<rectangle x1="-1.651" y1="-1.27" x2="1.651" y2="-0.762" layer="21"/>
+</package>
+<package name="BR220S">
+<description>&lt;B&gt;DIODE&lt;/B&gt;&lt;p&gt;
+3-lead molded, vertical</description>
+<wire x1="5.08" y1="-1.143" x2="4.953" y2="-4.064" width="0.1524" layer="21"/>
+<wire x1="4.699" y1="-4.318" x2="4.953" y2="-4.064" width="0.1524" layer="21"/>
+<wire x1="4.699" y1="-4.318" x2="-4.699" y2="-4.318" width="0.1524" layer="21"/>
+<wire x1="-4.953" y1="-4.064" x2="-4.699" y2="-4.318" width="0.1524" layer="21"/>
+<wire x1="-4.953" y1="-4.064" x2="-5.08" y2="-1.143" width="0.1524" layer="21"/>
+<circle x="-4.4958" y="-3.7084" radius="0.254" width="0" layer="21"/>
+<pad name="T1" x="-2.54" y="-2.54" drill="1.016" shape="long" rot="R90"/>
+<pad name="T2" x="0" y="-2.54" drill="1.016" shape="long" rot="R90"/>
+<pad name="T3" x="2.54" y="-2.54" drill="1.016" shape="long" rot="R90"/>
+<text x="-5.08" y="-6.0452" size="1.27" layer="25" ratio="10">&gt;NAME</text>
+<text x="-5.08" y="-7.62" size="1.27" layer="27" ratio="10">&gt;VALUE</text>
+<rectangle x1="-5.334" y1="-0.762" x2="5.334" y2="0" layer="21"/>
+<rectangle x1="-5.334" y1="-1.27" x2="-3.429" y2="-0.762" layer="21"/>
+<rectangle x1="-1.651" y1="-1.27" x2="-0.889" y2="-0.762" layer="21"/>
+<rectangle x1="-3.429" y1="-1.27" x2="-1.651" y2="-0.762" layer="51"/>
+<rectangle x1="0.889" y1="-1.27" x2="1.651" y2="-0.762" layer="21"/>
+<rectangle x1="3.429" y1="-1.27" x2="5.334" y2="-0.762" layer="21"/>
+<rectangle x1="-0.889" y1="-1.27" x2="0.889" y2="-0.762" layer="51"/>
+<rectangle x1="1.651" y1="-1.27" x2="3.429" y2="-0.762" layer="51"/>
+</package>
+<package name="05">
+<description>&lt;b&gt;JUMPER&lt;/b&gt;</description>
+<wire x1="-1.3462" y1="0" x2="1.3462" y2="0" width="0.6096" layer="21"/>
+<wire x1="2.54" y1="0" x2="1.397" y2="0" width="0.6096" layer="51"/>
+<wire x1="-2.54" y1="0" x2="-1.397" y2="0" width="0.6096" layer="51"/>
+<pad name="1" x="-2.54" y="0" drill="0.8128" diameter="1.6002" shape="octagon"/>
+<pad name="2" x="2.54" y="0" drill="0.8128" diameter="1.6002" shape="octagon"/>
+<text x="-2.54" y="0.889" size="1.27" layer="25" ratio="10">&gt;NAME</text>
+<text x="2.5001" y="0" size="0.02" layer="27">&gt;VALUE</text>
+</package>
+<package name="SOIC8">
+<description>&lt;b&gt;Small Outline IC&lt;/b&gt;</description>
+<wire x1="2.4" y1="1.9" x2="2.4" y2="-1.4" width="0.2032" layer="51"/>
+<wire x1="2.4" y1="-1.4" x2="2.4" y2="-1.9" width="0.2032" layer="51"/>
+<wire x1="2.4" y1="-1.9" x2="-2.4" y2="-1.9" width="0.2032" layer="51"/>
+<wire x1="-2.4" y1="-1.9" x2="-2.4" y2="-1.4" width="0.2032" layer="51"/>
+<wire x1="-2.4" y1="-1.4" x2="-2.4" y2="1.9" width="0.2032" layer="51"/>
+<wire x1="-2.4" y1="1.9" x2="2.4" y2="1.9" width="0.2032" layer="51"/>
+<wire x1="2.4" y1="-1.4" x2="-2.4" y2="-1.4" width="0.2032" layer="51"/>
+<smd name="2" x="-0.635" y="-2.6" dx="0.6" dy="2.2" layer="1"/>
+<smd name="7" x="-0.635" y="2.6" dx="0.6" dy="2.2" layer="1"/>
+<smd name="1" x="-1.905" y="-2.6" dx="0.6" dy="2.2" layer="1"/>
+<smd name="3" x="0.635" y="-2.6" dx="0.6" dy="2.2" layer="1"/>
+<smd name="4" x="1.905" y="-2.6" dx="0.6" dy="2.2" layer="1"/>
+<smd name="8" x="-1.905" y="2.6" dx="0.6" dy="2.2" layer="1"/>
+<smd name="6" x="0.635" y="2.6" dx="0.6" dy="2.2" layer="1"/>
+<smd name="5" x="1.905" y="2.6" dx="0.6" dy="2.2" layer="1"/>
+<text x="-2.667" y="-1.905" size="1.27" layer="25" rot="R90">&gt;NAME</text>
+<text x="3.937" y="-1.905" size="1.27" layer="27" rot="R90">&gt;VALUE</text>
+<rectangle x1="-2.15" y1="-3.1" x2="-1.66" y2="-2" layer="51"/>
+<rectangle x1="-0.88" y1="-3.1" x2="-0.39" y2="-2" layer="51"/>
+<rectangle x1="0.39" y1="-3.1" x2="0.88" y2="-2" layer="51"/>
+<rectangle x1="1.66" y1="-3.1" x2="2.15" y2="-2" layer="51"/>
+<rectangle x1="1.66" y1="2" x2="2.15" y2="3.1" layer="51"/>
+<rectangle x1="0.39" y1="2" x2="0.88" y2="3.1" layer="51"/>
+<rectangle x1="-0.88" y1="2" x2="-0.39" y2="3.1" layer="51"/>
+<rectangle x1="-2.15" y1="2" x2="-1.66" y2="3.1" layer="51"/>
+</package>
+<package name="HC49UP">
+<description>&lt;b&gt;CRYSTAL&lt;/b&gt;</description>
+<wire x1="-5.1091" y1="1.143" x2="-3.429" y2="2.0321" width="0.0508" layer="21" curve="-55.770993"/>
+<wire x1="-5.715" y1="1.143" x2="-5.715" y2="2.159" width="0.1524" layer="21"/>
+<wire x1="3.429" y1="2.032" x2="5.1091" y2="1.143" width="0.0508" layer="21" curve="-55.772485"/>
+<wire x1="5.715" y1="1.143" x2="5.715" y2="2.159" width="0.1524" layer="21"/>
+<wire x1="3.429" y1="-1.27" x2="-3.429" y2="-1.27" width="0.0508" layer="21"/>
+<wire x1="3.429" y1="-2.032" x2="-3.429" y2="-2.032" width="0.0508" layer="21"/>
+<wire x1="-3.429" y1="1.27" x2="3.429" y2="1.27" width="0.0508" layer="21"/>
+<wire x1="5.461" y1="-2.413" x2="-5.461" y2="-2.413" width="0.1524" layer="21"/>
+<wire x1="5.715" y1="-0.381" x2="6.477" y2="-0.381" width="0.1524" layer="51"/>
+<wire x1="5.715" y1="0.381" x2="6.477" y2="0.381" width="0.1524" layer="51"/>
+<wire x1="6.477" y1="-0.381" x2="6.477" y2="0.381" width="0.1524" layer="51"/>
+<wire x1="5.461" y1="-2.413" x2="5.715" y2="-2.159" width="0.1524" layer="21" curve="90"/>
+<wire x1="5.715" y1="-1.143" x2="5.715" y2="1.143" width="0.1524" layer="51"/>
+<wire x1="5.715" y1="-2.159" x2="5.715" y2="-1.143" width="0.1524" layer="21"/>
+<wire x1="3.429" y1="-1.27" x2="3.9826" y2="-1.143" width="0.0508" layer="21" curve="25.842828"/>
+<wire x1="3.429" y1="1.27" x2="3.9826" y2="1.143" width="0.0508" layer="21" curve="-25.842828"/>
+<wire x1="3.429" y1="-2.032" x2="5.109" y2="-1.1429" width="0.0508" layer="21" curve="55.771157"/>
+<wire x1="3.9826" y1="-1.143" x2="3.9826" y2="1.143" width="0.0508" layer="51" curve="128.314524"/>
+<wire x1="5.1091" y1="-1.143" x2="5.1091" y2="1.143" width="0.0508" layer="51" curve="68.456213"/>
+<wire x1="-5.1091" y1="-1.143" x2="-3.429" y2="-2.032" width="0.0508" layer="21" curve="55.772485"/>
+<wire x1="-3.9826" y1="-1.143" x2="-3.9826" y2="1.143" width="0.0508" layer="51" curve="-128.314524"/>
+<wire x1="-3.9826" y1="-1.143" x2="-3.429" y2="-1.27" width="0.0508" layer="21" curve="25.842828"/>
+<wire x1="-3.9826" y1="1.143" x2="-3.429" y2="1.27" width="0.0508" layer="21" curve="-25.842828"/>
+<wire x1="-6.477" y1="-0.381" x2="-6.477" y2="0.381" width="0.1524" layer="51"/>
+<wire x1="-5.1091" y1="-1.143" x2="-5.1091" y2="1.143" width="0.0508" layer="51" curve="-68.456213"/>
+<wire x1="-5.715" y1="-1.143" x2="-5.715" y2="-0.381" width="0.1524" layer="51"/>
+<wire x1="-5.715" y1="-0.381" x2="-5.715" y2="0.381" width="0.1524" layer="51"/>
+<wire x1="-5.715" y1="0.381" x2="-5.715" y2="1.143" width="0.1524" layer="51"/>
+<wire x1="-5.715" y1="-2.159" x2="-5.715" y2="-1.143" width="0.1524" layer="21"/>
+<wire x1="-5.715" y1="-2.159" x2="-5.461" y2="-2.413" width="0.1524" layer="21" curve="90"/>
+<wire x1="-5.715" y1="-0.381" x2="-6.477" y2="-0.381" width="0.1524" layer="51"/>
+<wire x1="-5.715" y1="0.381" x2="-6.477" y2="0.381" width="0.1524" layer="51"/>
+<wire x1="-3.429" y1="2.032" x2="3.429" y2="2.032" width="0.0508" layer="21"/>
+<wire x1="5.461" y1="2.413" x2="-5.461" y2="2.413" width="0.1524" layer="21"/>
+<wire x1="5.461" y1="2.413" x2="5.715" y2="2.159" width="0.1524" layer="21" curve="-90"/>
+<wire x1="-5.715" y1="2.159" x2="-5.461" y2="2.413" width="0.1524" layer="21" curve="-90"/>
+<wire x1="-0.254" y1="0.635" x2="-0.254" y2="-0.635" width="0.1524" layer="21"/>
+<wire x1="-0.254" y1="-0.635" x2="0.254" y2="-0.635" width="0.1524" layer="21"/>
+<wire x1="0.254" y1="-0.635" x2="0.254" y2="0.635" width="0.1524" layer="21"/>
+<wire x1="0.254" y1="0.635" x2="-0.254" y2="0.635" width="0.1524" layer="21"/>
+<wire x1="-0.635" y1="0.635" x2="-0.635" y2="0" width="0.1524" layer="21"/>
+<wire x1="-0.635" y1="0" x2="-0.635" y2="-0.635" width="0.1524" layer="21"/>
+<wire x1="-0.635" y1="0" x2="-1.016" y2="0" width="0.0508" layer="21"/>
+<wire x1="0.635" y1="0.635" x2="0.635" y2="0" width="0.1524" layer="21"/>
+<wire x1="0.635" y1="0" x2="0.635" y2="-0.635" width="0.1524" layer="21"/>
+<wire x1="0.635" y1="0" x2="1.016" y2="0" width="0.0508" layer="21"/>
+<smd name="1" x="-4.826" y="0" dx="5.334" dy="1.9304" layer="1"/>
+<smd name="2" x="4.826" y="0" dx="5.334" dy="1.9304" layer="1"/>
+<text x="-5.715" y="2.794" size="1.27" layer="25" ratio="10">&gt;NAME</text>
+<text x="-5.715" y="-4.191" size="1.27" layer="27" ratio="10">&gt;VALUE</text>
+<rectangle x1="-6.604" y1="-3.048" x2="6.604" y2="3.048" layer="43"/>
+</package>
+<package name="TOWTOM2">
+<description>Dummy</description>
+<pad name="G$1INV" x="-5.08" y="-33.02" drill="0.5" diameter="1" shape="square"/>
+<pad name="G$1V1" x="-5.08" y="-17.78" drill="0.5" diameter="1" shape="square"/>
+<pad name="G$1V2" x="-5.08" y="-2.54" drill="0.5" diameter="1" shape="square"/>
+</package>
+<package name="SOT23">
+<description>&lt;b&gt;SOT-23&lt;/b&gt;</description>
+<wire x1="1.4224" y1="0.6604" x2="1.4224" y2="-0.6604" width="0.1524" layer="51"/>
+<wire x1="1.4224" y1="-0.6604" x2="-1.4224" y2="-0.6604" width="0.1524" layer="51"/>
+<wire x1="-1.4224" y1="-0.6604" x2="-1.4224" y2="0.6604" width="0.1524" layer="51"/>
+<wire x1="-1.4224" y1="0.6604" x2="1.4224" y2="0.6604" width="0.1524" layer="51"/>
+<smd name="3" x="0" y="1.1" dx="1" dy="1.4" layer="1"/>
+<smd name="2" x="0.95" y="-1.1" dx="1" dy="1.4" layer="1"/>
+<smd name="1" x="-0.95" y="-1.1" dx="1" dy="1.4" layer="1"/>
+<text x="-1.905" y="1.905" size="1.27" layer="25">&gt;NAME</text>
+<text x="-1.905" y="-3.175" size="1.27" layer="27">&gt;VALUE</text>
+<rectangle x1="-0.2286" y1="0.7112" x2="0.2286" y2="1.2954" layer="51"/>
+<rectangle x1="0.7112" y1="-1.2954" x2="1.1684" y2="-0.7112" layer="51"/>
+<rectangle x1="-1.1684" y1="-1.2954" x2="-0.7112" y2="-0.7112" layer="51"/>
+</package>
+<package name="3V60R">
+<description>&lt;b&gt;NC ACCU&lt;/b&gt; Varta</description>
+<wire x1="-10.414" y1="-3.302" x2="-10.414" y2="-0.762" width="0.1524" layer="21"/>
+<wire x1="9.525" y1="-1.778" x2="9.525" y2="-0.762" width="0.1524" layer="51"/>
+<wire x1="-10.414" y1="-5.842" x2="-10.414" y2="-3.302" width="0.1524" layer="51"/>
+<wire x1="-10.414" y1="3.302" x2="-10.414" y2="5.842" width="0.1524" layer="51"/>
+<wire x1="-9.906" y1="-5.842" x2="-10.414" y2="-5.842" width="0.1524" layer="51"/>
+<wire x1="-9.906" y1="-5.842" x2="-9.906" y2="-3.302" width="0.1524" layer="51"/>
+<wire x1="-9.906" y1="-3.302" x2="-9.906" y2="-0.762" width="0.1524" layer="21"/>
+<wire x1="-9.906" y1="3.302" x2="-9.906" y2="5.842" width="0.1524" layer="51"/>
+<wire x1="9.017" y1="-1.778" x2="9.017" y2="-0.762" width="0.1524" layer="51"/>
+<wire x1="-9.906" y1="5.842" x2="-10.414" y2="5.842" width="0.1524" layer="51"/>
+<wire x1="-9.525" y1="0" x2="-8.509" y2="0" width="0.254" layer="21"/>
+<wire x1="-9.017" y1="0.508" x2="-9.017" y2="-0.508" width="0.254" layer="21"/>
+<wire x1="7.112" y1="0.635" x2="7.112" y2="-0.635" width="0.254" layer="21"/>
+<wire x1="-0.381" y1="-2.54" x2="-0.381" y2="0" width="0.254" layer="21"/>
+<wire x1="2.286" y1="0" x2="0.889" y2="0" width="0.1524" layer="21"/>
+<wire x1="-0.381" y1="0" x2="-2.286" y2="0" width="0.1524" layer="21"/>
+<wire x1="-0.381" y1="0" x2="-0.381" y2="2.54" width="0.254" layer="21"/>
+<wire x1="-0.889" y1="-1.524" x2="-1.905" y2="-1.524" width="0.1524" layer="21"/>
+<wire x1="-1.397" y1="-2.032" x2="-1.397" y2="-1.016" width="0.1524" layer="21"/>
+<wire x1="9.017" y1="1.778" x2="9.017" y2="2.54" width="0.1524" layer="21"/>
+<wire x1="-8.128" y1="6.477" x2="-9.017" y2="6.477" width="0.1524" layer="21"/>
+<wire x1="-9.271" y1="-6.477" x2="-9.017" y2="-6.477" width="0.1524" layer="51"/>
+<wire x1="9.017" y1="-8.382" x2="9.017" y2="-2.54" width="0.1524" layer="21"/>
+<wire x1="9.525" y1="-1.778" x2="9.525" y2="-2.54" width="0.1524" layer="21"/>
+<wire x1="9.525" y1="-2.54" x2="9.017" y2="-2.54" width="0.1524" layer="21"/>
+<wire x1="9.017" y1="-2.54" x2="9.017" y2="-1.778" width="0.1524" layer="21"/>
+<wire x1="9.525" y1="1.778" x2="9.525" y2="2.54" width="0.1524" layer="21"/>
+<wire x1="9.525" y1="2.54" x2="9.017" y2="2.54" width="0.1524" layer="21"/>
+<wire x1="9.017" y1="2.54" x2="9.017" y2="8.382" width="0.1524" layer="21"/>
+<wire x1="-9.906" y1="-0.762" x2="-10.414" y2="-0.762" width="0.1524" layer="21"/>
+<wire x1="-9.906" y1="-0.762" x2="-9.906" y2="0.762" width="0.1524" layer="21"/>
+<wire x1="-10.414" y1="-0.762" x2="-10.414" y2="0.762" width="0.1524" layer="21"/>
+<wire x1="-9.906" y1="0.762" x2="-10.414" y2="0.762" width="0.1524" layer="21"/>
+<wire x1="-9.906" y1="0.762" x2="-9.906" y2="3.302" width="0.1524" layer="21"/>
+<wire x1="-10.414" y1="0.762" x2="-10.414" y2="3.302" width="0.1524" layer="21"/>
+<wire x1="9.525" y1="-0.762" x2="9.017" y2="-0.762" width="0.1524" layer="51"/>
+<wire x1="9.525" y1="-0.762" x2="9.525" y2="0.762" width="0.1524" layer="51"/>
+<wire x1="9.017" y1="-0.762" x2="9.017" y2="0.762" width="0.1524" layer="51"/>
+<wire x1="9.525" y1="0.762" x2="9.017" y2="0.762" width="0.1524" layer="51"/>
+<wire x1="9.525" y1="0.762" x2="9.525" y2="1.778" width="0.1524" layer="51"/>
+<wire x1="9.017" y1="0.762" x2="9.017" y2="1.778" width="0.1524" layer="51"/>
+<wire x1="-8.128" y1="6.477" x2="-8.128" y2="8.382" width="0.1524" layer="21"/>
+<wire x1="-8.128" y1="8.382" x2="9.017" y2="8.382" width="0.1524" layer="21"/>
+<wire x1="-8.128" y1="-8.382" x2="9.017" y2="-8.382" width="0.1524" layer="21"/>
+<wire x1="-8.128" y1="6.477" x2="-8.128" y2="-6.477" width="0.1524" layer="21"/>
+<wire x1="-8.128" y1="-6.477" x2="-8.128" y2="-8.382" width="0.1524" layer="21"/>
+<wire x1="-9.906" y1="-5.842" x2="-9.271" y2="-6.477" width="0.1524" layer="51" curve="90"/>
+<wire x1="-9.906" y1="5.842" x2="-9.271" y2="6.477" width="0.1524" layer="51" curve="-90"/>
+<wire x1="-9.017" y1="-6.477" x2="-8.128" y2="-6.477" width="0.1524" layer="21"/>
+<wire x1="-9.271" y1="6.477" x2="-9.017" y2="6.477" width="0.1524" layer="51"/>
+<pad name="+" x="-10.16" y="-5.08" drill="1.3208" diameter="3.1496" shape="octagon"/>
+<pad name="+@1" x="-10.16" y="5.08" drill="1.3208" diameter="3.1496" shape="octagon"/>
+<pad name="-" x="9.271" y="0" drill="1.3208" diameter="3.1496" shape="octagon"/>
+<text x="-10.922" y="-2.54" size="1.27" layer="25" ratio="10" rot="R90">&gt;NAME</text>
+<text x="1.016" y="-7.62" size="1.27" layer="21" ratio="10">NC-3V6</text>
+<text x="-4.445" y="-3.175" size="1.27" layer="27" ratio="10" rot="R90">&gt;VALUE</text>
+<rectangle x1="0.254" y1="-1.27" x2="0.889" y2="1.27" layer="21"/>
+</package>
+</packages>
+<symbols>
+<symbol name="N_CHANNEL_TRANSISTOR">
+<wire x1="7.62" y1="-7.62" x2="7.62" y2="-15.24" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-12.7" x2="7.62" y2="-12.7" width="0.1524" layer="94"/>
+<wire x1="6.35" y1="-7.62" x2="7.62" y2="-7.62" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-7.62" x2="6.35" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-7.62" x2="6.35" y2="-8.255" width="0.1524" layer="94"/>
+<wire x1="6.35" y1="-6.985" x2="6.35" y2="-8.255" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-1.27" x2="2.54" y2="-3.81" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-6.35" x2="2.54" y2="-8.89" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-11.43" x2="2.54" y2="-13.97" width="0.1524" layer="94"/>
+<wire x1="0" y1="-12.7" x2="1.27" y2="-12.7" width="0.1524" layer="94"/>
+<wire x1="1.27" y1="-2.54" x2="1.27" y2="-12.7" width="0.1524" layer="94"/>
+<wire x1="7.62" y1="-2.54" x2="2.54" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="7.62" y1="0" x2="7.62" y2="-2.54" width="0.1524" layer="94"/>
+<text x="8.89" y="-5.08" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="8.89" y="-11.43" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="D" x="7.62" y="0" visible="off" length="point" direction="pas"/>
+<text x="7.62" y="0" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="G" x="0" y="-12.7" visible="off" length="point" direction="pas"/>
+<text x="0" y="-12.7" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="S" x="7.62" y="-15.24" visible="off" length="point" direction="pas"/>
+<text x="7.62" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+</symbol>
+<symbol name="BATTERY">
+<wire x1="-5.08" y1="-5.715" x2="5.08" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="-5.08" y1="-9.525" x2="5.08" y2="-9.525" width="0.1524" layer="94"/>
+<wire x1="0" y1="-15.24" x2="0" y2="-12.065" width="0.1524" layer="94"/>
+<wire x1="0" y1="-2.54" x2="0" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="-3.81" x2="-1.905" y2="-3.81" width="0.1524" layer="94"/>
+<wire x1="-2.54" y1="-3.175" x2="-2.54" y2="-4.445" width="0.1524" layer="94"/>
+<wire x1="-2.54" y1="-6.985" x2="2.54" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-6.985" x2="2.54" y2="-8.255" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-8.255" x2="-2.54" y2="-8.255" width="0.1524" layer="94"/>
+<wire x1="-2.54" y1="-8.255" x2="-2.54" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="-2.54" y1="-10.795" x2="2.54" y2="-10.795" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-10.795" x2="2.54" y2="-12.065" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-12.065" x2="-2.54" y2="-12.065" width="0.1524" layer="94"/>
+<wire x1="-2.54" y1="-12.065" x2="-2.54" y2="-10.795" width="0.1524" layer="94"/>
+<text x="3.81" y="-2.54" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="3.81" y="-16.51" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="+" x="0" y="-2.54" visible="off" length="point" direction="pas"/>
+<text x="0" y="-2.54" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="-" x="0" y="-15.24" visible="off" length="point" direction="pas"/>
+<text x="0" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+</symbol>
+<symbol name="CELL">
+<wire x1="0" y1="-6.35" x2="0" y2="-10.16" width="0.1524" layer="94"/>
+<wire x1="-5.08" y1="-3.81" x2="5.08" y2="-3.81" width="0.1524" layer="94"/>
+<wire x1="0" y1="0" x2="0" y2="-3.81" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="-1.905" x2="-1.905" y2="-1.905" width="0.1524" layer="94"/>
+<wire x1="-2.54" y1="-1.27" x2="-2.54" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="-2.54" y1="-5.08" x2="2.54" y2="-5.08" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-5.08" x2="2.54" y2="-6.35" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-6.35" x2="-2.54" y2="-6.35" width="0.1524" layer="94"/>
+<wire x1="-2.54" y1="-6.35" x2="-2.54" y2="-5.08" width="0.1524" layer="94"/>
+<text x="3.81" y="-1.27" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="3.81" y="-8.89" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="+" x="0" y="0" visible="off" length="point" direction="pas"/>
+<text x="0" y="0" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="-" x="0" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="0" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+</symbol>
+<symbol name="DIAC">
+<wire x1="0" y1="-6.985" x2="5.715" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="0" y1="-3.175" x2="5.715" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="5.715" y1="-3.175" x2="3.175" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="0.635" y1="-3.175" x2="3.175" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="0" x2="5.08" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-6.985" x2="5.08" y2="-10.16" width="0.1524" layer="94"/>
+<wire x1="4.445" y1="-6.985" x2="10.16" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="4.445" y1="-6.985" x2="6.985" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="6.985" y1="-3.175" x2="9.525" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="5.715" y1="-3.175" x2="10.16" y2="-3.175" width="0.1524" layer="94"/>
+<text x="7.62" y="0" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="7.62" y="-11.43" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="+" x="5.08" y="0" visible="off" length="point" direction="pas"/>
+<text x="5.08" y="0" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="-" x="5.08" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="5.08" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+</symbol>
+<symbol name="DIP10">
+<wire x1="-3.175" y1="20.32" x2="-3.175" y2="17.78" width="0.1524" layer="94"/>
+<wire x1="3.175" y1="20.32" x2="3.175" y2="17.78" width="0.1524" layer="94"/>
+<wire x1="-1.27" y1="15.875" x2="1.27" y2="15.875" width="0.1524" layer="94"/>
+<wire x1="-22.86" y1="20.32" x2="22.86" y2="20.32" width="0.1524" layer="94"/>
+<wire x1="22.86" y1="20.32" x2="22.86" y2="-30.48" width="0.1524" layer="94"/>
+<wire x1="22.86" y1="-30.48" x2="-22.86" y2="-30.48" width="0.1524" layer="94"/>
+<wire x1="-22.86" y1="-30.48" x2="-22.86" y2="20.32" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="17.78" x2="-1.27" y2="15.875" width="0.1524" layer="94" curve="90"/>
+<wire x1="1.27" y1="15.875" x2="3.175" y2="17.78" width="0.1524" layer="94" curve="90"/>
+<text x="0" y="-5.08" size="2.8448" layer="94" align="center">LT</text>
+<text x="0" y="22.86" size="1.778" layer="95" align="center">&gt;NAME</text>
+<text x="0" y="-34.29" size="1.778" layer="96" align="center">&gt;VALUE</text>
+<pin name="1" x="-22.86" y="15.24" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="15.24" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="2" x="-22.86" y="5.08" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="5.08" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="3" x="-22.86" y="-5.08" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-5.08" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+<pin name="4" x="-22.86" y="-15.24" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 4</text>
+<pin name="5" x="-22.86" y="-25.4" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-25.4" size="0.4064" layer="99" align="center">SpiceOrder 5</text>
+<pin name="6" x="22.86" y="-25.4" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-25.4" size="0.4064" layer="99" align="center">SpiceOrder 6</text>
+<pin name="7" x="22.86" y="-15.24" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 7</text>
+<pin name="8" x="22.86" y="-5.08" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-5.08" size="0.4064" layer="99" align="center">SpiceOrder 8</text>
+<pin name="9" x="22.86" y="5.08" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="5.08" size="0.4064" layer="99" align="center">SpiceOrder 9</text>
+<pin name="10" x="22.86" y="15.24" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="15.24" size="0.4064" layer="99" align="center">SpiceOrder 10</text>
+</symbol>
+<symbol name="DIP14">
+<wire x1="-3.175" y1="20.32" x2="-3.175" y2="17.78" width="0.1524" layer="94"/>
+<wire x1="3.175" y1="20.32" x2="3.175" y2="17.78" width="0.1524" layer="94"/>
+<wire x1="-1.27" y1="15.875" x2="1.27" y2="15.875" width="0.1524" layer="94"/>
+<wire x1="-22.86" y1="20.32" x2="22.86" y2="20.32" width="0.1524" layer="94"/>
+<wire x1="22.86" y1="20.32" x2="22.86" y2="-50.8" width="0.1524" layer="94"/>
+<wire x1="22.86" y1="-50.8" x2="-22.86" y2="-50.8" width="0.1524" layer="94"/>
+<wire x1="-22.86" y1="-50.8" x2="-22.86" y2="20.32" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="17.78" x2="-1.27" y2="15.875" width="0.1524" layer="94" curve="90"/>
+<wire x1="1.27" y1="15.875" x2="3.175" y2="17.78" width="0.1524" layer="94" curve="90"/>
+<text x="0" y="-15.24" size="2.8448" layer="94" align="center">LT</text>
+<text x="0" y="22.86" size="1.778" layer="95" align="center">&gt;NAME</text>
+<text x="0" y="-53.34" size="1.778" layer="96" align="center">&gt;VALUE</text>
+<pin name="1" x="-22.86" y="15.24" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="15.24" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="2" x="-22.86" y="5.08" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="5.08" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="3" x="-22.86" y="-5.08" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-5.08" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+<pin name="4" x="-22.86" y="-15.24" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 4</text>
+<pin name="5" x="-22.86" y="-25.4" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-25.4" size="0.4064" layer="99" align="center">SpiceOrder 5</text>
+<pin name="6" x="-22.86" y="-35.56" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-35.56" size="0.4064" layer="99" align="center">SpiceOrder 6</text>
+<pin name="7" x="-22.86" y="-45.72" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-45.72" size="0.4064" layer="99" align="center">SpiceOrder 7</text>
+<pin name="8" x="22.86" y="-45.72" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-45.72" size="0.4064" layer="99" align="center">SpiceOrder 8</text>
+<pin name="9" x="22.86" y="-35.56" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-35.56" size="0.4064" layer="99" align="center">SpiceOrder 9</text>
+<pin name="10" x="22.86" y="-25.4" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-25.4" size="0.4064" layer="99" align="center">SpiceOrder 10</text>
+<pin name="11" x="22.86" y="-15.24" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 11</text>
+<pin name="12" x="22.86" y="-5.08" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-5.08" size="0.4064" layer="99" align="center">SpiceOrder 12</text>
+<pin name="13" x="22.86" y="5.08" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="5.08" size="0.4064" layer="99" align="center">SpiceOrder 13</text>
+<pin name="14" x="22.86" y="15.24" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="15.24" size="0.4064" layer="99" align="center">SpiceOrder 14</text>
+</symbol>
+<symbol name="DIP16">
+<wire x1="-3.175" y1="20.32" x2="-3.175" y2="17.78" width="0.1524" layer="94"/>
+<wire x1="3.175" y1="20.32" x2="3.175" y2="17.78" width="0.1524" layer="94"/>
+<wire x1="-1.27" y1="15.875" x2="1.27" y2="15.875" width="0.1524" layer="94"/>
+<wire x1="-22.86" y1="20.32" x2="22.86" y2="20.32" width="0.1524" layer="94"/>
+<wire x1="22.86" y1="20.32" x2="22.86" y2="-60.96" width="0.1524" layer="94"/>
+<wire x1="22.86" y1="-60.96" x2="-22.86" y2="-60.96" width="0.1524" layer="94"/>
+<wire x1="-22.86" y1="-60.96" x2="-22.86" y2="20.32" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="17.78" x2="-1.27" y2="15.875" width="0.1524" layer="94" curve="90"/>
+<wire x1="1.27" y1="15.875" x2="3.175" y2="17.78" width="0.1524" layer="94" curve="90"/>
+<text x="0" y="-15.24" size="2.8448" layer="94" align="center">LT</text>
+<text x="0" y="22.86" size="1.778" layer="95" align="center">&gt;NAME</text>
+<text x="0" y="-63.5" size="1.778" layer="96" align="center">&gt;VALUE</text>
+<pin name="1" x="-22.86" y="15.24" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="15.24" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="2" x="-22.86" y="5.08" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="5.08" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="3" x="-22.86" y="-5.08" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-5.08" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+<pin name="4" x="-22.86" y="-15.24" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 4</text>
+<pin name="5" x="-22.86" y="-25.4" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-25.4" size="0.4064" layer="99" align="center">SpiceOrder 5</text>
+<pin name="6" x="-22.86" y="-35.56" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-35.56" size="0.4064" layer="99" align="center">SpiceOrder 6</text>
+<pin name="7" x="-22.86" y="-45.72" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-45.72" size="0.4064" layer="99" align="center">SpiceOrder 7</text>
+<pin name="8" x="-22.86" y="-55.88" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-55.88" size="0.4064" layer="99" align="center">SpiceOrder 8</text>
+<pin name="9" x="22.86" y="-55.88" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-55.88" size="0.4064" layer="99" align="center">SpiceOrder 9</text>
+<pin name="10" x="22.86" y="-45.72" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-45.72" size="0.4064" layer="99" align="center">SpiceOrder 10</text>
+<pin name="11" x="22.86" y="-35.56" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-35.56" size="0.4064" layer="99" align="center">SpiceOrder 11</text>
+<pin name="12" x="22.86" y="-25.4" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-25.4" size="0.4064" layer="99" align="center">SpiceOrder 12</text>
+<pin name="13" x="22.86" y="-15.24" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 13</text>
+<pin name="14" x="22.86" y="-5.08" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-5.08" size="0.4064" layer="99" align="center">SpiceOrder 14</text>
+<pin name="15" x="22.86" y="5.08" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="5.08" size="0.4064" layer="99" align="center">SpiceOrder 15</text>
+<pin name="16" x="22.86" y="15.24" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="15.24" size="0.4064" layer="99" align="center">SpiceOrder 16</text>
+</symbol>
+<symbol name="DIP20">
+<wire x1="-3.175" y1="20.32" x2="-3.175" y2="17.78" width="0.1524" layer="94"/>
+<wire x1="3.175" y1="20.32" x2="3.175" y2="17.78" width="0.1524" layer="94"/>
+<wire x1="-1.27" y1="15.875" x2="1.27" y2="15.875" width="0.1524" layer="94"/>
+<wire x1="-22.86" y1="20.32" x2="22.86" y2="20.32" width="0.1524" layer="94"/>
+<wire x1="22.86" y1="20.32" x2="22.86" y2="-81.28" width="0.1524" layer="94"/>
+<wire x1="22.86" y1="-81.28" x2="-22.86" y2="-81.28" width="0.1524" layer="94"/>
+<wire x1="-22.86" y1="-81.28" x2="-22.86" y2="20.32" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="17.78" x2="-1.27" y2="15.875" width="0.1524" layer="94" curve="90"/>
+<wire x1="1.27" y1="15.875" x2="3.175" y2="17.78" width="0.1524" layer="94" curve="90"/>
+<text x="0" y="-15.24" size="2.8448" layer="94" align="center">LT</text>
+<text x="0" y="22.86" size="1.778" layer="95" align="center">&gt;NAME</text>
+<text x="0" y="-83.82" size="1.778" layer="96" align="center">&gt;VALUE</text>
+<pin name="1" x="-22.86" y="15.24" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="15.24" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="2" x="-22.86" y="5.08" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="5.08" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="3" x="-22.86" y="-5.08" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-5.08" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+<pin name="4" x="-22.86" y="-15.24" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 4</text>
+<pin name="5" x="-22.86" y="-25.4" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-25.4" size="0.4064" layer="99" align="center">SpiceOrder 5</text>
+<pin name="6" x="-22.86" y="-35.56" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-35.56" size="0.4064" layer="99" align="center">SpiceOrder 6</text>
+<pin name="7" x="-22.86" y="-45.72" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-45.72" size="0.4064" layer="99" align="center">SpiceOrder 7</text>
+<pin name="8" x="-22.86" y="-55.88" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-55.88" size="0.4064" layer="99" align="center">SpiceOrder 8</text>
+<pin name="9" x="-22.86" y="-66.04" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-66.04" size="0.4064" layer="99" align="center">SpiceOrder 9</text>
+<pin name="10" x="-22.86" y="-76.2" visible="pin" length="point" direction="pas"/>
+<text x="-22.86" y="-76.2" size="0.4064" layer="99" align="center">SpiceOrder 10</text>
+<pin name="11" x="22.86" y="-76.2" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-76.2" size="0.4064" layer="99" align="center">SpiceOrder 11</text>
+<pin name="12" x="22.86" y="-66.04" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-66.04" size="0.4064" layer="99" align="center">SpiceOrder 12</text>
+<pin name="13" x="22.86" y="-55.88" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-55.88" size="0.4064" layer="99" align="center">SpiceOrder 13</text>
+<pin name="14" x="22.86" y="-45.72" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-45.72" size="0.4064" layer="99" align="center">SpiceOrder 14</text>
+<pin name="15" x="22.86" y="-35.56" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-35.56" size="0.4064" layer="99" align="center">SpiceOrder 15</text>
+<pin name="16" x="22.86" y="-25.4" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-25.4" size="0.4064" layer="99" align="center">SpiceOrder 16</text>
+<pin name="17" x="22.86" y="-15.24" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 17</text>
+<pin name="18" x="22.86" y="-5.08" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="-5.08" size="0.4064" layer="99" align="center">SpiceOrder 18</text>
+<pin name="19" x="22.86" y="5.08" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="5.08" size="0.4064" layer="99" align="center">SpiceOrder 19</text>
+<pin name="20" x="22.86" y="15.24" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="22.86" y="15.24" size="0.4064" layer="99" align="center">SpiceOrder 20</text>
+</symbol>
+<symbol name="DIP8">
+<wire x1="-3.175" y1="20.32" x2="-3.175" y2="17.78" width="0.1524" layer="94"/>
+<wire x1="3.175" y1="20.32" x2="3.175" y2="17.78" width="0.1524" layer="94"/>
+<wire x1="-1.27" y1="15.875" x2="1.27" y2="15.875" width="0.1524" layer="94"/>
+<wire x1="-17.78" y1="20.32" x2="17.78" y2="20.32" width="0.1524" layer="94"/>
+<wire x1="17.78" y1="20.32" x2="17.78" y2="-20.32" width="0.1524" layer="94"/>
+<wire x1="17.78" y1="-20.32" x2="-17.78" y2="-20.32" width="0.1524" layer="94"/>
+<wire x1="-17.78" y1="-20.32" x2="-17.78" y2="20.32" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="17.78" x2="-1.27" y2="15.875" width="0.1524" layer="94" curve="90"/>
+<wire x1="1.27" y1="15.875" x2="3.175" y2="17.78" width="0.1524" layer="94" curve="90"/>
+<text x="0" y="0" size="2.8448" layer="94" align="center">LT</text>
+<text x="0" y="22.86" size="1.778" layer="95" align="center">&gt;NAME</text>
+<text x="0" y="-22.86" size="1.778" layer="96" align="center">&gt;VALUE</text>
+<pin name="1" x="-17.78" y="15.24" visible="pin" length="point" direction="pas"/>
+<text x="-17.78" y="15.24" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="2" x="-17.78" y="5.08" visible="pin" length="point" direction="pas"/>
+<text x="-17.78" y="5.08" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="3" x="-17.78" y="-5.08" visible="pin" length="point" direction="pas"/>
+<text x="-17.78" y="-5.08" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+<pin name="4" x="-17.78" y="-15.24" visible="pin" length="point" direction="pas"/>
+<text x="-17.78" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 4</text>
+<pin name="5" x="17.78" y="-15.24" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="17.78" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 5</text>
+<pin name="6" x="17.78" y="-5.08" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="17.78" y="-5.08" size="0.4064" layer="99" align="center">SpiceOrder 6</text>
+<pin name="7" x="17.78" y="5.08" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="17.78" y="5.08" size="0.4064" layer="99" align="center">SpiceOrder 7</text>
+<pin name="8" x="17.78" y="15.24" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="17.78" y="15.24" size="0.4064" layer="99" align="center">SpiceOrder 8</text>
+</symbol>
+<symbol name="EPOLY">
+<wire x1="0" y1="-2.54" x2="0" y2="-3.81" width="0.1524" layer="94"/>
+<wire x1="0" y1="-15.24" x2="0" y2="-13.97" width="0.1524" layer="94"/>
+<wire x1="-0.635" y1="-11.43" x2="0.635" y2="-11.43" width="0.1524" layer="94"/>
+<wire x1="-0.635" y1="-6.35" x2="0.635" y2="-6.35" width="0.1524" layer="94"/>
+<wire x1="0" y1="-5.715" x2="0" y2="-6.985" width="0.1524" layer="94"/>
+<circle x="0" y="-8.89" radius="5.08" width="0.1524" layer="94"/>
+<text x="3.81" y="-2.54" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="3.81" y="-16.51" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="+" x="0" y="-2.54" visible="off" length="point" direction="pas"/>
+<text x="0" y="-2.54" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="-" x="0" y="-15.24" visible="off" length="point" direction="pas"/>
+<text x="0" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+</symbol>
+<symbol name="EUROPEANCAP">
+<wire x1="2.54" y1="-6.985" x2="2.54" y2="-10.16" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="0" x2="2.54" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="0" y1="-5.715" x2="5.08" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-5.715" x2="5.08" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-6.985" x2="0" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="0" y1="-6.985" x2="0" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="0" y1="-3.175" x2="5.08" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-3.175" x2="5.08" y2="-4.445" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-4.445" x2="0" y2="-4.445" width="0.1524" layer="94"/>
+<wire x1="0" y1="-4.445" x2="0" y2="-3.175" width="0.1524" layer="94"/>
+<text x="3.81" y="-0.635" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="3.81" y="-10.16" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="A" x="2.54" y="0" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="0" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="B" x="2.54" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+</symbol>
+<symbol name="EUROPEANPOLCAP">
+<wire x1="2.54" y1="-6.985" x2="2.54" y2="-10.16" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="0" x2="2.54" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="0" y1="-4.445" x2="5.08" y2="-4.445" width="0.1524" layer="94"/>
+<wire x1="0" y1="-3.175" x2="5.08" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-4.445" x2="5.08" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="0" y1="-4.445" x2="0" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-5.87375" x2="0" y2="-5.87375" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-6.0325" x2="0" y2="-6.0325" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-6.19125" x2="0" y2="-6.19125" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-6.35" x2="0" y2="-6.35" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-6.50875" x2="0" y2="-6.50875" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-6.6675" x2="0" y2="-6.6675" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-6.82625" x2="0" y2="-6.82625" width="0.1524" layer="94"/>
+<wire x1="0" y1="-5.715" x2="5.08" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-5.715" x2="5.08" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-6.985" x2="0" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="0" y1="-6.985" x2="0" y2="-5.715" width="0.1524" layer="94"/>
+<text x="3.81" y="-0.635" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="3.81" y="-10.16" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="A" x="2.54" y="0" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="0" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="B" x="2.54" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+</symbol>
+<symbol name="EUROPEANRESISTOR">
+<wire x1="2.54" y1="-13.97" x2="2.54" y2="-15.24" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-2.54" x2="2.54" y2="-3.81" width="0.1524" layer="94"/>
+<wire x1="4.28625" y1="-3.81" x2="0.79375" y2="-3.81" width="0.1524" layer="94"/>
+<wire x1="0.79375" y1="-13.97" x2="0.79375" y2="-3.81" width="0.1524" layer="94"/>
+<wire x1="0.79375" y1="-13.97" x2="4.28625" y2="-13.97" width="0.1524" layer="94"/>
+<wire x1="4.28625" y1="-3.81" x2="4.28625" y2="-13.97" width="0.1524" layer="94"/>
+<text x="4.92125" y="-6.35" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="4.92125" y="-12.065" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="A" x="2.54" y="-2.54" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="-2.54" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="B" x="2.54" y="-15.24" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+</symbol>
+<symbol name="FIXEDIND">
+<wire x1="0.74395" y1="-10.68605" x2="0.74395" y2="-7.09395" width="0.1524" layer="94" curve="270"/>
+<wire x1="2.54" y1="-15.24" x2="0.74395" y2="-10.90395" width="0.1524" layer="94" curve="225"/>
+<wire x1="0.74395" y1="-6.87605" x2="2.54" y2="-2.540003125" width="0.1524" layer="94" curve="225"/>
+<text x="5.715" y="-6.35" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="5.715" y="-12.7" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="A" x="2.54" y="-2.54" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="-2.54" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="B" x="2.54" y="-15.24" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+</symbol>
+<symbol name="JUMPER">
+<wire x1="3.81" y1="-10.16" x2="5.08" y2="-10.16" width="0.1524" layer="94"/>
+<wire x1="-3.81" y1="-10.16" x2="-5.08" y2="-10.16" width="0.1524" layer="94"/>
+<circle x="-3.175" y="-10.16" radius="0.635" width="0.1524" layer="94"/>
+<circle x="3.175" y="-10.16" radius="0.635" width="0.1524" layer="94"/>
+<wire x1="3.11334375" y1="-9.537334375" x2="-3.11334375" y2="-9.537334375" width="0.1524" layer="94" curve="157.380246"/>
+<text x="0" y="-6.35" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<pin name="+" x="-5.08" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="-5.08" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="-" x="5.08" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="5.08" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+</symbol>
+<symbol name="NE555">
+<wire x1="-3.175" y1="20.32" x2="-3.175" y2="17.78" width="0.1524" layer="94"/>
+<wire x1="3.175" y1="20.32" x2="3.175" y2="17.78" width="0.1524" layer="94"/>
+<wire x1="-1.27" y1="15.875" x2="1.27" y2="15.875" width="0.1524" layer="94"/>
+<wire x1="-17.78" y1="20.32" x2="17.78" y2="20.32" width="0.1524" layer="94"/>
+<wire x1="17.78" y1="20.32" x2="17.78" y2="-20.32" width="0.1524" layer="94"/>
+<wire x1="17.78" y1="-20.32" x2="-17.78" y2="-20.32" width="0.1524" layer="94"/>
+<wire x1="-17.78" y1="-20.32" x2="-17.78" y2="20.32" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="17.78" x2="-1.27" y2="15.875" width="0.1524" layer="94" curve="90"/>
+<wire x1="1.27" y1="15.875" x2="3.175" y2="17.78" width="0.1524" layer="94" curve="90"/>
+<text x="0" y="10.16" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="0" y="-10.16" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="GND" x="-17.78" y="15.24" visible="pin" length="point" direction="pas"/>
+<text x="-17.78" y="15.24" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="TRIG" x="-17.78" y="5.08" visible="pin" length="point" direction="pas"/>
+<text x="-17.78" y="5.08" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="OUT" x="-17.78" y="-5.08" visible="pin" length="point" direction="pas"/>
+<text x="-17.78" y="-5.08" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+<pin name="RST" x="-17.78" y="-15.24" visible="pin" length="point" direction="pas"/>
+<text x="-17.78" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 4</text>
+<pin name="CV" x="17.78" y="-15.24" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="17.78" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 5</text>
+<pin name="THRS" x="17.78" y="-5.08" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="17.78" y="-5.08" size="0.4064" layer="99" align="center">SpiceOrder 6</text>
+<pin name="DIS" x="17.78" y="5.08" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="17.78" y="5.08" size="0.4064" layer="99" align="center">SpiceOrder 7</text>
+<pin name="VCC" x="17.78" y="15.24" visible="pin" length="point" direction="pas" rot="R180"/>
+<text x="17.78" y="15.24" size="0.4064" layer="99" align="center">SpiceOrder 8</text>
+</symbol>
+<symbol name="NEONBULB">
+<wire x1="0" y1="7.62" x2="0" y2="3.33375" width="0.1524" layer="94"/>
+<wire x1="0" y1="-7.62" x2="0" y2="-3.33375" width="0.1524" layer="94"/>
+<wire x1="3.175" y1="-1.27" x2="1.905" y2="-1.27" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-1.905" x2="2.54" y2="-0.635" width="0.1524" layer="94"/>
+<wire x1="3.01625" y1="-1.74625" x2="2.06375" y2="-0.79375" width="0.1524" layer="94"/>
+<wire x1="2.06375" y1="-1.74625" x2="3.01625" y2="-0.79375" width="0.1524" layer="94"/>
+<circle x="0" y="0" radius="5.08" width="0.1524" layer="94"/>
+<circle x="0" y="2.54" radius="0.79375" width="0.1524" layer="94"/>
+<circle x="0" y="-2.54" radius="0.79375" width="0.1524" layer="94"/>
+<circle x="2.54" y="-1.27" radius="0.15875" width="0.1524" layer="94"/>
+<circle x="2.54" y="-1.27" radius="0.3175" width="0.1524" layer="94"/>
+<circle x="2.54" y="-1.27" radius="0.47625" width="0.1524" layer="94"/>
+<circle x="2.54" y="-1.27" radius="0.635" width="0.1524" layer="94"/>
+<text x="2.54" y="7.62" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<pin name="V+" x="0" y="7.62" visible="off" length="point" direction="pas"/>
+<text x="0" y="7.62" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="V-" x="0" y="-7.62" visible="off" length="point" direction="pas"/>
+<text x="0" y="-7.62" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+</symbol>
+<symbol name="NIGBT">
+<wire x1="2.54" y1="-12.7" x2="5.08" y2="-13.97" width="0.1524" layer="94"/>
+<wire x1="7.62" y1="-15.24" x2="4.445" y2="-14.605" width="0.1524" layer="94"/>
+<wire x1="7.62" y1="-15.24" x2="5.08" y2="-13.335" width="0.1524" layer="94"/>
+<wire x1="4.445" y1="-14.605" x2="5.08" y2="-13.335" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-7.62" x2="6.35" y2="-8.89" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-1.27" x2="2.54" y2="-3.81" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-6.35" x2="2.54" y2="-8.89" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-11.43" x2="2.54" y2="-13.97" width="0.1524" layer="94"/>
+<wire x1="0" y1="-12.7" x2="1.27" y2="-12.7" width="0.1524" layer="94"/>
+<wire x1="1.27" y1="-2.54" x2="1.27" y2="-12.7" width="0.1524" layer="94"/>
+<wire x1="7.62" y1="0" x2="5.08" y2="-1.27" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-2.54" x2="5.715" y2="-1.905" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-2.54" x2="5.08" y2="-0.635" width="0.1524" layer="94"/>
+<wire x1="5.715" y1="-1.905" x2="5.08" y2="-0.635" width="0.1524" layer="94"/>
+<text x="8.89" y="-5.08" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="8.89" y="-11.43" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="C" x="7.62" y="0" visible="off" length="point" direction="pas"/>
+<text x="7.62" y="0" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="G" x="0" y="-12.7" visible="off" length="point" direction="pas"/>
+<text x="0" y="-12.7" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="E" x="7.62" y="-15.24" visible="off" length="point" direction="pas"/>
+<text x="7.62" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+</symbol>
+<symbol name="PENTODE">
+<wire x1="-7.62" y1="2.54" x2="-7.62" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="7.62" y1="2.54" x2="7.62" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="0" y1="10.16" x2="0" y2="5.08" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="5.08" x2="3.175" y2="5.08" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="4.445" x2="3.175" y2="4.445" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="5.08" x2="-3.175" y2="4.445" width="0.1524" layer="94"/>
+<wire x1="3.175" y1="5.08" x2="3.175" y2="4.445" width="0.1524" layer="94"/>
+<wire x1="3.175" y1="2.54" x2="1.905" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="0.635" y1="2.54" x2="-0.635" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="-1.905" y1="2.54" x2="-3.175" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="-4.445" y1="2.54" x2="-7.62" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="7.62" y1="0" x2="4.445" y2="0" width="0.1524" layer="94"/>
+<wire x1="3.175" y1="0" x2="1.905" y2="0" width="0.1524" layer="94"/>
+<wire x1="0.635" y1="0" x2="-0.635" y2="0" width="0.1524" layer="94"/>
+<wire x1="-1.905" y1="0" x2="-3.175" y2="0" width="0.1524" layer="94"/>
+<wire x1="-7.62" y1="-2.54" x2="-4.445" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="-2.54" x2="-1.905" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="-0.635" y1="-2.54" x2="0.635" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="1.905" y1="-2.54" x2="3.175" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="-3.81" y1="-4.445" x2="3.81" y2="-4.445" width="0.1524" layer="94"/>
+<wire x1="-5.08" y1="-10.16" x2="-5.08" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="-3.81" y1="-4.445" x2="-5.08" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="3.81" y1="-4.445" x2="5.08" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="-4.445" y1="-5.08" x2="4.445" y2="-5.08" width="0.1524" layer="94"/>
+<wire x1="7.62" y1="2.54" x2="-7.62" y2="2.54" width="0.1524" layer="94" curve="180"/>
+<wire x1="-7.62" y1="-2.54" x2="7.62" y2="-2.54" width="0.1524" layer="94" curve="180"/>
+<text x="1.27" y="12.7" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="-3.81" y="-12.7" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="CATHODE" x="-5.08" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="-5.08" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="G1" x="-7.62" y="-2.54" visible="off" length="point" direction="pas"/>
+<text x="-7.62" y="-2.54" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="G2" x="7.62" y="0" visible="off" length="point" direction="pas"/>
+<text x="7.62" y="0" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+<pin name="G3" x="-7.62" y="2.54" visible="off" length="point" direction="pas"/>
+<text x="-7.62" y="2.54" size="0.4064" layer="99" align="center">SpiceOrder 4</text>
+<pin name="ANODE" x="0" y="10.16" visible="off" length="point" direction="pas"/>
+<text x="0" y="10.16" size="0.4064" layer="99" align="center">SpiceOrder 5</text>
+</symbol>
+<symbol name="PIGBT">
+<wire x1="2.54" y1="-12.7" x2="5.715" y2="-13.335" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-12.7" x2="5.08" y2="-14.605" width="0.1524" layer="94"/>
+<wire x1="5.715" y1="-13.335" x2="5.08" y2="-14.605" width="0.1524" layer="94"/>
+<wire x1="7.62" y1="-15.24" x2="5.08" y2="-13.97" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-7.62" x2="6.35" y2="-8.89" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-1.27" x2="2.54" y2="-3.81" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-6.35" x2="2.54" y2="-8.89" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-11.43" x2="2.54" y2="-13.97" width="0.1524" layer="94"/>
+<wire x1="0" y1="-12.7" x2="1.27" y2="-12.7" width="0.1524" layer="94"/>
+<wire x1="1.27" y1="-2.54" x2="1.27" y2="-12.7" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-2.54" x2="5.08" y2="-1.27" width="0.1524" layer="94"/>
+<wire x1="4.445" y1="-0.635" x2="7.62" y2="0" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-1.905" x2="7.62" y2="0" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-1.905" x2="4.445" y2="-0.635" width="0.1524" layer="94"/>
+<text x="8.89" y="-5.08" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="8.89" y="-11.43" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="C" x="7.62" y="0" visible="off" length="point" direction="pas"/>
+<text x="7.62" y="0" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="G" x="0" y="-12.7" visible="off" length="point" direction="pas"/>
+<text x="0" y="-12.7" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="E" x="7.62" y="-15.24" visible="off" length="point" direction="pas"/>
+<text x="7.62" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+</symbol>
+<symbol name="SCR">
+<wire x1="0" y1="-6.985" x2="5.08" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="0" y1="-3.175" x2="5.08" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-3.175" x2="2.54" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="0" y1="-3.175" x2="2.54" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="0" x2="2.54" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-6.985" x2="2.54" y2="-10.16" width="0.1524" layer="94"/>
+<wire x1="-1.905" y1="-10.16" x2="-5.08" y2="-10.16" width="0.1524" layer="94"/>
+<wire x1="-1.905" y1="-10.16" x2="1.27" y2="-6.985" width="0.1524" layer="94"/>
+<text x="3.81" y="0" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="3.81" y="-11.43" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="A" x="2.54" y="0" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="0" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="G" x="-5.08" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="-5.08" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="K" x="2.54" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+</symbol>
+<symbol name="TETRODE">
+<wire x1="-7.62" y1="0" x2="-7.62" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="7.62" y1="0" x2="7.62" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="0" y1="7.62" x2="0" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="2.54" x2="3.175" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="1.905" x2="3.175" y2="1.905" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="2.54" x2="-3.175" y2="1.905" width="0.1524" layer="94"/>
+<wire x1="3.175" y1="2.54" x2="3.175" y2="1.905" width="0.1524" layer="94"/>
+<wire x1="7.62" y1="0" x2="4.445" y2="0" width="0.1524" layer="94"/>
+<wire x1="3.175" y1="0" x2="1.905" y2="0" width="0.1524" layer="94"/>
+<wire x1="0.635" y1="0" x2="-0.635" y2="0" width="0.1524" layer="94"/>
+<wire x1="-1.905" y1="0" x2="-3.175" y2="0" width="0.1524" layer="94"/>
+<wire x1="-4.445" y1="0" x2="-5.715" y2="0" width="0.1524" layer="94"/>
+<wire x1="-7.62" y1="-2.54" x2="-4.445" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="-2.54" x2="-1.905" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="-0.635" y1="-2.54" x2="0.635" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="1.905" y1="-2.54" x2="3.175" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="4.445" y1="-2.54" x2="5.715" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="-3.81" y1="-4.445" x2="3.81" y2="-4.445" width="0.1524" layer="94"/>
+<wire x1="-5.08" y1="-10.16" x2="-5.08" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="-3.81" y1="-4.445" x2="-5.08" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="3.81" y1="-4.445" x2="5.08" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="-4.445" y1="-5.08" x2="4.445" y2="-5.08" width="0.1524" layer="94"/>
+<wire x1="7.62" y1="0" x2="-7.62" y2="0" width="0.1524" layer="94" curve="180"/>
+<wire x1="-7.62" y1="-2.54" x2="7.62" y2="-2.54" width="0.1524" layer="94" curve="180"/>
+<text x="1.27" y="10.16" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="-3.81" y="-12.7" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="ANODE" x="0" y="7.62" visible="off" length="point" direction="pas"/>
+<text x="0" y="7.62" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="SCREEN" x="7.62" y="0" visible="off" length="point" direction="pas"/>
+<text x="7.62" y="0" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="GRID" x="-7.62" y="-2.54" visible="off" length="point" direction="pas"/>
+<text x="-7.62" y="-2.54" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+<pin name="CATHODE" x="-5.08" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="-5.08" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 4</text>
+</symbol>
+<symbol name="TOWTOM2">
+<wire x1="10.16" y1="10.16" x2="10.16" y2="-30.48" width="0.1524" layer="94"/>
+<wire x1="-5.08" y1="10.16" x2="10.16" y2="10.16" width="0.1524" layer="94"/>
+<wire x1="-5.08" y1="-30.48" x2="10.16" y2="-30.48" width="0.1524" layer="94"/>
+<wire x1="-5.08" y1="10.16" x2="-5.08" y2="-30.48" width="0.1524" layer="94"/>
+<text x="-5.08" y="12.7" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="-5.08" y="-33.02" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="V1" x="-5.08" y="-10.16" visible="pin" length="point" direction="pas"/>
+<text x="-5.08" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="V2" x="-5.08" y="5.08" visible="pin" length="point" direction="pas"/>
+<text x="-5.08" y="5.08" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="INV" x="-5.08" y="-25.4" visible="pin" length="point" direction="pas"/>
+<text x="-5.08" y="-25.4" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+</symbol>
+<symbol name="TRIAC">
+<wire x1="0" y1="-6.985" x2="5.715" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="0" y1="-3.175" x2="5.715" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="5.715" y1="-3.175" x2="3.175" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="0.635" y1="-3.175" x2="3.175" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="0" x2="5.08" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-6.985" x2="5.08" y2="-10.16" width="0.1524" layer="94"/>
+<wire x1="4.445" y1="-6.985" x2="10.16" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="4.445" y1="-6.985" x2="6.985" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="6.985" y1="-3.175" x2="9.525" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="5.715" y1="-3.175" x2="10.16" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="0" y1="-10.16" x2="-2.54" y2="-10.16" width="0.1524" layer="94"/>
+<wire x1="0" y1="-10.16" x2="3.175" y2="-6.985" width="0.1524" layer="94"/>
+<text x="7.62" y="0" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="7.62" y="-11.43" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="MT2" x="5.08" y="0" visible="off" length="point" direction="pas"/>
+<text x="5.08" y="0" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="G" x="-2.54" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="-2.54" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="MT1" x="5.08" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="5.08" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+</symbol>
+<symbol name="TRIODE">
+<wire x1="-7.62" y1="0" x2="-4.445" y2="0" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="0" x2="-1.905" y2="0" width="0.1524" layer="94"/>
+<wire x1="-0.635" y1="0" x2="0.635" y2="0" width="0.1524" layer="94"/>
+<wire x1="1.905" y1="0" x2="3.175" y2="0" width="0.1524" layer="94"/>
+<wire x1="4.445" y1="0" x2="5.715" y2="0" width="0.1524" layer="94"/>
+<wire x1="0" y1="7.62" x2="0" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="2.54" x2="3.175" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="1.905" x2="3.175" y2="1.905" width="0.1524" layer="94"/>
+<wire x1="-3.175" y1="2.54" x2="-3.175" y2="1.905" width="0.1524" layer="94"/>
+<wire x1="3.175" y1="2.54" x2="3.175" y2="1.905" width="0.1524" layer="94"/>
+<wire x1="-3.81" y1="-1.905" x2="3.81" y2="-1.905" width="0.1524" layer="94"/>
+<wire x1="-5.08" y1="-7.62" x2="-5.08" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="-3.81" y1="-1.905" x2="-5.08" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="3.81" y1="-1.905" x2="5.08" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="-4.445" y1="-2.54" x2="4.445" y2="-2.54" width="0.1524" layer="94"/>
+<circle x="0" y="0" radius="7.62" width="0.1524" layer="94"/>
+<text x="1.27" y="10.16" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="-3.81" y="-10.16" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="PLATE" x="0" y="7.62" visible="off" length="point" direction="pas"/>
+<text x="0" y="7.62" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="GRID" x="-7.62" y="0" visible="off" length="point" direction="pas"/>
+<text x="-7.62" y="0" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="CATHODE" x="-5.08" y="-7.62" visible="off" length="point" direction="pas"/>
+<text x="-5.08" y="-7.62" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+</symbol>
+<symbol name="URC">
+<wire x1="0" y1="-11.43" x2="2.54" y2="-12.7" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-8.89" x2="0" y2="-11.43" width="0.1524" layer="94"/>
+<wire x1="0" y1="-6.35" x2="5.08" y2="-8.89" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-3.81" x2="0" y2="-6.35" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-2.54" x2="5.08" y2="-3.81" width="0.1524" layer="94"/>
+<wire x1="-1.27" y1="-2.54" x2="-1.27" y2="-12.7" width="0.1524" layer="94"/>
+<wire x1="-1.27" y1="-7.62" x2="-2.54" y2="-7.62" width="0.1524" layer="94"/>
+<text x="5.715" y="-5.08" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="5.715" y="-11.43" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="A" x="2.54" y="-2.54" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="-2.54" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="B" x="2.54" y="-12.7" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="-12.7" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="C" x="-2.54" y="-7.62" visible="off" length="point" direction="pas"/>
+<text x="-2.54" y="-7.62" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+</symbol>
+<symbol name="URC2">
+<wire x1="2.54" y1="0" x2="5.08" y2="-0.635" width="0.1524" layer="94"/>
+<wire x1="0" y1="-1.905" x2="5.08" y2="-0.635" width="0.1524" layer="94"/>
+<wire x1="0" y1="-1.905" x2="5.08" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="0" y1="-4.445" x2="5.08" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="0" y1="-4.445" x2="5.08" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="0" y1="-6.985" x2="5.08" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="0" y1="-6.985" x2="5.08" y2="-8.255" width="0.1524" layer="94"/>
+<wire x1="0" y1="-9.525" x2="5.08" y2="-8.255" width="0.1524" layer="94"/>
+<wire x1="0" y1="-9.525" x2="2.54" y2="-10.16" width="0.1524" layer="94"/>
+<wire x1="-2.54" y1="-5.08" x2="-1.27" y2="-5.08" width="0.1524" layer="94"/>
+<wire x1="-1.27" y1="-0.635" x2="-1.27" y2="-9.525" width="0.1524" layer="94"/>
+<text x="5.715" y="-2.54" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="5.715" y="-8.89" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="A" x="2.54" y="0" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="0" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="B" x="2.54" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+<pin name="C" x="-2.54" y="-5.08" visible="off" length="point" direction="pas"/>
+<text x="-2.54" y="-5.08" size="0.4064" layer="99" align="center">SpiceOrder 3</text>
+</symbol>
+<symbol name="XTAL">
+<wire x1="2.54" y1="-6.985" x2="2.54" y2="-10.16" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-3.175" x2="2.54" y2="0" width="0.1524" layer="94"/>
+<wire x1="0" y1="-3.175" x2="5.08" y2="-3.175" width="0.1524" layer="94"/>
+<wire x1="0" y1="-6.985" x2="5.08" y2="-6.985" width="0.1524" layer="94"/>
+<wire x1="1.27" y1="-5.715" x2="3.81" y2="-5.715" width="0.1524" layer="94"/>
+<wire x1="3.81" y1="-5.715" x2="3.81" y2="-4.445" width="0.1524" layer="94"/>
+<wire x1="3.81" y1="-4.445" x2="1.27" y2="-4.445" width="0.1524" layer="94"/>
+<wire x1="1.27" y1="-4.445" x2="1.27" y2="-5.715" width="0.1524" layer="94"/>
+<text x="3.81" y="0" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="3.81" y="-11.43" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="A" x="2.54" y="0" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="0" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="B" x="2.54" y="-10.16" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="-10.16" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+</symbol>
+<symbol name="XVARISTOR">
+<wire x1="2.54" y1="-12.7" x2="2.54" y2="-15.24" width="0.1524" layer="94"/>
+<wire x1="1.27" y1="-5.08" x2="1.27" y2="-12.7" width="0.1524" layer="94"/>
+<wire x1="3.81" y1="-5.08" x2="1.27" y2="-5.08" width="0.1524" layer="94"/>
+<wire x1="2.54" y1="-2.54" x2="2.54" y2="-5.08" width="0.1524" layer="94"/>
+<wire x1="0" y1="-2.54" x2="0" y2="-3.81" width="0.1524" layer="94"/>
+<wire x1="0" y1="-3.81" x2="5.08" y2="-13.335" width="0.1524" layer="94"/>
+<wire x1="5.08" y1="-14.605" x2="5.08" y2="-13.335" width="0.1524" layer="94"/>
+<wire x1="3.81" y1="-12.7" x2="3.81" y2="-5.08" width="0.1524" layer="94"/>
+<wire x1="1.27" y1="-12.7" x2="3.81" y2="-12.7" width="0.1524" layer="94"/>
+<text x="5.715" y="-6.35" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="5.715" y="-12.065" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="A" x="2.54" y="-2.54" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="-2.54" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<pin name="B" x="2.54" y="-15.24" visible="off" length="point" direction="pas"/>
+<text x="2.54" y="-15.24" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
+</symbol>
+</symbols>
+<devicesets>
+<deviceset name="2N7002" prefix="X">
+<description>Small signal N-Channel MOSFET transistor</description>
+<gates>
+<gate name="G$1" symbol="N_CHANNEL_TRANSISTOR" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name="">
+<attribute name="SPICEMODEL" value="2N7002.mod" constant="no"/>
+<attribute name="VALUE2" value=" 2N7002" constant="no"/>
+</technology>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="BATTERY" prefix="V">
+<description>Voltage Source, either DC, AC, PULSE, SINE, PWL, EXP, or SFFM</description>
+<gates>
+<gate name="G$1" symbol="BATTERY" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="3V60R">
+<connects>
+<connect gate="G$1" pin="+" pad="+ +@1" route="any"/>
+<connect gate="G$1" pin="-" pad="-"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="CELL" prefix="V">
+<description>Voltage Source, either DC, AC, PULSE, SINE, PWL, EXP, or SFFM</description>
+<gates>
+<gate name="G$1" symbol="CELL" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="DIAC" prefix="X">
+<description>Generic Bi-directional Trigger Device symbol for use with a model that you supply</description>
+<gates>
+<gate name="G$1" symbol="DIAC" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="BR210S">
+<connects>
+<connect gate="G$1" pin="+" pad="T1"/>
+<connect gate="G$1" pin="-" pad="T2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="DIP10" prefix="X" uservalue="yes">
+<description>Generic Symbol for use with subcircuts that you supply.</description>
+<gates>
+<gate name="G$1" symbol="DIP10" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="DIP14" prefix="X" uservalue="yes">
+<description>Generic Symbol for use with subcircuts that you supply.</description>
+<gates>
+<gate name="G$1" symbol="DIP14" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="DIP16" prefix="X" uservalue="yes">
+<description>Generic Symbol for use with subcircuts that you supply.</description>
+<gates>
+<gate name="G$1" symbol="DIP16" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="DIP20" prefix="X" uservalue="yes">
+<description>Generic Symbol for use with subcircuts that you supply.</description>
+<gates>
+<gate name="G$1" symbol="DIP20" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="DIP8" prefix="X" uservalue="yes">
+<description>Generic Symbol for use with subcircuts that you supply.</description>
+<gates>
+<gate name="G$1" symbol="DIP8" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="EPOLY" prefix="E">
+<description>Voltage dependent voltage source with two terminals.  Useful for drafting schematic generating archaic voltage controlled syntax.</description>
+<gates>
+<gate name="G$1" symbol="EPOLY" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="EUROPEANCAP" prefix="C">
+<description>Polarized Capacitor</description>
+<gates>
+<gate name="G$1" symbol="EUROPEANCAP" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="EUROPEANPOLCAP" prefix="C">
+<description>Polarized Capacitor</description>
+<gates>
+<gate name="G$1" symbol="EUROPEANPOLCAP" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="EUROPEANRESISTOR" prefix="R">
+<description>A Resistor(European style graphic)</description>
+<gates>
+<gate name="G$1" symbol="EUROPEANRESISTOR" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="FIXEDIND" prefix="L">
+<description>An inductor that cannot be edited.  Typically used with the 1533/1534</description>
+<gates>
+<gate name="G$1" symbol="FIXEDIND" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name="">
+<attribute name="DEFSUBSTRATE" value="noedit" constant="no"/>
+</technology>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="JUMPER" prefix="J" uservalue="yes">
+<description>A wire jumper.  This component lets you give the same net two different names</description>
+<gates>
+<gate name="G$1" symbol="JUMPER" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="05">
+<connects>
+<connect gate="G$1" pin="+" pad="1"/>
+<connect gate="G$1" pin="-" pad="2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="NE555" prefix="X">
+<description>An idealized 555 timer model.</description>
+<gates>
+<gate name="A" symbol="NE555" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="SOIC8">
+<connects>
+<connect gate="A" pin="CV" pad="5"/>
+<connect gate="A" pin="DIS" pad="7"/>
+<connect gate="A" pin="GND" pad="1"/>
+<connect gate="A" pin="OUT" pad="3"/>
+<connect gate="A" pin="RST" pad="4"/>
+<connect gate="A" pin="THRS" pad="6"/>
+<connect gate="A" pin="TRIG" pad="2"/>
+<connect gate="A" pin="VCC" pad="8"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="NEONBULB" prefix="X" uservalue="yes">
+<description>Parameterized Neon Bulb</description>
+<gates>
+<gate name="G$1" symbol="NEONBULB" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name="">
+<attribute name="MODELFILE" value="neonbulb.sub" constant="no"/>
+<attribute name="SPICELINE" value=" Zon=2K Ihold=200u" constant="no"/>
+<attribute name="SPICELINE2" value=" Tau=100u" constant="no"/>
+<attribute name="SPICEMODEL" value="neonbulb" constant="no"/>
+<attribute name="VALUE2" value=" Vstrike=100 Vhold=50" constant="no"/>
+</technology>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="NIGBT" prefix="X">
+<description>N-Channel IBGT symbol for a model you supply.</description>
+<gates>
+<gate name="G$1" symbol="NIGBT" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="PENTODE" prefix="X">
+<description>This symbol is for use with a subcircuit macromodel that you supply.</description>
+<gates>
+<gate name="G$1" symbol="PENTODE" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="PIGBT" prefix="X">
+<description>P-Channel IBGT symbol for a model you supply.</description>
+<gates>
+<gate name="G$1" symbol="PIGBT" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="SCR" prefix="X">
+<description>Generic SCR symbol for use with a model that you supply.</description>
+<gates>
+<gate name="G$1" symbol="SCR" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="TETRODE" prefix="X">
+<description>This symbol is for use with a subcircuit macromodel that you supply.</description>
+<gates>
+<gate name="G$1" symbol="TETRODE" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="TOWTOM2" prefix="X">
+<description>2nd Order Tow-Thomas Filter building block.  Needs .lib TowTom2.sub &amp; .params R=10K C=160p GBW1=10Meg GBW2=15Meg Aol=100K</description>
+<gates>
+<gate name="G$1" symbol="TOWTOM2" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="TOWTOM2">
+<connects>
+<connect gate="G$1" pin="INV" pad="G$1INV"/>
+<connect gate="G$1" pin="V1" pad="G$1V1"/>
+<connect gate="G$1" pin="V2" pad="G$1V2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="TRIAC" prefix="X">
+<description>Generic TRIAC symbol for use with a model that you supply.</description>
+<gates>
+<gate name="G$1" symbol="TRIAC" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="BR220S">
+<connects>
+<connect gate="G$1" pin="G" pad="T1"/>
+<connect gate="G$1" pin="MT1" pad="T2"/>
+<connect gate="G$1" pin="MT2" pad="T3"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="TRIODE" prefix="X">
+<description>This symbol is for use with a subcircuit macromodel that you supply.</description>
+<gates>
+<gate name="G$1" symbol="TRIODE" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="URC" prefix="U">
+<description>Uniform RC-line.  Intended for interconnection on IC s but rarely used.'</description>
+<gates>
+<gate name="G$1" symbol="URC" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="URC2" prefix="U">
+<description>Uniform RC-line.  Intended for interconnection on IC s but rarely used.'</description>
+<gates>
+<gate name="G$1" symbol="URC2" x="0" y="0"/>
+</gates>
+<devices>
+<device name="">
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="XTAL" prefix="C">
+<description>Piezoelectric crystal.  Set C, Lser and Cpar to set series and parallel resonances.  This is actually the same as a capacitor.</description>
+<gates>
+<gate name="G$1" symbol="XTAL" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="HC49UP">
+<connects>
+<connect gate="G$1" pin="A" pad="1"/>
+<connect gate="G$1" pin="B" pad="2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="XVARISTOR" prefix="X">
+<description>Generic varistor symbol for use with a model that you supply.</description>
+<gates>
+<gate name="G$1" symbol="XVARISTOR" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="BR210S">
+<connects>
+<connect gate="G$1" pin="A" pad="T1"/>
+<connect gate="G$1" pin="B" pad="T2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="2N5458" prefix="X">
+<description>&lt;b&gt;N-Channel General Purpose Amplifier&lt;/b&gt;&lt;p&gt;
+Source: &lt;a href="http://www.farnell.com/datasheets/46943.pdf"&gt; Data sheet &lt;/a&gt;</description>
+<gates>
+<gate name="G$1" symbol="N_CHANNEL_TRANSISTOR" x="-2.54" y="7.62"/>
+</gates>
+<devices>
+<device name="" package="SOT23">
+<connects>
+<connect gate="G$1" pin="D" pad="1"/>
+<connect gate="G$1" pin="G" pad="3"/>
+<connect gate="G$1" pin="S" pad="2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+</devicesets>
+</library>
+</drawing>
+</eagle>

@@ -1,0 +1,1023 @@
+#usage "en: <qt><nobr><b>Calculate the wire length from pad to pad</b></nobr>"
+       "<p>"
+       "Example:<br>"
+       "<nobr>RUN lpp Elementname Padname Elementname Padname [Elementname Padname Elementname Padname ...]</nobr><br> "
+       "RUN lpp /G<p>"
+       "You always have to specify a pair of Elementname + Padname.<br>"
+       "The ULP now calculates the length of the wire connection between the given pads. "
+       "So it is possible to measure the lenght of the trace between two contacts. "
+       "Other PADs/SMDs which are on the way are not taken into consideration.<br> "
+       "Option:<b>/G</b><br>"
+       "The ULP can be used with option /G, in case you defined a group in the layout before. "
+       "For each signal of the group the ULP searches for a starting point and the PAD/SMD next to it. "
+       "<br>"
+       "Micro, blind and buried vias are supported."
+       "<p>"
+       "<b>Limitations:<br>"
+       "There shouldn't be several signal branches and vias at the same location, "
+       "otherwise it may happen that the wrong branch will be calculated!</b><p> "
+       "Length information of traces that have such a branching point with vias as well as "
+       "non-continuous traces will be especially marked.<p>"
+       "For displaying possible additional information double-click one of the list entries  "
+       "and choose (one of) the available parameter(s) in the menu. "
+       "<br>"
+       "WIREs of an arbitrary PAD/SMD shape within a package will be ignored and might prompt a "
+       "message that tells you that the pad is not routed! "
+       "<p>"
+       "<p>"
+       "<author>Autor: info@az-cad.de</author>"
+       ,
+       "de: <qt><nobr><b>Berechnet die Länge von Leiterbahnen zwischen zwei PADs.</b></nobr>"
+       "<p>"
+       "Beispiel:<br>"
+       "<nobr>RUN lpp Elementname Padname Elementname Padname [Elementname Padname Elementname Padname ...]</nobr><br>"
+       "RUN lpp /G<p>"
+       "Es muss immer ein Paar von Elementname + Padname angegeben werden.<br>"
+       "Es wird nur die Länge der Leitung zwischen den beiden angegebenen Pads berechnet. "
+       "Somit ist es möglich eine beliebige Strecke zwischen zwei Kontaktpunkten zu messen. "
+       "Dazwischen liegende PADs/SMDs werden nicht beachtet.<br>"
+       "Option:<b>/G</b><br>"
+       "Man kann vorher auch eine GROUP definieren und dann mit der Option <b>/G</b> starten.<br>"
+       "Dabei wird von jedem Signal in der Gruppe eine Anfangskoordinate benutzt und bis zum nächsten PAD/SMD gesucht."
+       "<br>"
+       "Micro-, Blind- und Buried-VIAs werden unterstützt."
+       "<p>"
+       "<b>Einschränkungen:<br>"
+       "Es dürfen keine Mehrfachabzweigungen und VIAs an derselben Koordinate vorkommen, "
+       "da sonst die falsche Abzweigung benutzt werden kann!</b><p>"
+       "Längenangaben, bei denen innerhalb der Strecke Mehrfachabzweigung und zugleich VIAs vorkommen sowie "
+       "nicht durchgängig geroutete Leitungen, werden enstprechend markiert.<p>"
+       "Um mögliche weitere Details anzeigen zu lassen, doppelklicken Sie auf eine Zeile der Liste "
+       "und wählen Sie im sich öffnenden Menü die entsprechenden (Einzel-) Parameter."
+       "<br>"
+       "Die WIREs eines erweiterten PAD/SMD innerhalb eines Package werden nicht berücksichtigt und führen "
+       "u.U. zu der Meldung, dass das Pad nicht geroutet ist!"
+       "<p>"
+       "<p>"
+       "<author>Autor: info@az-cad.de</author>"
+
+
+string Version = "1.0.6"; // 2013-01-03 info@az-cad.de
+                          // 2013-01-11
+                          // 2013-01-13 Option /G
+                          // 2013-03-02 Pad am Wire-Ende suchen berichtigt
+                          //            Signal darf auch aus nur einem Wire-Segement bestehen bei Option /G
+                          // 2013-04-16 usage und diverse Meldungen in Englisch
+
+#require 6.0400;
+
+string Option = "";
+enum             { null, TypeW, TypeS,  TypeP, TypeV };
+string Typ[]   = { "null", "Wire", "Smd ", "Pad ", "Via " };
+
+int    wx1[];   // X coordinate
+int    wy1[];   // Y coordinate
+int    wx2[];   // X coordinate
+int    wy2[];   // Y coordinate
+int    wl[];    // Layer
+int    ws[];    // Start Layer for Via & Pad, Smd and Wire
+int    we[];    // End   Layer for Via & Pad, Smd and Wire == Start Layer
+int    wt[];    // Type
+real   wlen[];  // Länge des Wire in mm
+real   LengthPadPad;
+real   LengthDif[];
+string wirelen[];  // Liste der berechneten Längen der Wiresegemente von Pad zu Pad
+int    wused[];    // Zähler ob benutzt und zugleich die gefundene Reihenfolge
+                   // ein minus Wert signalisiert eine Via
+string wpart[];
+string wpad[];
+int    Ucnt = 1;
+int    Ncoord = 0;     // Anzahl der Koordinaten (WIRE/VIA/SMD/PAD)
+int    K2 = 0;         // Index auf die aktuell bearbeitete Wire-Koordiante x1y1 x2y2
+int    NumSEcoord = 0; // Anzahl aller Start / End-Koordinaten
+int    ErrorCoord = 0; // Zeiger auf die Koordinate, an der es klemmt.
+
+string ElementName1;
+string PadName1;
+string ElementName2;
+string padname2;
+string StartElement;   // für die Option /G 2013-02-25
+string StartPad;
+string EndElement;
+string EndPad;
+string FoundElement;
+string FoundPad;
+
+int    StartPadX, StartPadY, EndPadX, EndPadY;
+int    vs[]; // Layerstacktiefe Anfang | VIAs nie als Start benutzen, sondern die Startbedingung
+int    ve[]; // Layerstacktiefe Ende   | der Wire prüfen, ob er duch die Via angebunden ist.
+
+int    LayerStart1, LayerStart2, LayerEnd1, LayerEnd2;
+int    LastX, LastY, LastK2, LastI;  // da es mehr als eine End-Koordinate geben kann,
+                                     // muß immer die vorhergehende Koordinate überprüft werden.
+string Header = "diff. mm\t\diff. %\tMM\tSignal\tPart\tPad\tCoord\tPart\tPad\tCoord\tComment";
+
+int    Start1X, Start1Y, End2X, End2Y;
+int    StartI, EndI, Start2I, End2I; // zum debuggen
+
+string WireCoordText;
+
+// ### ---------------- functions ------------------- ###
+void checkshow(string line) {
+  string s[];
+  int cnt = strsplit(s, line, '\t');
+  string list[];
+  string viewheadline;
+  if (language() == "de") {
+    sprintf(list[0], "mm diff\t%s\tHighlighted das Signal", s[0]);
+    sprintf(list[1], "%c diff\t%s\tHighlighted das Signal", '%', s[1]);
+    sprintf(list[2], "Länge\t%s\tZoomt die Pad-Koordinaten und highlighted das Signal", s[2]);
+    sprintf(list[3], "Signal\t%s\tHighlighted das Signal mit einer Box inkl. Strahl von links oben", s[3]);
+    sprintf(list[4], "Element 1\t%s\tHighlighted das Element mit einer Box inkl. Strahl von links oben", s[4]);
+    sprintf(list[5], "Pad 1\t%s\tZoomt den Pad in die Mitte und highlighted das Element", s[5]);
+    sprintf(list[6], "Start-Koordinate\t%s\tZoomt die Koordinate in die Mitte und highlighted das Signal", s[6]);
+    sprintf(list[7], "Element 2\t%s\tHighlighted das Element mit einer Box inkl. Strahl von links oben", s[7]);
+    sprintf(list[8], "Pad 2\t%s\tZoomt den Pad in die Mitte und highlighted das Element", s[8]);
+    sprintf(list[9], "End-Koordinate\t%s\tZoomt die Koordinate in die Mitte und highlighted das Signal", s[9]);
+    viewheadline = "Zeige\tDetail\tBereich";
+  }
+  else {
+    sprintf(list[0], "mm diff\t%s\thighlight the signal", s[0]);
+    sprintf(list[1], "%c diff\t%s\thighlight the signal", '%', s[1]);
+    sprintf(list[2], "Length\t%s\tzoom in at pad coordinates and highlight the signal", s[2]);
+    sprintf(list[3], "Signal\t%s\thighlight the signal and draw box incl. pointer from upper left corner", s[3]);
+    sprintf(list[4], "Element 1\t%s\thighlight the element and draw a box incl. a pointer from upper left corner", s[4]);
+    sprintf(list[5], "Pad 1\t%s\tzoom and center pad and highlight element", s[5]);
+    sprintf(list[6], "Start coordinate\t%s\tzoom in and center at this coordinate and highlight the signal", s[6]);
+    sprintf(list[7], "Element 2\t%s\thighlight the element and draw a box with a pointer from upper left corner", s[7]);
+    sprintf(list[8], "Pad 2\t%s\tzoom in and center pad and higlight the element", s[8]);
+    sprintf(list[9], "End coordinate\t%s\tzoom in and center at the coordinate and highlight the signal", s[9]);
+    viewheadline = "Show\tDetail\tArea";
+  }
+  int sel;
+  int srt;
+  dlgDialog("List Detail") {
+    dlgHBoxLayout {
+      dlgVBoxLayout dlgSpacing(220);
+      dlgListView(viewheadline, list, sel, srt) {
+        switch(sel) {
+          case 0 : exit("SHOW "+s[3]);
+          case 1 : exit("SHOW "+s[3]);
+          case 2 : exit("WIN "+s[6]+" "+s[9]+";SHOW @ "+s[3]);
+          case 3 : exit("SHOW @ "+s[sel]);
+          case 4 : exit("SHOW @ "+s[sel]);
+          case 5 : exit("WIN "+s[6]+";"+"SHOW "+s[4]);
+          case 6 : exit("WIN "+s[sel]+";"+"SHOW "+s[sel]);
+          case 7 : exit("SHOW @ "+s[sel]);
+          case 8 : exit("WIN "+s[9]+";"+"SHOW "+s[7]);
+          case 9 : exit("WIN "+s[sel]+";"+"SHOW "+s[sel]);
+          default : ;
+        }
+      }
+    }
+    dlgPushButton("+OK") dlgAccept();
+  };
+}
+
+// *** different length to shortesd signals in percent ***
+string percent( real length, real length100) {
+  string s;
+  if (length100) sprintf(s, "%.3f", (length - length100) / (length100 / 100));
+  else s = "--";
+  return s;
+}
+
+// save data
+void save(string fname, string option) {
+  output(filesetext(fname, option+".lpp"), "wtD") {
+    int n;
+    printf("#%s : Option:%s\n%s\n", filename(argv[0]), option, Header);
+    do {
+      printf("%s\n", wirelen[n]);
+    } while (wirelen[n++]);
+  }
+  exit(0);
+}
+
+real ArcLength(real ang1, real ang2, real radius) {
+  return radius  * 2 * PI / 360 * (ang2 - ang1);
+}
+
+real WireLength(real x1, real x2, real y1, real y2) {
+  return sqrt((pow(x2 - x1, 2) + pow(y2 - y1, 2)) );
+}
+
+real addlength(UL_WIRE W) {
+  if (W.curve) {
+    return ArcLength(W.arc.angle1, W.arc.angle2, u2mm(W.arc.radius));
+  }
+  else {
+    return WireLength(u2mm(W.x2), u2mm(W.x1), u2mm(W.y2), u2mm(W.y1));
+  }
+}
+
+// collect coordinate
+void add(int x1, int y1, int x2, int y2, int lay, int l_start, int l_end, int type, real wirelength) {
+  if (lay == 19) return; // keine Luftlinien benutzen 2013-02-27
+  wx1[Ncoord] = x1;
+  wy1[Ncoord] = y1;
+  wx2[Ncoord] = x2;
+  wy2[Ncoord] = y2;
+  wl[Ncoord] = lay;
+  ws[Ncoord] = l_start;
+  we[Ncoord] = l_end;
+  wt[Ncoord] = type;
+  wlen[Ncoord] = wirelength;
+  wused[Ncoord] = 0; // preset
+  Ncoord++;
+  return;
+}
+
+// get and check signalname on pads
+string get_check_signal(string elementname1, string PadName1, string elementname2, string padname2, int cnt) {
+  string found1 = "", found2 = "";
+  board(B) {
+    B.elements(E) {
+      if (E.name == elementname1) {
+        E.package.contacts(C) {
+          if (C.name == PadName1) {
+            found1 = C.signal;
+            StartPadX = C.x;
+            StartPadY = C.y;
+            if (C.smd) {
+              LayerStart1 = C.smd.layer;
+              LayerStart2 = C.smd.layer;
+            }
+            else if (C.pad) {
+              LayerStart1 = 1;
+              LayerStart2 = 16;
+            }
+            break;
+          }
+        }
+        break;
+      }
+    }
+    B.elements(E) {
+      if (E.name == elementname2) {
+        E.package.contacts(C) {
+          if (C.name == padname2) {
+            found2 = C.signal;
+            EndPadX = C.x;
+            EndPadY = C.y;
+            if (C.smd) {
+              LayerEnd1 = C.smd.layer;
+              LayerEnd2 = C.smd.layer;
+            }
+            else if (C.pad) {
+              LayerEnd1 = 1;
+              LayerEnd2 = 16;
+            }
+          }
+        }
+        break;
+      }
+    }
+  }
+  if (!found1 || !found2 || found1 != found2) {
+    string err;
+    if (!found1) {
+        sprintf(err, "!Pad %s of element %s not found!", PadName1, ElementName1);
+    }
+    if (!found2) {
+        sprintf(err, "!Pad %s of element %s not found!", padname2, ElementName2);
+    }
+    if (found1 != found2) {
+      string fe1 = found1, fe2 = found2;
+      if (!fe1) fe1 = "~no signal~";
+      if (!fe2) fe2 = "~no signal~";
+      sprintf(err, "!Different Signal #%d %s [%s %s] : %s [%s %s]", cnt, fe1, ElementName1, PadName1, fe2, ElementName2, padname2);
+    }
+    dlgMessageBox(err + "\nQuit with SHOW command!", "OK");
+    exit("SHOW "+found1+" "+found2);
+  }
+  return found1;
+}
+
+// suche die weiterführende Koordinate auf dem selben Layer,
+// wenn es nicht mehr weiter geht, suche nach einer Via,
+// und dann wieder weiter.
+int getnextcoord(int i, int k) {
+  int x, y, l;
+  l = wl[i]; // der Layer des Wire
+  if (k == 2) { // wenn 2 suche nach Koordinate 1
+    x = wx1[i];
+    y = wy1[i];
+  }
+  else {        // wenn 1 suche nach Koordinate 2
+    x = wx2[i];
+    y = wy2[i];
+  }
+
+  for (int n=0; n<Ncoord; n++) {
+    if (n != i && wt[n] == TypeW && l == wl[n]) { // nur in Type WIRE suchen und gleichen Layer
+      if (x == wx1[n] && y == wy1[n]) {
+        K2 = 1 ;           // gibt die gefundene Seite zurück
+        wused[n] = Ucnt++; // zum debuggen
+        return n;
+      }
+      if (x == wx2[n] && y == wy2[n]) {
+        K2 = 2 ; // gibt die gefundene Seite zurück
+        wused[n] = Ucnt++; // zum debuggen
+        return n;
+      }
+    }
+  }
+  // nichts gefunden, dann suche nach Via für einen Layerwechsel
+  int via = -1;
+  for (n = 0; n<Ncoord; n++) {
+    if (n != i && wt[n] == TypeV) { // nur in Type VIA suchen
+      if (x == wx1[n] && y == wy1[n]) {
+        via = n;
+        wused[n] = Ucnt*-1; // zum debuggen
+        break;
+      }
+    }
+  }
+  if (ws[n] <= LayerEnd1 && we[n] >= LayerEnd2) {
+    if  (x == EndPadX && y == EndPadY) {
+      K2 = 0;
+      return n; // Ende durch Via erreicht
+    }
+  }
+  if (via >= 0) {  // ist eine Via an diesem "Ende", dann suche in einem anderen Layer weiter.
+    for (int n = 0; n <Ncoord; n++) {
+      if (n != i && wt[n] == TypeW && wl[n] != l) { // nur in Type WIRE suchen und bei anderem Layer
+        if (x == wx1[n] && y == wy1[n]) {
+          K2 = 1; // gibt die gefundene Seite zurück
+          wused[n] = Ucnt++;
+          return n;
+        }
+        if (x == wx2[n]&& y == wy2[n]) {
+          K2 = 2;  // gibt die gefundene Seite zurück
+          wused[n] = Ucnt++;
+          return n;
+        }
+      }
+    }
+  }
+  ErrorCoord = i;
+  return -1;
+}
+
+/* suche nach Endkoordinate für die Pad zu Pad Option*/
+int getendpadpad(int start, int sk, string sigName) { // die Startseite k wird übergeben
+  int cntdebug = 0; // zum debuggen
+  Ucnt = 001;       // zum debuggen
+  wused[start] = Ucnt++; // zum debuggen
+  string debug;     // zum debuggen
+
+  int x, y;
+  int i = start;
+  K2 = sk;
+  int endeerreicht = -1;
+  do { /********** suche durch die Liste bis zum End-Pad **********/
+    LengthPadPad += wlen[i];
+    LastI = i;
+    LastK2 = K2;
+    if (K2 == 2) {  // suche nach der anderen Seite von 2
+      LastX = wx1[i];
+      LastY = wy1[i];
+      x = wx1[i];
+      y = wy1[i];
+    }
+    else {  // suche nach der anderen Seite von 1
+      LastX = wx2[i];
+      LastY = wy2[i];
+      x = wx2[i];
+      y = wy2[i];
+    }
+
+
+
+    // gleich mal prüfen ob das Ende schon erreicht ist
+    if (ws[i] <= LayerEnd1 && we[i] >= LayerEnd2) { // passt der Layer
+      if (K2 == 1) { // K2 == 1
+        if (EndPadX == wx2[i] &&  EndPadY == wy2[i]) {  // suche nach der anderen Seite wie k
+          return i;
+        }
+      }
+      else { // dann K2 == 2
+        if (EndPadX == wx1[i] &&  EndPadY == wy1[i]) {  // suche nach der anderen Seite von k
+          return i;
+        }
+      }
+    }// Ende von if gleich mal prüfen ob das Ende schon erreicht ist
+    /* durchsuche die Liste auf die nachfolgende Koordinate */
+
+    /****** VIAs sind in der Suche eingeschlossen, werden also übersprungen. ******/
+    i = getnextcoord(i, K2);  // K2 ist Global! Eine Funktion kann nur einen Return-Wert zurückgeben.
+    /****** VIAs sind in der Suche eingeschlossen, werden also übersprungen. ******/
+    if (i < 0) return i; /*** hier ist es zu Ende, wenn keine weiterführende Koordinate gefunden wurde ***/
+
+
+    if (K2 == 1) { // K2 == 1
+      if (EndPadX == wx2[i] &&  EndPadY == wy2[i]) {  // suche nach der anderen Seite wie k
+        LengthPadPad += wlen[i];  // 2013-03-02
+        return i;
+      }
+    }
+    else { // dann K2 == 2
+      if (EndPadX == wx1[i] &&  EndPadY == wy1[i]) {  // suche nach der anderen Seite von k
+        LengthPadPad += wlen[i]; // 2013-03-02
+        return i;
+      }
+    }
+    cntdebug++;
+  } while(i >= 0);  /********** suche durch die Liste bis zum End-Pad **********/
+
+  // index zum zuletzt gefundenen Wire der auf den PAD/SMD zeigt
+  return i;  // - negative Zahl heisst das Ende nicht gefunden!
+}
+
+// überprüfe ob der Wire über eine Via an den SMD (Pad) angebuden ist.
+int viaandindung(int l, int cntv) {
+  int fehler = 0;
+  string v;
+  for (int cnt = 0; cnt < cntv; cnt++) {
+    if (l >= vs[cnt] && l <= ve[cnt]) return 1;  // evtl. noch die Stacktiefe auf die Länge addieren?
+    sprintf(v, "WIRE layer %d : VIA Layer %d-%d", l, vs[cnt], ve[cnt]);
+  }
+  dlgMessageBox(v);
+  return 0;
+}
+
+/*** Hauptschleife der Option [Elementname Pad Elementname Padname] ***/
+// ermittle Start-Koordinaten in den Wire-Koordinaten für dieses Signal
+real checkcoordpadpad(string sigName) {
+  // 2013-01-09 info@az-cad.de
+  NumSEcoord = 0;
+  int cntstart = 0;
+  int cntend = 0;
+  int indexstart[];
+  int wk[];
+  int x;
+  int cnti = 0;
+  int cntv = 0;
+  for (x = 0; x < Ncoord; x++) {  // Suche zuerst eventuelle Start-VIAs
+    if (StartPadX == wx1[x] && StartPadY == wy1[x] && (wt[x] ==  TypeV)) { // Via hat 1. Koordinate gleich wie 2. Koordinate
+      vs[cntv] = ws[x];
+      ve[cntv] = we[x];
+      cntv++;
+    }
+  }
+
+  for (x = 0; x < Ncoord; x++) {
+    // Eine VIA nie als Startbedingung benutzen, sondern gleich die entsprechenden Wire suchen,
+    // die an der Via angebunden sind.
+    if (StartPadX == wx1[x] && StartPadY == wy1[x] && wt[x] ==  TypeW) { // Die erste Seite des Wire
+      if (LayerStart1 == ws[x] || viaandindung(ws[x], cntv)) {
+        indexstart[cntstart] = x;
+        wk[cntstart] = 1;  // die Startseite
+        LayerStart1 = ws[x];
+        LayerStart2 = we[x];
+        cntstart++;
+        NumSEcoord++;
+      }
+    }
+    if (StartPadX == wx2[x] && StartPadY == wy2[x] &&  wt[x] ==  TypeW) { // die zweite Seite des Wire
+      if (LayerStart1 == ws[x] || viaandindung(ws[x], cntv)) {
+        indexstart[cntstart] = x;
+        wk[cntstart] = 2;  // die Startseite
+        LayerStart1 = ws[x];
+        LayerStart2 = we[x];
+        cntstart++;
+        NumSEcoord++;
+      }
+    }
+    // prüfe auch ob die Enden geroutet sind
+    if (EndPadX == wx1[x] && EndPadY == wy1[x] && (wt[x] ==  TypeW || wt[x] == TypeV)) {
+      cntend++;
+    }
+    if (EndPadX == wx2[x] && EndPadY == wy2[x] &&  (wt[x] ==  TypeW || wt[x] == TypeV)) {
+      cntend++;
+    }
+  }
+
+  string errorinfo = "";
+  if (!cntstart) {
+    if (language() == "de") sprintf(errorinfo, "%s PAD %s nicht geroutet!", ElementName1, PadName1);
+    else  sprintf(errorinfo, "%s PAD %s not routed!", ElementName1, PadName1);
+    dlgMessageBox(errorinfo);
+    sprintf(errorinfo, "WIN (%.fmm %.fmm);SHOW (%.fmm %.fmm)", u2mm(StartPadX), u2mm(StartPadY), u2mm(StartPadX), u2mm(StartPadY));
+    exit(errorinfo);
+  }
+  if (!cntend) {
+    if (language() == "de") sprintf(errorinfo, "%s PAD %s nicht geroutet!", ElementName2, padname2);
+     sprintf(errorinfo, "%s PAD %s not routed!", ElementName2, padname2);
+    dlgMessageBox(errorinfo);
+    sprintf(errorinfo, "WIN (%.fmm %.fmm);SHOW (%.fmm %.fmm)", u2mm(EndPadX), u2mm(EndPadY), u2mm(EndPadX), u2mm(EndPadY));
+    exit(errorinfo);
+  }
+
+  int foundend = -1;
+  int n = 0;
+  if (Ncoord > 1) {
+    if (NumSEcoord) {
+      foundend = -1;
+      // ### loop ###
+      for (int s = 0; s < cntstart; s++) {  // durchsuche alle Start-Koordinaten
+        LengthPadPad = 0;  // die Stelle in der Funktion Pad-Pad zum reseten der Gesamtlänge
+        foundend = getendpadpad(indexstart[s], wk[s], sigName); // suche das Ende (PAD/SMD)
+        if (foundend >= 0) return LengthPadPad;
+      }
+    }
+  }
+
+  return LengthPadPad *= -1.0; // * -1.0;  // erzeuge im Fehlerfall ein negatives Vorzeichen
+  //return LengthPadPad;
+}
+
+// ******************************************************
+// suche die weiterführende Koordinate auf dem selben Layer,
+// wenn es nicht mehr weiter geht, suche nach einer Via,
+// und dann wieder weiter.
+int getnextcoordpad(int i, int k) {
+  int x, y, l;
+  l = wl[i]; // der Layer des Wire
+
+  if (k == 2) { // wenn 2 suche nach Koordinate 1
+    x = wx1[i];
+    y = wy1[i];
+  }
+  else {        // wenn 1 suche nach Koordinate 2
+    x = wx2[i];
+    y = wy2[i];
+  }
+
+  int e;
+  for (e = Ncoord-1; e; e--) {  // suche vom Ende der Liste her, die Pad/Smd stehen am Schluß
+    if (wt[e] == TypeP || wt[e] == TypeS) { // in Type PAD und SMD suchen
+      if (ws[e] >= ws[i] && we[e] <= we[i]) { // Trifft der Layer des Wire auf den PAD
+        if (x == wx1[e] && y == wy1[e]) {
+          wused[e] = Ucnt++; // zum debuggen
+          LastI = e;
+          return e;
+        }
+      }
+    }
+  }
+  // in Type WIRE suchen und mit gleichen Layer
+  for (int n=0; n<Ncoord; n++) {
+    if (n != i && wt[n] == TypeW && l == wl[n]) {
+      if (x == wx1[n] && y == wy1[n]) {
+        K2 = 1 ;  // gibt die gefundene Seite zurück
+        wused[n] = Ucnt++; // zum debuggen
+        return n;
+      }
+      if (x == wx2[n] && y == wy2[n]) {
+        K2 = 2 ; // gibt die gefundene Seite zurück
+        wused[n] = Ucnt++; // zum debuggen
+        return n;
+      }
+    }
+  }
+
+  // nichts gefunden? Dann suche nach Via für einen Layer wechsel
+  int via = -1;
+  for (n = 0; n<Ncoord; n++) {
+    if (n != i && wt[n] == TypeV) { // nur in Type VIA suchen
+      if (x == wx1[n] && y == wy1[n]) {
+        via = n;
+        wused[n] = Ucnt*-1; // zum debuggen
+        break;
+      }
+    }
+  }
+
+  if (via >= 0) {  // ist eine Via an diesem "Ende", dann suche in einem anderen Layer weiter.
+    // gleich mal prüfen ob die Via einen Pad/Smd erreicht?
+    for (e = Ncoord-1; e; e--) {  // suche vom Ende der Liste her, die Pad/Smd stehen am Schluß
+      if (wt[e] == TypeP || wt[e] == TypeS) { // in Type PAD und SMD suchen
+        if (x == wx1[e] && y == wy1[e]) {
+          if (ws[e] >= ws[n] && we[e] <= we[n]) { // Trifft der Layer des Via auf den PAD
+            wused[e] = Ucnt++; // zum debuggen
+            LastI = e;
+            return e;
+          }
+        }
+      }
+    }
+
+    for (int n = 0; n <Ncoord; n++) {
+      if (n != i && wt[n] == TypeW && wl[n] != l) { // nur in Type WIRE suchen und bei anderem Layer
+        if (x == wx1[n] && y == wy1[n]) {
+          K2 = 1; // gibt die gefundene Seite zurück
+          wused[n] = Ucnt++;
+          return n;
+        }
+        if (x == wx2[n]&& y == wy2[n]) {
+          K2 = 2;  // gibt die gefundene Seite zurück
+          wused[n] = Ucnt++;
+          return n;
+        }
+      }
+    }
+  }
+  ErrorCoord = i;
+  return -1;
+}
+
+// *********************************************************
+//  Option Gruppe markiert. Suche nach Pad am Ende
+int getendgrouppad(int start, int sk, string sigName) { // die Startseite k wird übergeben
+  int cnt = 0;    // zum debuggen
+  Ucnt = 001;     // zum debuggen
+  string ncoords; // zum debuggen
+  int x, y;
+  int i = start;
+  K2 = sk;
+  int e;
+  do {
+    LastI = i;
+    LastK2 = K2;
+    if (K2 == 2) {  // suche nach der anderen Seite
+      LastX = wx1[i];
+      LastY = wy1[i];
+      x = wx1[i];
+      y = wy1[i];
+    }
+    else {
+      LastX = wx2[i];
+      LastY = wy2[i];
+      x = wx2[i];
+      y = wy2[i];
+    }
+    LengthPadPad += wlen[i];
+
+    // gleich mal prüfen ob das Ende schon erreicht ist.
+    int e;
+    for (e = Ncoord-1; e; e--) {  // suche vom Ende der Liste her, die Pad/Smd stehen am Schluß
+      if (wt[e] == TypeP || wt[e] == TypeS) { // in Type PAD und SMD suchen
+        if (ws[e] >= ws[i] && we[e] <= we[i]) { // Trifft der Layer des Wire auf den Layer des PAD
+          if (x == wx1[e] && y == wy1[e]) {
+            wused[e] = Ucnt++; // zum debuggen
+            LastI = e;
+            return e;
+          }
+        }
+      }
+    }
+
+    // nichts gefunden? Dann suche nach Via für einen Layer wechsel
+    int via = -1;
+    int n;
+    for (n = 0; n<Ncoord; n++) {
+      if (n != i && wt[n] == TypeV) { // nur in Type VIA suchen
+        if (ws[n] >= ws[i] && we[n] <= we[i]) { // Trifft der Layer des Wire auf den Layer des PAD
+          if (x == wx1[n] && y == wy1[n]) {
+            via = n;
+            wused[n] = Ucnt*-1; // zum debuggen
+            break;
+          }
+        }
+      }
+    }
+
+    if (via >= 0) {  // ist eine Via an diesem "Ende", dann suche in einem anderen Layer weiter.
+      // gleich mal prüfen ob die Via einen Pad/Smd erreicht?
+      for (e = Ncoord-1; e; e--) {  // suche vom Ende der Liste her, die Pad/Smd stehen am Schluß
+        if (wt[e] == TypeP || wt[e] == TypeS) { // in Type PAD und SMD suchen
+          if (x == wx1[e] && y == wy1[e]) {
+            if (ws[e] >= ws[n] && we[e] <= we[n]) { // Trifft der Layer des Via auf den PAD
+              wused[e] = Ucnt++; // zum debuggen
+              LastI = e;
+              return e;
+            }
+          }
+        }
+      }
+    }
+    //
+    for (e = Ncoord-1; e; e--) {  // suche vom Ende des Array, die Pad/Smd stehen am Schluß
+      if (x == wx1[e] && y == wy1[e] && (wt[e] == TypeP || wt[e] == TypeS)) { // ist der Type ein SMD oder PAD
+        if (ws[e] <= ws[i] && we[e] >= we[i]) { // Trifft der Layer des Wire auf den PAD
+          LastX = x;
+          LastY = y;
+          LastI = e;
+          return e; // 2013-01-15
+        }
+      }
+    }
+
+    i = getnextcoordpad(i, K2);  // K2 ist Global! Weil eine Funktion nur einen Return-Wert zurückgeben kann.
+
+    cnt++;
+  } while(i >= 0);
+  LastI = i;
+  return i; // 2013-01-15 Ende nicht gefunden
+}
+
+
+//  Option Gruppe markiert. Suche nach dem ersten Pad/Smd in der Kette
+real searchgrouppad(int n, int k, string signame) {
+  LengthPadPad = 0.0; // die Einzig wahre Stelle zum reseten der Gesamtlänge des Signal in der Group-Option
+  int foundend = -1;
+  foundend = getendgrouppad(n, k, signame);  // die Startseite k wird übergeben
+
+  if (foundend >= 0) {
+    FoundElement = wpart[foundend];
+    FoundPad = wpad[foundend];
+    return LengthPadPad;
+  }
+  return LengthPadPad * -1.0;  // erzeuge im Fehlerfall ein negatives Vorzeichen
+}
+
+
+//  Option Gruppe markiert. Messe die Wire des markierten Signal
+real measuringgroup(UL_WIRE W, UL_SIGNAL S, int wx, int wy) { // samme alle koordinaten und suche nach wx1 wy1
+  Ncoord = 0;
+  S.wires(W) { // zuerst alle Wire sammeln.
+    add(W.x1, W.y1, W.x2, W.y2, W.layer, W.layer, W.layer, TypeW, addlength(W));
+  }
+  S.vias(V) { // dann die Vias sammeln
+    add(V.x, V.y, V.x, V.y, 18, V.start, V.end, TypeV, 0);  // hier evtl. die Bohrtiefe aus den DRC-Daten berechnen 2013-01-02
+  }
+  S.contactrefs(C) {
+    if (C.contact) { // jetzt noch die CONTACTs sammeln
+      wpart[Ncoord] = C.element.name;
+      wpad[Ncoord] = C.contact.name;
+      if (C.contact.smd) {
+        add(C.contact.x, C.contact.y, C.contact.x, C.contact.y, C.contact.smd.layer, C.contact.smd.layer, C.contact.smd.layer, TypeS, 0);
+      }
+      else {
+        add(C.contact.pad.x, C.contact.pad.y, C.contact.pad.x, C.contact.pad.y, 17, 1, 16, TypeP, 0);
+      }
+    }
+    else {
+      if (language() == "de") dlgMessageBox("Signal '"+ S.name + "' ohne Contactrefs gefunden!\nPrüfen Sie die Konsistenz und evtl. korrupte Signale!", "OK");
+      else dlgMessageBox("Found signal '"+ S.name + "' without contactrefs!\nCheck consistency and corrupted signals!", "OK");
+      exit(-1);
+    }
+  }
+  // Das Problem beim Selektieren ist, man kann mit Group keinen Wire in der Mitte selektieren,
+  // sondern nur an den Enden.
+  real len = 0.0;
+  int cntw = 0;
+  int n;
+  /** Reset all global strings **/
+  StartPad = "";
+  FoundPad = "";
+  StartElement = "";
+  FoundElement = "";
+  EndPad = "";
+  FoundPad = "";
+  EndElement = "";
+  FoundElement = "";
+
+  string h;
+  for (n = 0; n < Ncoord; n++) {
+    if (wx == wx1[n] && wy == wy1[n] && TypeW == wt[n]) {
+      len += searchgrouppad(n, 1, S.name);
+      StartPad = FoundPad;
+      StartElement = FoundElement;
+      Start1X = LastX;
+      Start1Y = LastY;
+      len += searchgrouppad(n, 2, S.name) - wlen[n]; // suche auch nach der anderen Seite
+      EndPad = FoundPad;
+      EndElement = FoundElement;
+      End2X = LastX;
+      End2Y = LastY;
+      cntw++;
+      n = Ncoord; // 2013-02-27 den Wire nur einmal benutzen
+    }
+    else {
+      if (wx == wx2[n] && wy == wy2[n] && TypeW == wt[n]) {
+        len += searchgrouppad(n, 2, S.name);
+        StartPad = FoundPad;
+        StartElement = FoundElement;
+        Start1X = LastX;
+        Start1Y = LastY;
+        len += searchgrouppad(n, 1, S.name) - wlen[n]; // suche auch nach der anderen Seite
+        EndPad = FoundPad;
+        EndElement = FoundElement;
+        End2X = LastX;
+        End2Y = LastY;
+        cntw++;
+        n = Ncoord; // 2013-02-27 den Wire nur einmal benutzen
+      }
+    }
+  }
+  if (cntw > 2) {
+    string h;
+    if (language() == "de") sprintf(h, "!Signal %s\nStartkoordinate enthält Abzweigung!", S.name);
+    else sprintf(h, "!Signal %s\nBranching on starting coordinate!", S.name);
+    if (dlgMessageBox(h, "OK", "ESC") != 0) {
+      string s;
+      sprintf(s, "WIN (%.6fmm %.6fmm);", u2mm(wx), u2mm(wy) );
+      exit(s);
+    }
+  }
+  return len;
+}
+
+// Option Gruppe markiert, suche nach Wire im Signal die in der Gruppe enthalten sind.
+int usegroup(void) {
+  int l = 0;
+  board(B) {
+    B.signals(S) {
+      if (ingroup(S)) {  // Signal ist in der Group
+        int nx = 0;
+        S.wires(W) {
+          if (ingroup(W)) {
+            real len = measuringgroup(W, S, W.x1, W.y1); // sammel alle koordinaten und suche nach wx1 wy1
+            LengthDif[l] = len;
+            if (StartElement == EndElement && StartPad == EndPad) {
+                sprintf(wirelen[l], "%s\t%s\t?%s\t?%s\t(%.9fmm %.9fmm)\t?%s\t?%s\t(%.9fmm %.9fmm)",
+                                      "*start==end*", S.name,
+                                      StartElement, StartPad,
+                                      u2mm(Start1X), u2mm(Start1Y),
+                                      EndElement, EndPad,
+                                      u2mm(End2X), u2mm(End2Y)
+                       );
+            }
+            else if ((!StartElement && !StartPad) && EndElement && EndPad) {
+                sprintf(wirelen[l], "%s\t%s\t%s\t%s\t(%.9fmm %.9fmm)\t%s\t%s\t(%.9fmm %.9fmm)",
+                                      "*not routed*", S.name,
+                                      "???", "???",
+                                      u2mm(Start1X), u2mm(Start1Y),
+                                      EndElement, EndPad,
+                                      u2mm(End2X), u2mm(End2Y)
+                       );
+            }
+            else if (StartElement && StartPad && (!EndElement && !EndPad)) {
+                sprintf(wirelen[l], "%s\t%s\t%s\t%s\t(%.9fmm %.9fmm)\t%s\t%s\t(%.9fmm %.9fmm)",
+                                      "*not routed*", S.name,
+                                      StartElement, StartPad,
+                                      u2mm(Start1X), u2mm(Start1Y),
+                                      "???", "???",
+                                      u2mm(End2X), u2mm(End2Y)
+                       );
+            }
+            else {
+              if (len < 0.0) {
+                LengthDif[l] = 0.0; // 2013-02-27
+                sprintf(wirelen[l], "*%s\t%s\t%s\t%s\t(%.9fmm %.9fmm)\t%s\t%s\t(%.9fmm %.9fmm)",
+                                      "not found", S.name,
+                                      StartElement, StartPad,
+                                      u2mm(Start1X), u2mm(Start1Y),
+                                      EndElement, EndPad,
+                                      u2mm(End2X), u2mm(End2Y)
+                       );
+              }
+              else {
+                sprintf(wirelen[l], "%.9f\t%s\t%s\t%s\t(%.9fmm %.9fmm)\t%s\t%s\t(%.9fmm %.9fmm)",
+                                      len, S.name,
+                                      StartElement, StartPad,
+                                      u2mm(Start1X), u2mm(Start1Y),
+                                      EndElement, EndPad,
+                                      u2mm(End2X), u2mm(End2Y)
+                       );
+              }
+            }
+            l++;
+            break; // W-Schleife abbrechen, nur einen Wire (Koordinate) aus der Gruppe benutzen
+          }
+        }
+      }
+    }
+    if (!l) {
+      if (language() == "de") dlgMessageBox("!Keine Gruppe definiert. ", "OK");
+      else  dlgMessageBox("!No group defined. ", "OK");
+      exit(-4);
+    }
+  }
+  return l;
+}
+
+// ### main ###
+if (board) {
+  board(B) {
+    int l = 0;
+    if (argc == 2 && argv[1] == "/G") { // benutze Option Group
+      Option = "~group";
+      l = usegroup();
+    } // Ende von benutze definierte Group
+
+    else { // benutze Option [Element Pad Element Pad]
+      Option = "~pad-pad";
+      int cnt = argc-1;
+      if (argc > 1) {
+        string h;
+        if (cnt < 4) {
+          if (language() == "de") sprintf(h, "!Zu wenig Parameter: %d", cnt);
+          else  sprintf(h, "!Insufficient number of parameters: %d", cnt);
+          dlgMessageBox(h, "OK");
+          exit(-3);
+        }
+        else {
+          if (cnt & 3 != 2) {
+            if (language() == "de") sprintf(h, "!Ungenügende Anzahl von Parametern: %d", cnt);
+            else sprintf(h, "!Insufficient number of parameters: %d", cnt);
+            dlgMessageBox(h, "OK");
+            exit(-2);
+          }
+        }
+      }
+      else {
+        dlgDialog("HELP: Lenght PAD PAD") {
+          dlgLabel(usage);
+          dlgHBoxLayout {
+            dlgStretch(1);
+            dlgPushButton("+OK") dlgAccept();
+            dlgStretch(1);
+          }
+        };
+        exit(0);
+      }
+      l = 0;
+      string sig;
+      for (int n = 1; n <= cnt; n+=4) {
+        ElementName1 = strupr(argv[n]);
+        PadName1 = strupr(argv[n+1]);
+        ElementName2 = strupr(argv[n+2]);
+        padname2 = strupr(argv[n+3]);
+
+        sig = get_check_signal(ElementName1, PadName1, ElementName2, padname2, n);
+        string h;
+        sprintf(h, "%s %s (%.9f_%.9f) %s %s (%.9f_%.9f)\n",
+                    ElementName1, PadName1, u2mm(StartPadX), u2mm(StartPadY),
+                    ElementName2, padname2, u2mm(EndPadX), u2mm(EndPadY)
+               );
+        WireCoordText += h;
+
+        B.signals(S) {
+          status(" check "+sig);
+          if (S.name == sig) {  // Der Signalname der Pads ist gefunden.
+            Ncoord = 0;
+            S.wires(W) {        // zuerst alle Wire sammeln. 2013-01-09
+                add(W.x1, W.y1, W.x2, W.y2, W.layer, W.layer, W.layer, TypeW, addlength(W));
+            }
+            S.vias(V) {         // dann die Vias sammeln
+              add(V.x, V.y, V.x, V.y, 18, V.start, V.end, TypeV, 0);  // hier evtl. die Bohrtiefe aus den DRC-Daten berechnen 2013-01-02
+            }
+            S.contactrefs(C) {
+              if (C.contact) {  // jetzt noch den CONTACT ermitteln, das sind die letzen beiden. 2013-01-09
+                if (C.contact.smd) {
+                  add(C.contact.x, C.contact.y, C.contact.x, C.contact.y, C.contact.smd.layer, C.contact.smd.layer, C.contact.smd.layer, TypeS, 0);
+                }
+                else {
+                  add(C.contact.pad.x, C.contact.pad.y, C.contact.pad.x, C.contact.pad.y, 17, 1, 16, TypeP, 0);
+                }
+              }
+            }
+            real len = checkcoordpadpad(S.name); // Suche die Endkoordinaten und ermittle die Länge
+            LengthDif[l] = len;
+            if (len < 0.0) {
+              sprintf(wirelen[l++], "%s\t%s\t%s\t%s\t(%.9fmm %.9fmm)\t%s\t%s\t(%.9fmm %.9fmm)",
+                                   "*not routet*", // markiere nicht geroutete Verbindung
+                                   S.name,
+                                   ElementName1, PadName1, u2mm(StartPadX), u2mm(StartPadY),
+                                   ElementName2, padname2, u2mm(wx2[ErrorCoord]), u2mm(wy2[ErrorCoord])
+                     );
+            }
+            else {
+              sprintf(wirelen[l++], "%.9f\t%s\t%s\t%s\t(%.9fmm %.9fmm)\t%s\t%s\t(%.9fmm %.9fmm)",
+                                   len, S.name,
+                                   ElementName1, PadName1, u2mm(StartPadX), u2mm(StartPadY),
+                                   ElementName2, padname2, u2mm(EndPadX), u2mm(EndPadY)
+                     );
+            }
+          }
+        }
+      }
+    }  // Ende von benutzen Element Pad Element Pad
+
+    int index[];
+    sort(l, index, LengthDif);
+    real null_length = LengthDif[index[0]];
+    string h;
+    for (int i = 0; i < l; ++i) {
+      sprintf(h, "%.6f\t%s\t",
+                  LengthDif[index[i]] - null_length,
+                  percent(LengthDif[index[i]], null_length)
+             );
+      wirelen[index[i]] = h + wirelen[index[i]];
+    }
+
+    int sel = -1;
+    int srt = 0 ;
+    dlgDialog("Lenght PAD PAD" + Option) {
+      dlgLabel("Option:" + Option);
+      dlgHBoxLayout {
+        dlgVBoxLayout dlgSpacing(200);
+        dlgListView(Header, wirelen, sel, srt) dlgAccept();
+      }
+      if (language() == "de") dlgLabel("Um Details eines Eintrag anzuzeigen, selektieren (doppelklicken) Sie eine Zeile.");
+      else  dlgLabel("To show details of a list entry, select (double click) a line.");
+      dlgHBoxLayout {
+        dlgPushButton("+OK") dlgAccept();
+        dlgPushButton("&Save") { dlgAccept(); save(B.name, Option); }
+        dlgStretch(1);
+        dlgLabel(Version);
+      }
+    };
+    if (sel >= 0)  checkshow(wirelen[sel]);
+    exit(0);
+  }
+}
+
+else {
+  if (language() == "de") dlgMessageBox("Starten Sie das ULP in einem Board", "OK");
+  else dlgMessageBox("Start this ULP in a Board", "OK");
+}

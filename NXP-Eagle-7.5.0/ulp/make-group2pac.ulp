@@ -1,0 +1,327 @@
+#usage "en:<b>Generate a package from a GROUP of elements and their pads you selected in the layout.</b><p>"
+       "Layer 20 Dimension is always considered as selected. "
+       "HOLEs and TEXTs can be selected (GROUP) as well.</b><p>"
+       "<author>Author: alf@cadsoft.de</author>"
+       ,
+       "de:<b>Erzeuge ein Package aus den PADs einer selektierten GROUP im Board.<p>"
+       "Der Layer 20 Dimension wird immer als selektiert betrachtet<br>"
+       "HOLEs und TEXTe müssen im Board entsprechen selektiert werden (GROUP)<br>"
+       "<author>Author: alf@cadsoft.de</author>"
+
+string Verison = "1.0.1"; // 2011-05-25 alf@cadsoft.de
+                          // 2011-05-27 board loop correted
+
+int    Group = 0;
+string Lbrname = "";
+
+string h, Cmd;
+int    Trash_layer = 250; // put anything here which is in wrong layers
+
+
+/**** functions ****/
+void PrintValidLayer(int LNr) {
+  // put anything not allowed in trash_layer
+
+  if (LNr>90 && LNr<100) {
+     LNr = Trash_layer;
+     sprintf(h, "Layer trash %d;\n", Trash_layer);
+     Cmd += h;
+  }
+  sprintf(h, "Layer %d;\n", LNr);
+  Cmd += h;
+  return;
+}
+
+
+
+string addApostroph(string s) {
+  int len = strlen(s);
+  int pos = strrchr(s, '\'');
+  string l;
+  if (pos >= 0) {
+    l = strsub(s, 0, pos) + "'" + strsub(s, pos, len-pos);
+    s = l;
+  }
+  return s;
+}
+
+/* main */
+if (board) {
+  board(B) {
+    B.elements(E) {
+      if (ingroup(E)) {
+        Group = 1;
+        if (!Lbrname) { // make the package on the first element library
+          Lbrname = E.package.library;
+          sprintf(h, "OPEN '%s.lbr';\nEDIT %s_%s.PAC;\nGRID MM;\nSET WIRE_BEND 2;\n", Lbrname, E.name, filename(filesetext(B.name, "")) );
+          Cmd += h;
+        }
+        E.package.contacts(C) {
+          string ShapeString;
+          string ShapeFlag;
+          if (C.pad) {
+            switch(C.pad.shape[17]) {
+              case PAD_SHAPE_SQUARE    : ShapeString = "Square";  break;
+              case PAD_SHAPE_ROUND     : ShapeString = "Round";   break;
+              case PAD_SHAPE_OCTAGON   : ShapeString = "Octagon"; break;
+              case PAD_SHAPE_LONG      : ShapeString = "Long";    break;
+              case PAD_SHAPE_OFFSET    : ShapeString = "Offset";  break;
+            }
+            if (!(C.pad.flags & PAD_FLAG_STOP) )     ShapeFlag  = "NOSTOP ";
+            if (!(C.pad.flags & PAD_FLAG_THERMALS) ) ShapeFlag += "NOTHERMALS ";
+            if ((C.pad.flags & PAD_FLAG_FIRST) )     ShapeFlag += "FIRST ";
+            //
+            // PAD [diameter] [shape] [orientation] [flags] ['name'] *..
+            //
+             sprintf(h, "Change Drill %f;\n", u2mm(C.pad.drill));
+             Cmd += h;
+             sprintf(h, "Pad %f %s R%.1f %s '%s' (%f %f);\n",
+                       u2mm(C.pad.diameter[17]),
+                       ShapeString,
+                       C.pad.angle,
+                       ShapeFlag,
+                       addApostroph(C.pad.name+"@"+E.name),
+                       u2mm(C.pad.x), u2mm(C.pad.y));
+             Cmd += h;
+          }
+          else if (C.smd) {
+            if (!(C.smd.flags & PAD_FLAG_STOP) )     ShapeFlag  = "NOSTOP ";
+            if (!(C.smd.flags & SMD_FLAG_THERMALS) ) ShapeFlag += "NOTHERMALS ";
+            if (!(C.smd.flags & SMD_FLAG_CREAM) )    ShapeFlag += "NOCREAM ";
+
+            sprintf(h, "Layer %d;\n", C.smd.layer);
+            Cmd += h;
+            sprintf(h, "CHANGE Roundness %d;\n", C.smd.roundness);
+            Cmd += h;
+            //
+            // SMD [x_width y_width] [-roundness] [orientation] [flags] ['name'] *..
+            //
+            sprintf(h, "SMD %f %f -%d R%.1f %s '%s' (%f %f);\n",
+                     u2mm(C.smd.dx), u2mm(C.smd.dy),
+                     C.smd.roundness,
+                     C.smd.angle,
+                     ShapeFlag,
+                     addApostroph(C.smd.name),
+                     u2mm(C.smd.x), u2mm(C.smd.y)
+                   );
+            Cmd += h;
+          }
+        }
+        E.package.holes(H) {
+          sprintf(h, "Change Drill %f;\n", u2mm(H.drill));
+          Cmd += h;
+          sprintf(h, "Hole (%f %f);\n", u2mm(H.x), u2mm(H.y));
+          Cmd += h;
+        }
+        E.package.wires(W) {
+          sprintf(h, "Layer %d;\n", W.layer);
+          Cmd += h;
+          if (W.arc) {    // 2008-09-11
+            sprintf(h, "WIRE %f (%f %f) %+f (%.f %.f);\n",
+                      u2mm(W.width),
+                      u2mm(W.x1), u2mm(W.y1),
+                      W.curve,
+                      u2mm(W.x2), u2mm(W.y2));
+            Cmd += h;
+          }
+          else {
+            sprintf(h, "Wire %f (%f %f) (%f %f);\n",
+                  u2mm(W.width), u2mm(W.x1), u2mm(W.y1), u2mm(W.x2), u2mm(W.y2));
+            Cmd += h;
+          }
+        }
+
+        E.package.circles(C) {
+          sprintf(h, "Layer %d;\n", C.layer);
+          Cmd += h;
+          sprintf(h, "Circle %f (%f %f) (%f %f);\n",
+                     u2mm(C.width),
+                     u2mm(C.x), u2mm(C.y),
+                     u2mm(C.x + C.radius), u2mm(C.y)
+                 );
+          Cmd += h;
+        }
+
+        E.package.rectangles(R) {
+          sprintf(h, "Rect R%.1f (%f %f) (%f %f);\n",
+                     R.angle,
+                     u2mm(R.x1), u2mm(R.y1),
+                     u2mm(R.x2), u2mm(R.y2)
+                 );
+           Cmd += h;
+        }
+
+        E.package.polygons(P) {
+          sprintf(h, "Layer %d;\n", P.layer);
+          Cmd += h;
+          sprintf(h, "Change Isolate %f;\n", u2mm(P.isolate));
+          Cmd += h;
+          sprintf(h, "Change Spacing %f;\n", u2mm(P.spacing));
+          Cmd += h;
+          if (P.orphans) {
+            sprintf(h, "Change Orphans On;\n");
+            Cmd += h;
+          }
+          else {
+            sprintf(h, "Change Orphans Off;\n");
+            Cmd += h;
+          }
+          if (P.thermals) {
+            sprintf(h, "Change Thermals On;\n");
+            Cmd += h;
+          }
+          else {
+            sprintf(h, "Change Thermals Off;\n");
+            Cmd += h;
+          }
+          if (P.pour == POLYGON_POUR_SOLID) {
+            sprintf(h, "Change Pour Solid;\n");
+            Cmd += h;
+          }
+          else {
+            sprintf(h, "Change Pour Hatch;\n");
+            Cmd += h;
+          }
+            sprintf(h, "Polygon %f ", u2mm(P.width));
+            Cmd += h;
+          P.wires(W) {
+            sprintf(h, "(%f %f) ", u2mm(W.x1), u2mm(W.y1));
+            Cmd += h; /*start coord.*/
+            break;
+          }
+          P.wires(W) {
+             sprintf(h, " %+f (%f %f) ", W.curve, u2mm(W.x2), u2mm(W.y2));
+             Cmd += h;
+          }
+          sprintf(h, ";\n"); Cmd += h;
+        }
+
+        E.package.texts(T) {
+          sprintf(h, "Layer %d;\n", T.layer);
+          Cmd += h;
+          switch(T.font) {
+            case FONT_VECTOR       : sprintf(h, "CHANGE FONT VECTOR;\n");
+                                     Cmd += h;
+                                     break;
+            case FONT_PROPORTIONAL : sprintf(h, "CHANGE FONT PROPORTIONAL;\n");
+                                     Cmd += h;
+                                     break;
+            case FONT_FIXED        : sprintf(h, "CHANGE FONT FIXED;\n");
+                                     Cmd += h;
+                                     break;
+          }
+          string Spin = "";
+          string Mirror = "";
+          if (T.spin) Spin = "S";
+          if (T.mirror) Mirror = "M";
+
+          sprintf(h, "Change Size %f;\n", u2mm(T.size));
+          Cmd += h;
+          sprintf(h, "Change Ratio %d;\n", T.ratio);
+          Cmd += h;
+          sprintf(h, "Text %s%sR%.1f '%s' (%f %f);\n",
+                   Spin, Mirror, T.angle, T.value, u2mm(T.x), u2mm(T.y)
+                 );
+          Cmd += h;
+        }
+      }
+    }
+    // 2011-05-27 Board contour
+    B.wires(W) {
+      if (W.layer == 20) {
+        sprintf(h, "Layer %d;\n", W.layer);
+        Cmd += h;
+        if (W.arc) {    // 2008-09-11
+          sprintf(h, "WIRE %f (%f %f) %+f (%.f %.f);\n",
+                    u2mm(W.width),
+                    u2mm(W.x1), u2mm(W.y1),
+                    W.curve,
+                    u2mm(W.x2), u2mm(W.y2));
+          Cmd += h;
+        }
+        else {
+          sprintf(h, "Wire %f (%f %f) (%f %f);\n",
+                u2mm(W.width), u2mm(W.x1), u2mm(W.y1), u2mm(W.x2), u2mm(W.y2));
+          Cmd += h;
+        }
+      }
+    }
+
+    B.circles(C) {
+      if (C.layer == 20) {
+        sprintf(h, "Layer %d;\n", C.layer);
+        Cmd += h;
+        sprintf(h, "Circle %f (%f %f) (%f %f);\n",
+                   u2mm(C.width),
+                   u2mm(C.x), u2mm(C.y),
+                   u2mm(C.x + C.radius), u2mm(C.y)
+               );
+        Cmd += h;
+      }
+    }
+    B.texts(T) {
+      if (ingroup(T)) {
+        sprintf(h, "Layer %d;\n", T.layer);
+        Cmd += h;
+        switch(T.font) {
+          case FONT_VECTOR       : sprintf(h, "CHANGE FONT VECTOR;\n");
+                                   Cmd += h;
+                                   break;
+          case FONT_PROPORTIONAL : sprintf(h, "CHANGE FONT PROPORTIONAL;\n");
+                                   Cmd += h;
+                                   break;
+          case FONT_FIXED        : sprintf(h, "CHANGE FONT FIXED;\n");
+                                   Cmd += h;
+                                   break;
+        }
+        string Spin = "";
+        string Mirror = "";
+        if (T.spin) Spin = "S";
+        if (T.mirror) Mirror = "M";
+
+        sprintf(h, "Change Size %f;\n", u2mm(T.size));
+        Cmd += h;
+        sprintf(h, "Change Ratio %d;\n", T.ratio);
+        Cmd += h;
+        sprintf(h, "Text %s%sR%.1f '%s' (%f %f);\n",
+                 Spin, Mirror, T.angle, T.value, u2mm(T.x), u2mm(T.y)
+               );
+        Cmd += h;
+      }
+    }
+    B.holes(H) {
+      if (ingroup(H)) {
+        sprintf(h, "Change Drill %f;\n", u2mm(H.drill));
+        Cmd += h;
+        sprintf(h, "Hole (%f %f);\n", u2mm(H.x), u2mm(H.y));
+        Cmd += h;
+      }
+    }
+
+    sprintf(h, "WIN FIT;\n");
+    Cmd += h;
+    sprintf(h, "DESCRIPTION 'Package generated by <b>%s</b><p>\nfrom: %s<br>\nat: %s';\n",
+              filename(argv[0]), B.name, t2string(time())
+           );
+    Cmd += h;
+  }
+
+  if (!Group) {
+    dlgMessageBox("!First define a GROUP. Read HELP GROUP (enter)", "OK");
+  }
+  else {
+    dlgDialog("Return script") {
+      dlgHBoxLayout dlgSpacing(500);
+      dlgHBoxLayout {
+        dlgVBoxLayout dlgSpacing(400);
+        dlgTextEdit(Cmd);
+      }
+      dlgHBoxLayout {
+        dlgPushButton("Run Script") { dlgAccept(); exit(Cmd); }
+        dlgPushButton("ESC") { dlgReject(); exit(-1); }
+      }
+    };
+  }
+}
+
+else dlgMessageBox("!Start this ULP in a board.", "OK");

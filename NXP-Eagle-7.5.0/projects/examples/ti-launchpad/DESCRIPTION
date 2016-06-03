@@ -1,0 +1,12 @@
+<b>MSP430F5529 LaunchPad Development Kit</b><p>
+The MSP430F5529 LaunchPad (MSP-EXP430F5529LP) features on-board emulation,
+which means you can program and debug your projects without the need for additional tools.
+The MSP430F5529 device features integrated Full-speed USB 2.0 (HID/MSC/CDC) for creating
+PC-connected applications, 128KB Flash & 8KB RAM of onboard memory, 16ch 12-bit ADC, 4 16-bit
+Timers, and up to 4 serial communication ports (I2C, SPI, UART).
+<p>
+The LaunchPad supports 20-pin and 40-pin BoosterPack plug-in modules that add additional
+functionality such as connectivity, sensing, and more.  Simply connect the LaunchPad to a
+host PC via USB cable and program the microcontroller with various free software options.
+<p>
+<b>See <a href="http://www.ti.com/launchpad">www.ti.com/launchpad</a></b>

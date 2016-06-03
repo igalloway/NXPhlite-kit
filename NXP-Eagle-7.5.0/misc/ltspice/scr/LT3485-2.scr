@@ -1,0 +1,17 @@
+ Edit 'LT3485-2.dev' ;
+ Prefix 'IC' ;
+ Description 'Photoflash Capacitor Chargers with Output Voltage Monitor and Integrated IGBT Drive' ;
+ Value off ;
+ Add LT3485-2 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.IBGTOUT' '6' ;
+ Connect 'G$1.!DONE' '9' ;
+ Connect 'G$1.VBAT' '2' ;
+ Connect 'G$1.IBGTPWR' '8' ;
+ Connect 'G$1.VIN' '3' ;
+ Connect ALL 'G$1.SW' '4 5' ;
+ Connect 'G$1.GND' '11' ;
+ Connect 'G$1.VMONT' '10' ;
+ Connect 'G$1.CHARGE' '1' ;
+ Connect 'G$1.IBGTIN' '7' ;

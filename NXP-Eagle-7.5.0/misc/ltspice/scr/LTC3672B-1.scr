@@ -1,0 +1,15 @@
+ Edit 'LTC3672B-1.dev' ;
+ Prefix 'IC' ;
+ Description 'Monolithic Fixed-Output 400mA Buck Regulator with Dual 150mA LDOs in 2mm x 2mm DFN' ;
+ Value off ;
+ Add LTC3672B-1 'G$1' next 0 (0 0) ;
+ Package 'DFN8(DC)' 'DC' ;
+ Technology '' ;
+ Connect 'G$1.VIN1' '5' ;
+ Connect 'G$1.ENALL' '3' ;
+ Connect 'G$1.VIN' '8' ;
+ Connect 'G$1.SW' '1' ;
+ Connect ALL 'G$1.GND' '2 9' ;
+ Connect 'G$1.BUCKOUT' '4' ;
+ Connect 'G$1.LDO2' '7' ;
+ Connect 'G$1.LDO1' '6' ;

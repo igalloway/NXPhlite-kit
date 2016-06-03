@@ -1,0 +1,345 @@
+#usage "de:<html><body bgcolor=\"grey\"><b>Das Board transparent ausdrucken.</b><p>"
+       "<b><font color=\"lightblue\">Nur die Option IMAGE kann wirklich transparent ausdrucken.</font></b><p>"
+       "RUN print-transparent-brd [Options]<br>"
+       "<font color=\"blue\"><nobr>Es werden für die Layer 1 16 17 18 20 21 22 25 26 27 28 51 und 52 die "
+       "entsprechenden Farb-Codes gesetzt,</nobr><br>"
+       "und falls mit DISPLAY aktiviert, ausgedruckt. Alle anderen Layer werden abgeschaltet.</font><br>"
+       "<font color=\"blue\">Die <font color=\"white\">Hintergrundfarbe</font> wird auf "
+       "<font color=\"white\">weiss</font> umgestellt, die Farben der <font color=\"darkgrey\">Kupferlayer</font> "
+       "werden entsprechend <font color=\"darkgrey\">abgeschwächt</font>, die Farben des <font color=\"black\">Place, Docu, Name, und "
+       "Value-Layer</font> werden auf <font color=\"black\">schwarz</font> eingestellt, so dass die Leiterbahnen "
+       "nur <font color=\"darkgrey\">schwach</font> unter dem <font color=\"black\">kräftigen Bestückungsdruck</font> "
+       "zu erkennen sind.</font><p>"
+       "<font color=\"lightblue\">Alle PRINT-Option werden ausgeführt. Lesen Sie bitte dazu unter HELP PRINT.</font><p>"
+       "<font color=\"lightgreen\">RUN print-transparent-brd IMAGE @ DPI [Options]<br> <br>"
+       "Die Option IMAGE erzeugt ein Bitmap-Bild des Fensters anstatt eines Ausdrucks.<br>"
+       "Die Option @ nach IMAGE wird durch den Dateinamen inkl. Pfad und die Dateierweiterung .png ersetzt.<br>"
+       "Alternativ kann/muß man den Pfad/Dateinamen, in Hochkommas (Apostroph) eingeschlossen angeben, wenn "
+       "im Pfad oder Dateinamen ein Leerzeichen (Space) vorkommt.<br>"
+       "DPI ist die Auflösung (dots per inch), z.B. 360<br>"
+       "RUN print-transparent-brd IMAGE 'Laufwerk:/Pfad/Dateiname' 360</font><p>"
+       "<author>Author: alf@cadsoft.de</author></body></html>"
+       ,
+       "en:<html><body bgcolor=\"grey\"><b>Print Board in a transparent style.</font></b><p>"
+       "<b><font color=\"lightblue\">Only the option IMAGE print real transparent.</b><p>"
+       "RUN print-transparent-brd [options]<br>"
+       "<font color=\"blue\"><nobr>The ULP changes the color settings for layers 1 16 17 18 20 21 22 25 26 27 28 51 and 52 </nobr><br>"
+       "and prints them, if activated. All the other layers will be switched off.</font><br>"
+       "<font color=\"blue\">The <font color=\"white\">background color</font> will be set to "
+       "<font color=\"white\">white</font> , the colors of the <font color=\"darkgrey\">copper layers</font> "
+       "will be changed into a <font color=\"darkgrey\">less bright</font> mode. The colors of layers <font color=\"black\">Place, Docu, Name, and "
+       "value</font> will be set to <font color=\"black\">black</font> , so that the traces "
+       "are <font color=\"darkgrey\">faintly visible</font> under the <font color=\"black\">strong silk screen layers.</font><p> "
+       "<font color=\"lightblue\">All given PRINT options will be executed. Please read HELP PRINT for details.</font><p>"
+       "<font color=\"lightgreen\">RUN print-transparent-brd IMAGE @ DPI<br> <br>"
+       "The IMAGE option generates a bitmap of the editor window instead of the print-out.<br>"
+       "The parameter @ following the IMAGE option will be replaced by path + file name + extension .png. <br>"
+       "As an alterantive you can add your own path/file name which has to be included into single quotes.<br>"
+       "DPI stands for the resolution, for example, 360 <br>"
+       "RUN print-transparent-brd IMAGE 'drive:/path/file name' 360</font><p>"
+       "<author>Author: alf@cadsoft.de</author></body></html>"
+
+#require 5.1200
+string Version = "1.0.2"; // 2010-11-11 alf@cadsoft.de
+                          // 2010-11-30 Alle Print-Optionen durchreichen.
+                          //            Layer die nicht gedruckt werden sollen, werden mit -nummer ab,
+                          //            und nach dem drucken wieder eingeschaltet.
+                          //            Die Option IMAGE kann die Ansicht als Bild abspeichern.
+                          // 2011-09-01 Bestückungsvarianten ausdruck. Der Layer 101 bis 106 bleiben erhalten
+                          //            wie sie sind.
+                          // 2013-07-03 bei Palette schwarz und weiss wird die Frabe 0 nicht behandelt
+                          //            Wenn Pad bzw. Via-Layer keine eigene Farbe besitzt, wird die Farbe nicht verändert.
+
+
+
+
+string Ptype[] = { "BLACK", "WHITE", "COLORED" };
+enum    { BLACK, WHITE, COLORED };  // Paletten Definition
+
+//int    Fa[], Fr[], Fg[], Fb[]; // Farbcodes der Palette, Alpha, Rot, Grün, Blau
+int    Actual_Palette = -1;
+string s, Scmd, Spalette, OrgLayColor;
+
+string Fname = "";   // Board-Dateiname
+string Fscript = ""; // Script-Dateiname
+
+// Die Farben (Nummerzuweisung) zum Transparant drucken mit weissen Hintergrund.
+enum  { WeissNT,
+        HellGrau,
+        Hellblau,
+        Hellgruen,
+        Hellcyan,
+        Hellrot,
+        Hellmagenta,
+        Hellgelb,
+        Hellgrau2,
+        Schwarz,
+        Blau,
+        Gruen,
+        Cyan,
+        Rot,
+        Magenta,
+        Gelb,
+        Grid,
+        Null
+      };
+
+// Die Farbdefinitionen
+string PrintColor[];
+PrintColor[WeissNT]       = "0xFFFFFFFF"; // weiss, nicht transparent
+PrintColor[HellGrau]      = "0xFFC8C8C8";
+PrintColor[Hellblau]      = "0x8FC3CEFF";
+PrintColor[Hellgruen]     = "0x4F004000";
+PrintColor[Hellcyan]      = "0x8FA4FCFF";
+PrintColor[Hellrot]       = "0x8FFFB9B9";
+PrintColor[Hellmagenta]   = "0x8FE9C8FF";
+PrintColor[Hellgelb]      = "0x8FFDFFB9";
+PrintColor[Hellgrau2]     = "0xFFDEDEDE";
+PrintColor[Schwarz]       = "0xFF000000";
+PrintColor[Blau]          = "0x8F4C49FF";
+PrintColor[Gruen]         = "0x8F00FF00";
+PrintColor[Cyan]          = "0x8F00D7FD";
+PrintColor[Rot]           = "0x8FFF3737";
+PrintColor[Magenta]       = "0x8FFF0AF3";
+PrintColor[Gelb]          = "0x8FFCFF13";
+PrintColor[Grid]          = "0x3213F3F3";
+PrintColor[Null]          = "0x00FFFFFF"; //  weiss transparent
+
+int    PrintBackground = WHITE; // weisser Hintergrund zum drucken
+string SetPrintColor   = "";
+string ReDisplayLAyer  = ""; // zum wieder herstellen der Layer (Display)
+
+int test = 0;  // test flag
+
+if (argv[1] == "-T") test = 1;
+
+// ### Funktionen ###
+void readPalette(int t) {
+  for (int n = 0; n < PALETTE_ENTRIES; n++) {
+    if ((t == 0 || t == 1) && n == 0) {
+      ; // Farbe 0 (Hintergrund) in weißer und schwarzer Palette kann nicht geändert werden.
+    }
+    else {
+      sprintf(s, "Set PALETTE %d 0x%08X;\n", n, palette(n, t));
+      Spalette+=s;
+    }
+  }
+  return;
+}
+
+
+string getColor(int color, int type) {
+  string s;
+  if (color || type > 1 ) {
+    sprintf(s, "SEt PALETTE % 3d 0x%08X\n", color, palette(color, type) );
+  }
+  return s;
+}
+
+
+void save(string Fname, string script) {
+  output(Fname, "wtD") {
+    printf("%s", script);
+  }
+  return;
+}
+
+
+for (int t = 0; t < PALETTE_TYPES; t++) {       // *** Anzahl der Paletten ***
+  sprintf(s, "SET PALETTE %s;\n", Ptype[t]);
+  Spalette+=s;
+  readPalette(t);
+}
+
+Actual_Palette = palette(-1);  // die Palette des aktuellen Fenster wählen
+Spalette+="# Die aktuelle Palette\n";
+sprintf(s, "sET PALETTE %s;\n", Ptype[Actual_Palette]);
+Spalette+=s;
+/*
+Die verwendeten Farben für die Layer
+1. Hintergrund  weiss
+2. Top          hell rot
+3. Bottom       hell blau
+4. tPlace       schwarz
+5. bPlace       schwarz
+6. tNamens      schwarz
+7. bNamens      schwarz
+8. tValues      schwarz
+9. bValues      schwarz
+*/
+
+if (board) board(BRD) {
+  if (argc < 2) {
+    dlgDialog("Print transparant HELP") {
+      dlgHBoxLayout dlgSpacing(550);
+      dlgHBoxLayout {
+        dlgVBoxLayout dlgSpacing(300);
+        dlgTextView(usage);
+      }
+      dlgHBoxLayout {
+        dlgPushButton("+OK") dlgAccept();
+        dlgStretch(1);
+        dlgPushButton("-CANCEL") { dlgReject(); exit(0); }
+      }
+    };
+  }
+
+  Fname = BRD.name;
+  sprintf(Fscript, "%s", filesetext(Fname, "~print~transparent.scr"));
+  string restore_org_palette = filesetext(Fname, "~restore-palette.scr");
+  Scmd+="# "+Fname+"\n";
+  sprintf(s, "# Generated with ULP %s Version %s;\n# 1st to restore original palette\nSET PALETTE %s;\n",  // weisser Hintergrund
+              filename(argv[0]), Version, Ptype[PrintBackground]
+         );
+  Scmd += "SET PAD_NAMES OFF;\n";
+  OrgLayColor+=s;
+  SetPrintColor+= "seT PALETTE "+Ptype[PrintBackground]+";\n";
+  BRD.layers(L) {
+    if (L.visible) {
+      OrgLayColor+=getColor(L.color, PrintBackground);
+      switch(L.number) {
+             // Top
+        case    1 : sprintf(s, "SET PALETTE %d %s; # %d hellrot\n", L.color, PrintColor[Hellrot], L.number);
+                    SetPrintColor += s;
+                    break;
+             // Bottom
+        case   16 : sprintf(s, "SET PALETTE %d %s; # %d hellblau\n", L.color, PrintColor[Hellblau], L.number);
+                    SetPrintColor += s;
+                    break;
+             // Pads
+        case   17 : if (L.color) { // nur wenn PAD-Layer eine eigene Farbe besitzt
+                      sprintf(s, "SET PALETTE %d %s; # %d hellgruen\n", L.color, PrintColor[Hellgruen], L.number);
+                      SetPrintColor += s;
+                    }
+                    break;
+             // Vias
+        case   18 : if (L.color) { // nur wenn VIA-Layer eine eigene Farbe besitzt
+                      sprintf(s, "SET PALETTE %d %s; # %d hellgruen\n", L.color, PrintColor[Hellgruen], L.number);
+                      SetPrintColor += s;
+                    }
+                    break;
+             // Dimension
+        case   20 : sprintf(s, "SET PALETTE %d %s; # %d dunkelgrau\n", L.color, PrintColor[Hellgrau2], L.number);
+                    SetPrintColor += s;
+                    break;
+             // tPlace
+        case   21 : sprintf(s, "SET PALETTE %d %s; # %d schwarz\n", L.color, PrintColor[Schwarz], L.number);
+                    SetPrintColor += s;
+                    break;
+             // bPlace
+        case   22 : sprintf(s, "SET PALETTE %d %s; # %d schwarz\n", L.color, PrintColor[Schwarz], L.number);
+                    SetPrintColor += s;
+                    break;
+             // tName
+        case   25 : sprintf(s, "SET PALETTE %d %s; # %d schwarz\n", L.color, PrintColor[Schwarz], L.number);
+                    SetPrintColor += s;
+                    break;
+             // bName
+        case   26 : sprintf(s, "SET PALETTE %d %s; # %d schwarz\n", L.color, PrintColor[Schwarz], L.number);
+                    SetPrintColor += s;
+                    break;
+             // tValue
+        case   27 : sprintf(s, "SET PALETTE %d %s; # %d schwarz\n", L.color, PrintColor[Schwarz], L.number);
+                    SetPrintColor += s;
+                    break;
+             // bValue
+        case   28 : sprintf(s, "SET PALETTE %d %s; # %d schwarz\n", L.color, PrintColor[Schwarz], L.number);
+                    SetPrintColor += s;
+                    break;
+             // tDocu
+        case   51 : sprintf(s, "SET PALETTE %d %s; # %d schwarz\n", L.color, PrintColor[Schwarz], L.number);
+                    SetPrintColor += s;
+                    break;
+             // bDocu
+        case   52 : sprintf(s, "SET PALETTE %d %s; # %d schwarz\n", L.color, PrintColor[Schwarz], L.number);
+                    SetPrintColor += s;
+                    break;
+        case  101 :
+                    break;
+        case  102 :
+                    break;
+        case  103 :
+                    break;
+        case  104 :
+                    break;
+        case  105 :
+                    break;
+             // alle anderen
+        default   : // Layer abschalten die nicht gedruckt werden sollen.
+                    sprintf(s, "DISPLAY -%d;\n", L.number);  // Layer abschalten die nicht gedruckt werden sollen
+                    SetPrintColor +=  s;
+                    sprintf(s, "DISPLAY %d;\n", L.number);  // Layer wieder einschalten
+                    ReDisplayLAyer +=  s;
+      }
+    }
+  }
+  sprintf(s, "%s WIN;\n", SetPrintColor);
+  Scmd += s;
+  if (test) Scmd += "RUN ulpmessage 'blasse Farben?';\n"; //
+  else {
+    int n1 = 1;
+    if (strupr(argv[1]) == "IMAGE") {
+      sprintf(s, "EXPORT ");
+      Scmd += s;
+      if (argv[2] == "@") {  // wird ersetzt durch den Dateinamen und die Extension ".png", dammit man sich nicht die Finger wund tippen muß.
+        n1 = 3;
+        sprintf(s, "IMAGE '%s' ", filesetext(Fname, ".png"));
+        Scmd += s;
+      }
+    }
+    else {
+      sprintf(s, "PRINT ");
+      Scmd += s;
+    }
+    for (int n = n1; n < argc; n++) {  // 2010-11-29 alle Optionen wie in der Kommandozeile angegeben weiterreichen.
+      sprintf(s, " %s", argv[n]);
+      Scmd += s;
+    }
+  }
+  sprintf(s, ";\nSCRIPT '%s'", restore_org_palette);
+  Scmd += s;
+
+  sprintf(s, "# 2nd to reset the used palette\nSET PALETTE %s;\n", Ptype[palette(-1)]); // aktueller Hintergrund
+  OrgLayColor+=s;
+  OrgLayColor += "SET PAD_NAMES ON;";
+  save(restore_org_palette, OrgLayColor);
+}
+
+else {
+  dlgMessageBox("Start this ULP in a BRD!", "OK");
+  exit(-1);
+}
+
+if (test) {
+  int Result = dlgDialog("Farbpalette für aktuellen Ausdruck") {
+    dlgHBoxLayout {
+      dlgVBoxLayout dlgSpacing(500);
+      dlgVBoxLayout {
+        dlgHBoxLayout dlgSpacing(350);
+        dlgTextEdit(Scmd);
+      }
+      dlgVBoxLayout {
+        dlgHBoxLayout dlgSpacing(300);
+        dlgTextEdit(OrgLayColor);
+      }
+      dlgVBoxLayout {
+        dlgHBoxLayout dlgSpacing(100);
+        dlgTextEdit(Spalette);
+      }
+    }
+    dlgHBoxLayout {
+      dlgPushButton("+OK") dlgAccept();
+      dlgPushButton("-ESC") dlgReject();
+      dlgStretch(1);
+    }
+  };
+
+  if (!Result) exit(-1);
+}
+
+output(Fscript, "wtD") {
+  printf("%s\n%s", Scmd, ReDisplayLAyer);
+}
+exit("SCRIPT '"+Fscript+"'");
+
+

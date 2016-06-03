@@ -1,0 +1,12 @@
+ Edit 'LTC3410-1.875.dev' ;
+ Prefix 'IC' ;
+ Description '2.25MHz, 300mA Synchronous Step-Down Regulator in SC70' ;
+ Value off ;
+ Add LTC3410-1.875 'G$1' next 0 (0 0) ;
+ Package 'SOT6(SC6)' 'SC6' ;
+ Technology '' ;
+ Connect 'G$1.RUN' '1' ;
+ Connect 'G$1.VIN' '4' ;
+ Connect 'G$1.SW' '3' ;
+ Connect ALL 'G$1.GND' '5 2' ;
+ Connect 'G$1.VSENSE' '6' ;

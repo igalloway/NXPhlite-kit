@@ -1,0 +1,62 @@
+#usage "Example: Make Directory with a ULP.<p>"
+       "RUN mkdir subdirectoryname<p>"
+       "<author>alf@cadsoft.de</author>"
+
+string Version = "1.0.0"; // 2012-04-10 alf@cadsoft.de
+string Directory;
+string SubDirectory = argv[1];
+string DOScommand;
+
+if (!argv[1]) {
+  dlgMessageBox("!Missing subdirectoryname.<p>" + usage, "OK");
+  exit(-1);
+}
+
+
+/* **********************************************************************************
+ Der MicroSoft-Fehler: BACKSLASH
+ Ein Backslach ist ein Escape-Zeichen um ein Steuerzeichen zu maskieren.
+ Unter Windows wird als Pfad-Trennzeichen der Backslash '\' benutzt,
+ und nicht wie unter UNIX der Slash '/'!
+ Eagle benutzt aus Kompatibilitätsgründen zu Linux und Macintosh intern als
+ Pfad-Trennzeichen den Slash '/'.
+ Unter Windows wird in allen File-Funktionen im ULP vor der Ausführung der Slash
+ zu einem Backslash gewandelt. Damit funktionieren alle ULPs auf allen Plattformen.
+ Soll unter Windows einem system()-Aufruf ein Pfad- oder Datei-Name übergeben werden,
+ so muß man zuerst den Slash zu einen Backslash wandeln, da nicht unterschieden
+ werden kann, ob es sich um einen Pfad oder eine Option des Aufrufes handelt.
+********************************************************************************** */
+
+// change slash to backslash for windows
+string cs2bs(string s) {
+  int pos;
+  do {
+    pos = strchr(s, '/');
+    if (pos >= 0) s[pos] = '\\';
+  } while (pos >= 0);
+  return s;
+}
+
+
+if (board) board(B) {
+  Directory = filedir(B.name);
+}
+else if (schematic) schematic(S) {
+  Directory = filedir(S.name);
+}
+else if (library)   library(L) {
+  Directory = filedir(L.name);
+}
+
+// Check if exist subdirectory.
+string f[];
+int n = fileglob(f, Directory+SubDirectory);
+if (n) {
+  //dlgMessageBox("!Directory exist:\n\n" + Directory+SubDirectory, "OK");
+  exit(0);
+}
+
+/*** generate DOS command ***/
+sprintf(DOScommand, "CMD.EXE  /C MKDIR \"%s%s\"", cs2bs(Directory), cs2bs(SubDirectory) );
+system(DOScommand);
+

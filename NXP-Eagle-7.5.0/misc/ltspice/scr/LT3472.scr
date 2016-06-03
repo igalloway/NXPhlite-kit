@@ -1,0 +1,18 @@
+ Edit 'LT3472.dev' ;
+ Prefix 'IC' ;
+ Description 'Boost and Inverting DC/DC Converter for CCD Bias' ;
+ Value off ;
+ Add LT3472 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.DN' '5' ;
+ Connect 'G$1.VIN' '2' ;
+ Connect 'G$1.SSN' '7' ;
+ Connect 'G$1.GND' '11' ;
+ Connect 'G$1.VPOS' '10' ;
+ Connect 'G$1.SSP' '9' ;
+ Connect 'G$1.FBP' '8' ;
+ Connect 'G$1.!SHDN' '3' ;
+ Connect 'G$1.SWP' '1' ;
+ Connect 'G$1.FBN' '6' ;
+ Connect 'G$1.SWN' '4' ;

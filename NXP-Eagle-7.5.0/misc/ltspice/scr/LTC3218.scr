@@ -1,0 +1,17 @@
+ Edit 'LTC3218.dev' ;
+ Prefix 'IC' ;
+ Description '400mA Single Wire Camera LED Charge Pump' ;
+ Value off ;
+ Add LTC3218 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DDB)' 'DDB' ;
+ Technology '' ;
+ Connect 'G$1.CPO' '2' ;
+ Connect 'G$1.VIN' '10' ;
+ Connect ALL 'G$1.GND' '11 8' ;
+ Connect 'G$1.ILED' '3' ;
+ Connect 'G$1.ISETF' '6' ;
+ Connect 'G$1.CP' '1' ;
+ Connect 'G$1.CM' '9' ;
+ Connect 'G$1.ISETT' '5' ;
+ Connect 'G$1.ENF' '7' ;
+ Connect 'G$1.ENT' '4' ;

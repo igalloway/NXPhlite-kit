@@ -1,0 +1,100 @@
+#usage "<b>Export In-Circuit-Test net list with pad/smd coordinates</b>"
+       "Exported format: Net Part.Pad Layer X Y<br>"
+       "<author>support@cadsoft.de</auhor>"
+
+string Version = " Version 1.0"; // 2008-05-14 alf@cadsoft.de
+int withSignal = 0;
+
+if (strupr(argv[1]) == "NOSIGNAL") withSignal = 1;
+
+string list, s;
+string lTop = "t";
+string lBottom = "b";
+
+void sortnet(void) {
+  string s[];
+  int n;
+  int index[], i;
+  n = strsplit(s, list, '\n');
+  sort(n, index, s);
+  list = "";
+  for (i = 0; i < n; i++) {
+    list += s[index[i]] + "\n";
+  }
+  return;
+}
+
+
+if (board) {
+  board(B) {
+    B.elements(E) {
+      E.package.contacts(C) {
+        if (C.signal || withSignal) {
+          string cLayer;
+          if (C.smd) {
+            if (C.smd.layer == 1) cLayer = lTop;
+            else cLayer = lBottom;
+            sprintf(s, "%s\t%s.%s\t%s\t%.4f\t%.4f\n",
+                      C.signal,
+                      E.name,
+                      C.name,
+                      cLayer,
+                      u2mm(C.x),
+                      u2mm(C.y)
+                 );
+            list += s;
+          }
+          else {
+            sprintf(s, "%s\t%s.%s\t%s\t%.4f\t%.4f\n",
+                      C.signal,
+                      E.name,
+                      C.name,
+                      lTop,
+                      u2mm(C.x),
+                      u2mm(C.y)
+                   );
+            list += s;
+            sprintf(s, "%s\t%s.%s\t%s\t%.4f\t%.4f\n",
+                      C.signal,
+                      E.name,
+                      C.name,
+                      lBottom,
+                      u2mm(C.x),
+                      u2mm(C.y)
+                 );
+            list += s;
+          }
+        }
+      }
+    }
+    sortnet();
+    list = "# Data export with " + filename(argv[0]) + Version + "\n# at: "+ t2string(time()) + " from: "+filename(B.name) + "\n# " + EAGLE_SIGNATURE + "\n# Testpoint for In-Circuit-Test (Coordinates in mm)\nNet\tPart.Pad\tLayer\tX\tY\n" + list;
+    string f = filesetext(B.name, ".ict");
+    dlgDialog("ICT Netlist") {
+      dlgHBoxLayout dlgSpacing(600);
+      dlgHBoxLayout {
+        dlgVBoxLayout dlgSpacing(600);
+        dlgVBoxLayout {
+          dlgTextEdit(list);
+        }
+      }
+      dlgLabel("If you want this list with unconnected pads start with:<br>RUN export-ict-netlist-pad-coordinates.ulp <b>NOSIGNAL</b>");
+      dlgLabel("Save as: "+f);
+      dlgHBoxLayout {
+        dlgPushButton("OK") {
+          dlgAccept();
+          {
+            output(f, "wt") printf("%s", list);
+          }
+        }
+        dlgPushButton("-CANCEL") {
+          dlgReject();
+          exit(-1);
+        }
+        dlgStretch(1);
+      }
+    };
+  }
+}
+
+else  dlgMessageBox("Start this ULP from a Board", "OK");

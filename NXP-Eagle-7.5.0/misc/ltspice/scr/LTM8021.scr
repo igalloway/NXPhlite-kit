@@ -1,0 +1,13 @@
+ Edit 'LTM8021.dev' ;
+ Prefix 'IC' ;
+ Description '36VIN, 500mA Step-Down DC/DC uModule' ;
+ Value off ;
+ Add LTM8021 'G$1' next 0 (0 0) ;
+ Package 'LGA35(V)' 'V' ;
+ Technology '' ;
+ Connect ALL 'G$1.VIN' 'B5 B4 A5 A4' ;
+ Connect ALL 'G$1.GND' 'E3 E4 E5 F1 F2 G1 G2 H1 H2 E2 E1 B1 B2 C1 C2 D1 D2 D3 D4 D5' ;
+ Connect ALL 'G$1.OUT' 'H5 H4 G5 G4 G3 F5 F4 F3' ;
+ Connect 'G$1.ADJ' 'A2' ;
+ Connect 'G$1.!SHDN' 'A1' ;
+ Connect 'G$1.BIAS' 'H3' ;

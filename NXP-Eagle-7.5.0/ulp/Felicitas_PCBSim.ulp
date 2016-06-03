@@ -1,0 +1,974 @@
+#usage "en:<b>Felicitas PCBSim</b><p>"
+       "Pre-Layout Simulation (PreSim)<br>"
+       "<p>"
+       "RUN Felicitas_PCBSim /E | Export data.<br>"
+       "RUN Felicitas_PCBSim /I | Export attributes of selected instance.<br>"
+       "RUN Felicitas_PCBSim /S | Setup option<br>"
+       "RUN Felicitas_PCBSim /RELOAD | Import of simulation values."
+       "<p>"
+       "Wait on handshake by file polling."
+       "<p>"
+       "<author>Author: alf@cadsoft.de</author>"
+       ,
+       "de:<b>Felicitas PCBSim</b><p>"
+       "Pre-Layout Simulation (PreSim)<br>"
+       "<p>"
+       "RUN Felicitas_PCBSim /E | Daten-Export.<br>"
+       "RUN Felicitas_PCBSim /I | Exportiert nur die Attribute der selektierten Instanz.<br>"
+       "RUN Felicitas_PCBSim /S | Setup Option.<br>"
+       "RUN Felicitas_PCBSim /RELOAD | Import der simulierten Werte."
+       "<p>"
+       "Handshake erfolgt durch Datei-Polling."
+       "Um das ULP als Kontext einer Instanz (Symbol) zu starten, tragen Sie die unten stehende "
+       "Zeile in Ihre eagle.scr unter SCH: ein.<br>"
+       "SET CONTEXT instance 'PCBsim' 'RUN Felicitas_PCBSim /I';"
+       "<p>"
+       "Globale Attribute für die Übergabe von Werten (Design-Regeln) müssen mit 'FEL_' beginnen.<br>"
+       "Jedes globale Attribute wird mit \"@GLOBAL\" gekennzeichnet."
+      "<p>"
+       "<author>Author: alf@cadsoft.de</author>"
+
+
+#require 6.0503
+string ULP_Version = "1.0.8"; // 1.0.2 | 2013-12-18
+                              // 1.0.3 | 2014-01-15 Netzliste mit allen Nicht-SUPPLY-Pins ausgeben.
+                              // 1.0.4 | 2014-02-11 Globale Attrubte ausgeben.
+                              // 1.0.5 | 2014-02-13 Globale Attrubte auch für ToPCBSim_SingleAttributes_txt ausgeben
+                              //                    und wieder zurücklesen, inkl. aller geänderten Values und Part-Attribute.
+                              //                    Home path in Linux wird richtig benutzt.
+                              // 1.0.6 | 2014-02-17 MOVE Datei unter Windows jetzt mit Absoluten Pfad
+                              // 1.0.7 | 2014-02-26 Anlegen des Ordner "/PCBSimExchange" unter Windows 8 berichtigt
+                              // 1.0.8 | 2014-03-11 Usage geändert "RUN Felicitas_PCBSim"
+                              //                    #require 6.0503
+
+char   Separator = '\t';      /* ***************************************************************************
+                                Der Separator zum trennen der Parameter in der Zeile.
+                                Es muß ein nicht druckbares Zeichen sein, aber nicht SPACE,
+                                da in VALUES von Bauteilen und Attributen "SPACE" erlaubt ist.
+                                Bauteilnamen, NET-Namen und ATTIBUTE-Namen sind immer groß geschrieben,
+                                und können kein SPACE oder sonstige nicht druckbare ASCII-Zeichen anthalten.
+                              ******************************************************************************/
+int    Test = 0;
+int    PCBsim_running = 0;
+
+string Search_Felicitas_Execute; // "felicitas/pcbsim.exe";
+
+string Exchange_Directory;
+  /* 2.2 Exchange Directory
+    The exchange directory can be given by a command line option ?-d?.
+    The environment variable PCBSIMEXCHANGE overwrites that default.
+    If neither a command line option is given nor the environment variable PCBSIMEXCHANGE is
+    set, the directory to exchange data defaults to
+    ? Windows: C:/Documents and Settings/Username/PCBSimExchange
+     ? Linux: ~/PCBSimExchange
+  */
+string UserHome[];
+int    Ucnt = strsplit(UserHome, EAGLE_HOME, '/');
+
+string OS_System = OS_SIGNATURE;
+
+if (strstr(OS_System, "Windows") == 0) {
+  OS_System = "Windows";
+  Exchange_Directory = "/PCBSimExchange";
+  Search_Felicitas_Execute = "pcbsim.exe";  // "PCBsim program Windows";
+}
+
+else if (OS_System == "Linux") {
+  // da der relative Pfad zum Homeverzeichnis ~/ u.U. Probleme machen kann,
+  // könnte man evtl. auch EAGLE_HOME benutzen.
+  //Exchange_Directory = "~/PCBSimExchange"; // 2014-02-12 Pfade nie mit / beenden
+  sprintf(Exchange_Directory, "%s",  "/PCBSimExchange"); // 2014-02-12 Pfade immer mit / trennen
+  Search_Felicitas_Execute = "pcbsim"; // "PCBsim program Linux";
+}
+
+else if (OS_System == "MAC_OS") {
+  dlgMessageBox("Für MAC OS gibt es keine Version von PCBsim.", "OK");
+  exit(-81);
+}
+else {
+  dlgMessageBox("Betriebssystem <b>" + OS_SIGNATURE + "</b> wird nicht unterstützt!", "OK");
+  exit(-85);
+}
+
+/* ***** PCBsim file definition ****** */
+string Logging_Directory = "logging";
+
+string PCBSim_Present_txt = EAGLE_HOME + Exchange_Directory + "/PCBSim_Present.txt";
+       /*
+       This file is created by PCBSim uppon start and deleted when closed. It
+       can be used by the CAD system to determine whether PCBSim is present or not. If in doubt,
+       use the command ?Ping? to determine whether PCBSim is till alive...
+       */
+       /* **********************************************************************
+       ***** PCBSim_Present.txt, 14/11/2013, 14:07:13 *****
+       VERSION 1 01 Windows Beta version
+       @END
+       ********************************************************************** */
+string PCBSim_Busy_txt = EAGLE_HOME + Exchange_Directory + "/PCBSim_Busy.txt";
+       /*
+       This file indicates that PCBSim is busy with a lenghty operation. It can be used to indicate the
+       status of PCBSim within the CAD system. If PCBSim is not busy anymore, it just erases that file.
+       The file is not logged.
+       It contains a message which might be used by the CAD system to display a status bar. An optional
+       status number is presented also. It contains an estimate on how much percent of the current task has
+       been done.
+       */
+string ToPCBSim_Command_txt = EAGLE_HOME + Exchange_Directory + "/ToPCBSim_Command.txt";
+       /*
+       A file which contains special commands. Currently defined is
+       ?Version?, ?Close? and ?Ping?. Commands are NOT case sensitive.
+       */
+string FrPCBSim_Command_txt = EAGLE_HOME + Exchange_Directory + "/FrPCBSim_Command.txt";
+       /*
+       The respond for special commands. Currently not used
+       */
+string ToPCBSim_Netlist_txt = EAGLE_HOME + Exchange_Directory + "/ToPCBSim_Netlist.txt";
+       /*
+       Netlist written from the CAD system in order to start the simulation
+       with PCBSim.
+       */
+string ToPCBSim_AllAttributes_txt = EAGLE_HOME + Exchange_Directory + "/ToPCBSim_AllAttributes.txt";
+       /*
+       All attributes of all components in the netlist. This file MUST
+       be written BEFORE ToPCBSim_Netlist.txt is written.
+       */
+string ToPCBSim_SingleAttributes_txt = EAGLE_HOME + Exchange_Directory + "/ToPCBSim_SingleAttributes.txt";
+       /*
+       The attributes of a single component. It is written so that
+       PCBSim opens a dialog to edit the special properties of the component. For example IBIS
+       model, or transmission line properties.
+       */
+string FrPCBSim_SingleAttributes_txt = EAGLE_HOME + Exchange_Directory + "/FrPCBSim_SingleAttributes.txt";
+       /*
+       The changed attributes of a single component. Those are used by the CAD system
+       to update the attributes after PCBSim has changed some properties.
+       */
+string FrPCBSim_AllAttributes_txt = EAGLE_HOME + Exchange_Directory + "/FrPCBSim_AllAttributes.txt";
+       /*
+       The changed attributes of all components. This file might
+       contain changed attributes of a number of components. It is written after the simulation by
+       PCBSim and might contain changed values for termination resistors or other components.
+       */
+    /* ************************************************************************************************
+    A transaction is started by the CAD system writing one of the ?ToPCBSim...? files. PCBSim reacts
+    accordingly. When PCBSim is finished, it first writes any result files (FrPCBSim...) and then deletes
+    the files ?ToPCB...? from the directory (rather moves them to the logging directory). The deletion of
+    the files is the signal for the CAD system that PCBSim has finished. It can then process any
+    ?FrPCBSim...? files if there are any.
+    As soon as the CAD system has finished processing the ?FrPCBSim...? files, it moves them to the
+    logging directory.
+    After a complete transaction, the exchange directory is empty again.
+    ************************************************************************************************* */
+
+
+string Executable = "";        // Pfad-Dateiname zum Executable-Programm
+string EagleExecute = EAGLE_PATH;
+
+int    Ex_WaitOnHandShake = 1;  // flag for response of external executable has changed the data file
+
+string FileNewTemp = "wtD";     // option for function output() for generate temporary file (script).
+string FileAppend = "at";       // option for function output() append data to existing file.
+string ScriptFile = "";
+
+int    ExportAll = 1;
+
+char   SearchStartDrive = 'C';  // *** first Windows-System drive  ***
+string StartFolder;             // the ground path
+char   SearchLastDrive = 'Z';   // 'Z' *** last Windows-System drive ***
+
+int    SearchnRoot;
+string SearchRoot[];
+
+string SearchFiles[];
+int    SearchStart, SearchEnd;
+string a[];
+int    SearchIs_UNC;
+int    CntSubDirIteration = 4;  // maximal bis in den 4. Unterordner suchen
+
+
+string GlobalAttribute = "@GLOBAL"; // Markierung der globalen Attribute des Schaltplan für die Definition der Design-Regeln im Schaltplan
+int    PCBsimGlobalAttributeCount = 10; //
+int    CntNewI = 0;
+string NewInstancePart[];
+
+string SearcheLibrary = "/felicitas/felicitas-simulation.lbr";
+string FelicitasSimulationLbr;
+string Cmd = "";
+
+
+
+/* ################## Functions ####################### */
+string showsyscommand(string command, string call, string debug) {
+  dlgDialog("show command") {
+    dlgLabel("Call from: " + call);
+    dlgLabel("Debug: " + debug);
+    dlgHBoxLayout dlgSpacing(800);
+    dlgHBoxLayout {
+      dlgLabel("system(");
+      dlgStringEdit(command);
+      dlgLabel(")");
+    }
+    dlgHBoxLayout {
+      dlgStretch(1);
+      dlgPushButton("+OK") dlgAccept();
+      dlgPushButton("-CANCEL") { dlgReject(); exit(-209); }
+      dlgStretch(1);
+    }
+  };
+  return command;
+}
+
+
+/* *************** file functions ********** */
+// change Eagle slash in path names to backslash for windows
+string lash2backslash(string f) {
+  string s[];
+  int cnt = strsplit(s, f, '/');
+  return strjoin(s, '\\');
+}
+
+// change backslash in windows path names to Eagle slash
+string backslash2lash(string f) {
+  string s[];
+  int cnt = strsplit(s, f, '\\');
+  return strjoin(s, '/');
+}
+
+int make_sub_dir(string root, string subdir) {  /*** generate DOS command MKDIR ***/
+  if (OS_System == "Windows") { /* ** generate DOS command MKDIR ** */
+    string doscommand;
+    sprintf(doscommand, "CMD.EXE  /C MKDIR \"%s%s\"",  lash2backslash(root), lash2backslash(subdir));
+    if (Test) doscommand = showsyscommand(doscommand, "(Test) make directory", "");
+    system(doscommand);
+  }
+
+  else {
+    string linuxshellscript;
+    // mkdir ist das offizielle Komando!
+    // md kann auch funktionieren, muß aber nicht!
+    // bei ~/... für den Home-Pfad darf man den Pfad nicht in " " einschliessen,
+    // sonst wird die Tilde ~ nicht ausgewertet!
+    // Wegen evtl. Leerzeichen im Pfad, ist es besser EAGLE_HOME + "/" als Pfad zu benutzen, eingeschlossen in " ".
+    string sd[], s;
+    int cnt = strsplit(sd, subdir, '/');
+    string mk;
+    sprintf(mk, "mkdir %s%s",  root, sd[0]); // setze den Grundpfad
+    for (int n = 1; n < cnt; n++) {
+        sprintf(s, "%s/%s\n",  mk, sd[n] );
+        mk += "/" + sd[n];  // der erweiterte Pfad ist jetzt der Grundpfad
+        linuxshellscript += s;
+    }
+
+    if (Test) linuxshellscript = showsyscommand(linuxshellscript, "(Test) make directory", "");
+
+    system(linuxshellscript);
+  }
+  string f[];
+  int n = fileglob(f, root + subdir); // prüfe ob das Verzeichnis angelegt werden konnte.
+  return n;
+}
+
+void move_and_rename_to_logging(string f) {
+  if (OS_System == "Windows") { /* ** generate DOS command MKDIR ** */
+    string doscommand;
+    /*
+    Um eine oder mehrere Dateien zu verschieben:
+    MOVE [/Y| /-Y] [Laufwerk:][Pfad]Datei1[,...] Ziel
+
+    Um ein Verzeichnis umzubenennen:
+    MOVE [/Y| /-Y] [Laufwerk:][Pfad]Verz1 Verz2
+
+      [Laufwerk:][Pfad]Datei1  Bezeichnet den Pfad und den Namen der zu
+                               verschiebenden Datei(en).
+      Ziel                     Bezeichnet den Zielort für die Datei. Das Ziel
+                               kann ein Laufwerkbuchstabe mit Doppelpunkt, ein
+                               Verzeichnisname oder eine Kombination beider sein.
+                               Wenn Sie nur eine einzelne Datei verschieben,
+                               können Sie auch einen Dateinamen angeben, um die
+                               Datei beim Verschieben umzubenennen.
+      [Laufwerk:][Pfad]Verz1   Bezeichnet das umzubenennende Verzeichnis.
+      Verz2                    Bezeichnet den neuen Namen des Verzeichnisses.
+      /Y                       Unterdrückt die Bestätigungsaufforderung zum
+                               Überschreiben bestehender Zieldateien.
+      /-Y                      Fordert vor dem Überschreiben bestehender
+                               Zieldateien zur Bestätigung auf.
+    Die Option /Y ist in der COPYCMD-Umgebungsvariablen eventuell voreingestellt.
+    */
+
+    string fext; // file extension
+    sprintf(fext, ".%s.txt", t2string(time(), "Uyyyy-MM-dd hh_mm_ss"));
+    sprintf(doscommand, "CMD.EXE  /C MOVE \"%s\" \"%s\"",
+                       lash2backslash(f),
+                       lash2backslash(filedir(f)) + lash2backslash(Logging_Directory + "/" + filesetext(filename(f), fext)) // 2014-0217
+           );
+    if (Test) {
+      dlgDialog("(Test) move") {
+        dlgHBoxLayout dlgSpacing(900);
+        dlgTextEdit(doscommand);
+        dlgHBoxLayout {
+          dlgPushButton("OK") dlgAccept();
+          dlgPushButton("esc") { dlgReject(); exit(-305); }
+        }
+      };
+    }
+    system(doscommand);
+  }
+  else {  // move file for Linux
+    string linuxshellscript;
+    string fext; // file extension
+    sprintf(fext, ".%s.txt", t2string(time(), "Uyyyy-MM-dd hh_mm_ss"));
+    sprintf(linuxshellscript, "mv \"%s\" \"%s\"",  // Linux braucht für das Ziel den kompletten Pfad
+                       f,
+                       filedir(f) + Logging_Directory + "/" + filesetext(filename(f), fext)  // 2014-02-17
+           );
+    if (Test) {
+      dlgDialog("(Test) move") {
+        dlgHBoxLayout dlgSpacing(900);
+        dlgTextEdit(linuxshellscript);
+        dlgHBoxLayout {
+          dlgPushButton("OK") dlgAccept();
+          dlgPushButton("esc") { dlgReject(); exit(-328); }
+        }
+      };
+    }
+    system(linuxshellscript);
+  }
+  return;
+}
+
+int check_directory(string dir) {
+  string fdir[];
+  return fileglob(fdir, dir);
+}
+
+int check_exist_file(string path, string ckfile) {
+  return fileglob(SearchFiles, path + ckfile);
+}
+
+// ein Windows-Laufwerk beginnt mit "Buchstabe:\"
+// suche nach ":/" hinter dem Laufwerksbuchstaben
+void check_windows_root(void) {
+  string drv;
+  for(int d = SearchStartDrive; d <= SearchLastDrive; d++) {
+    sprintf(drv, "%c:/", d);
+    if (check_exist_file(drv, "/")) {
+      SearchRoot[SearchnRoot] = drv;
+      SearchnRoot++;
+    }
+  }
+  return;
+}
+
+
+/* *********************** die Suchschleife ****************************************************** */
+// searchfile   = die zu suchende Datei
+// root         = der Start-Pfad ab dem gesucht werden soll, inkl. Laufwerkbuchstabe unter Windows
+// maxiteration = die Tiefe, Anzahl der Verzweigung (Unterordner) ab dem root Pfad.
+/* *********************************************************************************************** */
+string file_search(string root, string searchfile, int maxiteration, string debugnum) {
+  if (!root) {
+    if (debugnum == "init") {
+      dlgMessageBox("RUN '" + filesetext(argv[0], "") + "' with option Setup: " + searchfile, "CANCEL");
+    }
+    else {
+      if (dlgMessageBox(debugnum + "\nUnknown path of file : "+searchfile, "OK", "CANCEL") == 0) return "";
+    }
+    exit(-374);
+  }
+  int len = strlen(root);
+  if (root[len-1] != '/') root += "/"; // root muß mit Slash enden!
+  if (!check_exist_file(root, "")) {  // den Pfad prüfen
+    return "";
+  }
+  // *** Betriebsystem feststellen ***
+  // ******* Windows Laufwerke *******
+  if (root) {
+    SearchRoot[0] = root;
+    SearchnRoot = 1;
+  }
+  else {
+    check_windows_root();   // unter Windows die Laufwerke ermitteln
+  }
+
+  int n, r;
+  SearchStart = 0;
+  SearchEnd = SearchnRoot;
+  int iteration = 1;
+  int finish = 0;
+  int cntf;
+  string searchfoundfile[];
+  string h;
+
+  do {
+    // 1. die Root-Ordner nach der Datei durchsuchen
+    for (r = SearchStart; r < SearchEnd; r++) {
+      status(SearchRoot[r]);                   // Anzeige des aktuellen Verzeichnisnamen
+      n = check_exist_file(SearchRoot[r], searchfile); // suche im Verzeichnis nach Datei
+      if (n) {
+        for (int f=0; f<n; f++) {
+          searchfoundfile[cntf] = SearchFiles[f];
+          return searchfoundfile[cntf]; // das erst gefunden File zurückgeben
+          cntf++;
+        }
+      }
+    }
+    if (finish || (maxiteration && iteration == maxiteration)) break;
+
+    // 2. die Root-Ordner nach Ordnern durchsuchen
+    for (r = SearchStart; r < SearchEnd; r++) {
+      sprintf(h, "%d %d %s", iteration, SearchnRoot, SearchRoot[r]);
+      status(h);               // Anzeige des aktuellen Verzeichnisnamen
+      n = fileglob(a, SearchRoot[r] + "/");      // lesen der Dateien
+      if (n) {
+        for (int xl = 0; xl < n; xl++) {
+          sprintf(h, "%s\n", a[xl]);
+          if (a[xl][strlen(a[xl])-1] == '/') { // nach Verzeichnis suchen
+            SearchRoot[SearchnRoot] = a[xl];
+            sprintf(h, "%d %d %s", iteration, SearchnRoot, SearchRoot[SearchnRoot]);
+            status(h);             // Anzeige des aktuellen Verzeichnisnamen
+            SearchnRoot++;
+          }
+          else {
+            break;
+          }
+        }
+      }
+    }
+    SearchStart = r;
+    SearchEnd = SearchnRoot; // Suchende erweitern
+    if (SearchStart == SearchEnd) {
+      finish = 1;
+    }
+    iteration++;
+  } while(SearchnRoot);
+  return searchfoundfile[0];
+}
+
+string checkapostroph(string s) {  // da der ganze String in ' eingeschlossen wird,
+                                   // müssen die Apostrophen verdoppelt werden.
+  string t[];
+  int cnt;
+  cnt = strsplit(t, s, '\''); // check Apostroph
+  if (cnt > 1) {
+    s = "";
+    for (int i = 0; i < cnt; i++) {
+      if (i == 0) {
+        if (t[i]) s += t[i];
+      }
+      else if (i) s += "''" + t[i];
+    }
+  }
+ return s;
+}
+
+void readconfig(void) {  // read configuration file of ULP
+  Executable = cfgget("ULP:felicitas.Executable");
+  return;
+}
+
+void saveconfig(void) {
+  cfgset("ULP:felicitas.Executable", Executable);
+  return;
+}
+
+void call_system(string exportfile, string debug) {  // DOS comand execute
+  string syscommand;
+  // Das executable und der Dateiname müssen in " " eingeschlossen werden, wegen Spaces im Pfad-Dateinamen!
+  sprintf(syscommand, "CMD.EXE /C  \"%s\" \"%s\"", lash2backslash(Executable), lash2backslash(ToPCBSim_Netlist_txt));
+  if (Test) syscommand = showsyscommand(syscommand, "(Test) call_system()", debug);
+  system(syscommand);  // externes Programm starten
+  return;
+}
+
+/* *************************************
+ ********** Reload - Import ************
+ ************************************* */
+// check if exist attribute and has changed the value
+int checkatt(string p_name, string att_name, string att_value) {
+  sheet(S) {
+    S.instances(I) {
+      if (ingroup(I) || strupr(argv[1]) == "/E") {  // mit Iption /E werden alle Parts geprüft/geändert
+        if (I.part.name == p_name) {
+          if (att_name == "VALUE") {
+            if (I.part.value == att_value) return 0; // value is the sam, do nothing
+            else return 1; // value is changed
+          }
+          else {
+            I.part.attributes(A) {
+              if (A.name == att_name) {
+                if (A.value == att_value) return 0; // value is the sam, do nothing
+                else return 1; // value is changed
+              }
+            }
+            return 1; // returns a new attribute from PCBsim
+          }
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+void set_attributes(string valuelines) {
+  string line[];
+  int cntlines = strsplit(line, valuelines, '\n');
+  string cmd, s;
+  for (int n = 0; n < cntlines; n++) {
+    string v[];
+    int cnt = strsplit(v, line[n], Separator);
+    if (cnt > 1) {
+      if (v[0] == GlobalAttribute) { // 2014-02-12 set global attributes
+        sprintf(s, "ATTRIBUTE * '%s' '%s';\n", v[1], v[2]);
+        cmd+=s;
+      }
+      else if (checkatt(v[0], v[1], v[2])) {
+        if (v[1] == "VALUE") {
+          sprintf(s, "VALUE '%s' '%s';\n", v[0], v[2]);
+          cmd+=s;
+        }
+        else {
+          sprintf(s, "CHANGE DISPLAY OFF;\n");
+          cmd+=s;
+          sprintf(s, "ATTRIBUTE '%s' '%s' '%s';\n", v[0], v[1], v[2]);
+          cmd+=s;
+        }
+      }
+    }
+    else {
+      if (v[0][0] == '*') {
+        // Nur die Kopfzeile (Kommentar), wird nicht ausgewertet
+      }
+      else if (v[0] == "@END") {
+        break;
+      }
+    }
+  }
+  if (Test) dlgDialog("(Test) Die Rückgabewerte") {
+    dlgHBoxLayout dlgSpacing(600);
+    dlgTextEdit(valuelines);
+    dlgTextEdit(cmd);
+    dlgHBoxLayout {
+      dlgPushButton("+OK") dlgAccept();
+      dlgPushButton("-CANCEL") { dlgReject(); exit(-550); }
+      dlgStretch(1);
+    }
+  };
+  exit(cmd);
+}
+
+/* ************************************
+ ********* Export functions ***********
+ ************************************ */
+int newpart(UL_INSTANCE I) {  // 2014-02-12 check exits this part of instance on list
+  for (int n = 0; n < CntNewI; n++) {
+    if (NewInstancePart[n] == I.part.name) return 0;
+  }
+  NewInstancePart[CntNewI++] = I.part.name;
+  return 1;
+}
+
+void ex_attrib_value(UL_INSTANCE I) {  // 2014-02-12
+  printf("%s%cVALUE%c%s\n", I.part.name, Separator, Separator , I.part.value);
+  I.part.attributes(A) {
+    if (A.name != "_EXTERNAL_") printf("%s%c%s%c%s\n", I.part.name, Separator, A.name, Separator, A.value);
+  }
+  return;
+}
+
+void ex_draw_net_wire(UL_SEGMENT SEG, string netname) {
+  SEG.pinrefs(P) {
+    if (P.pin.direction != PIN_DIRECTION_SUP) {  // 2014-01-15 keine Supply-Pins ausgeben
+      printf("@Part%c%s%c%s%c%s\n", Separator, P.part.name, Separator, P.pin.name, Separator, netname);
+    }
+  }
+  return;
+}
+
+void ex_globalattribute(UL_SCHEMATIC SCH) { // 2014-02-11
+  int cnta = 0;
+  SCH.attributes(A) {
+    if (strstr(A.name, "FEL_") == 0) { // nur Attribute die mit "FEL_" beginnen werden exportiert
+      cnta++;
+      printf("%s%c%s%c%s\n", GlobalAttribute, Separator, A.name, Separator, A.value);
+    }
+  }
+  if (cnta < PCBsimGlobalAttributeCount) {
+    dlgMessageBox("!Not enough global attributes \"FEL_...\" defined.\nFirst define global attributes for PCBsim (Design-Rules).", "OK");
+    exit("ATTRIBUTE *");
+  }
+}
+
+void ex_attribute(UL_PART P) { // für Option /I nur die Attribute dieser Instance ausgeben
+  printf("%s%cVALUE%c%s\n", P.name, Separator, Separator, P.value);
+  P.attributes(A) {  // Das Attribute _EXTERNAL_ wird nicht ausgegeben, da es speziell für Bauteile
+                     // reserviert ist, die nur für Simulation oder Dokumentation vorgesehen sind,
+                     // und daher kein Package besitzen dürfen, um nicht im Board zu erscheinen.
+    if (A.name != "_EXTERNAL_") printf("%s%c%s%c%s\n", P.name, Separator, A.name, Separator, A.value);
+  }
+  return;
+}
+
+void ex_pinlist(UL_PART PA) {
+  /*
+  Definition der Pinlist:
+  Part-Name __Kennung__ Pin-Name Pad-Name Net-Name
+  Besitzt der Pin keinen Conntact (Pad) wird er mit *_PCBsim_* markiert.
+  Ist der Pin an keinem Net angeschlossen, wird er mit *_not_connected_* markiert.
+  */
+  PA.instances(I) {
+    I.gate.symbol.pins(P) {
+      string netcontact = P.net;
+      if (!netcontact) netcontact = "*_not_connected_*";  // Pin ist an keinem Net angeschlossen
+      int cntcont = 0;  // Contactzähler für die Pads
+      P.contacts(C) {
+        printf("%s%c__PinList__%c%s%c%s%c%s\n", PA.name, Separator, Separator, P.name, Separator, C.name, Separator, netcontact);
+        cntcont++;
+      }
+      if (!cntcont) { /* Pin hat keinen Contact zu einem PAD (also ohne Package),
+                         dann wird als Kennung *_PCBsim_* ausgegeben.
+                      */
+        printf("%s%c__PinList__%c%s%c%s%c%s\n", PA.name, Separator, Separator, P.name, Separator, "*_PCBsim_*", Separator, netcontact);
+      }
+    }
+  }
+  return;
+}
+
+/* **** EXPORT menu **** */
+void ex_setupmenu(void) {
+  string schexportname;
+  dlgDialog("Eagle-felicitas Setup") {
+    dlgHBoxLayout  dlgSpacing(200);
+    dlgHBoxLayout {
+      dlgPushButton("+OK") dlgAccept();
+      dlgPushButton("-CANCEL") { dlgReject(); exit(-2); }
+      dlgStretch(1);
+      dlgLabel(ULP_Version);
+    }
+  };
+  saveconfig();
+  return;
+}
+
+
+void autosetupinfo(string dlgheader) {
+  dlgDialog(dlgheader) {
+    dlgGridLayout {
+      dlgCell(  0, 1) dlgLabel("Program:");
+      dlgCell(  0, 2) dlgLabel(EAGLE_SIGNATURE);
+      dlgCell(  1, 1) dlgLabel("System:");
+      dlgCell(  1, 2) dlgLabel(OS_SIGNATURE);
+      dlgCell(  2, 1) dlgLabel("Eagle Path:");
+      dlgCell(  2, 2) dlgLabel(EAGLE_PATH);
+      dlgCell(  3, 1) dlgLabel("Eagle Dir:");
+      dlgCell(  3, 2) dlgLabel(EAGLE_DIR);
+      dlgCell(  4, 1) dlgLabel("User Dir:");
+      dlgCell(  4, 2) dlgLabel(EAGLE_HOME);
+      dlgCell(  5, 1) dlgLabel("<hr>");
+      dlgCell(  5, 2) dlgLabel("<hr>");
+      dlgCell(  6, 1) dlgLabel("Executable");
+      dlgCell(  6, 2) dlgLabel(Executable);
+      dlgCell(  7, 1) dlgLabel("FelicitasLibDir");
+      dlgCell(  7, 2) dlgLabel(FelicitasSimulationLbr);
+    }
+    dlgHBoxLayout {
+      dlgPushButton("+OK") dlgAccept();
+      //dlgPushButton("-CANCEL") {dlgReject(); exit(-10); }
+      dlgStretch(1);
+      if (dlgheader == "Diagnose") {
+        dlgPushButton("Save") {
+          string rptfile = filesetext(argv[0], ".fel");
+          output(rptfile, "wt") {
+            printf("Program:%c%s\n", Separator, EAGLE_SIGNATURE);
+            printf("System:%c%s\n", Separator, OS_SIGNATURE);
+            printf("Eagle Path:%c%s\n", Separator, EAGLE_PATH);
+            printf("Eagle Dir:%c%s\n", Separator, EAGLE_DIR);
+            printf("User Dir:%c%s\n", Separator, EAGLE_HOME);
+            printf("Executable:%c%s\n", Separator, Executable);
+            printf("FelicitasLibDir:%c%s\n", Separator, FelicitasSimulationLbr);
+          }
+          dlgMessageBox("Saved to:"+rptfile, "OK");
+        }
+      }
+    }
+  };
+  return;
+}
+
+void reload(void) {
+  string frpcbsim_singleattributes_txt;
+  string frpcbsim_allattributes_txt;
+  int answer = 0; // für Datei-Hand-Shake
+  do {
+    if (check_exist_file(FrPCBSim_SingleAttributes_txt, "")) {
+      fileread(frpcbsim_singleattributes_txt, FrPCBSim_SingleAttributes_txt);
+      //move and rename to logging dir  // = "FrPCBSim_SingleAttributes.txt";
+      move_and_rename_to_logging(FrPCBSim_SingleAttributes_txt);
+      set_attributes(frpcbsim_singleattributes_txt);
+      answer = 1;
+    }
+    if (check_exist_file(FrPCBSim_AllAttributes_txt, "")) {
+      fileread(frpcbsim_allattributes_txt, FrPCBSim_AllAttributes_txt);
+      //move and rename to logging dir  // = "FrPCBSim_SingleAttributes.txt";
+      move_and_rename_to_logging(FrPCBSim_AllAttributes_txt);
+      set_attributes(frpcbsim_allattributes_txt);
+      answer = 1;
+    }
+    sleep(1); // 1 Sekunde warten, ohne CPU-Last
+  } while (!answer);
+
+  exit(-718); // hier kommt das Programm niemals her.
+}
+
+/* ***********************
+ ******** MAIN ***********
+ *********************** */
+readconfig();
+
+if (!Executable || argv[1] == "/S") {
+  string rootpath[];
+  if (OS_System == "Windows" ) {
+    rootpath[0] = "C:/Programme/";
+    rootpath[1] = "C:/Program files (x86)/";
+    rootpath[2] = "C:/Program files/";
+    rootpath[3] = "D:/Program files (x86)/";
+    rootpath[4] = "D:/Program files/";
+    rootpath[5] = "E:/Programme";
+    rootpath[6] = "C:/";
+  }
+  else if (OS_System == "Linux" ) rootpath[0] = "//";
+  else {
+    dlgMessageBox("!PCBsim runs not on MAC OS", "OK");
+    exit(-740);
+  }
+  int nroot = 0;
+  do {
+    Executable = file_search(rootpath[nroot],Search_Felicitas_Execute,  3, "550");
+    nroot++;
+  } while (!Executable && rootpath[nroot]);
+
+  if (!Executable) {
+    dlgMessageBox("!felicitas (" + Search_Felicitas_Execute + ") not found.", "OK");
+    Executable = dlgFileOpen(Search_Felicitas_Execute);
+    if (!Executable) exit(-751);
+  }
+
+  int pos = strstr(EagleExecute, "bin/");       // nur den Hauptpfad zu den Unterordnern
+  string eagleroot = strsub(EagleExecute, 0, pos);
+
+  // durchsuche alle Pfade nach der LBR
+  // string cfgdirlbr = cfgget("EAGLE:Directories.Lbr");
+  // den Pfad unter Optionen Verzeichnisse zu den LBRs!
+  for (int fn = 0; path_lbr[fn]; fn++) {
+    //if (dlgMessageBox("Suche in " + path_lbr[fn] + " nach " + SearcheLibrary, "ok", "esc") != 0) exit(568);
+    FelicitasSimulationLbr = file_search( path_lbr[fn], SearcheLibrary, 1, "-644"); // die Symbole zum simulieren
+    if (FelicitasSimulationLbr) break;
+  }
+  if (!FelicitasSimulationLbr) {
+    dlgMessageBox("!Default felicitas simulation library " + SearcheLibrary + "\nnot found:\n" + EAGLE_DIR + "..\n\n" +
+                  "Please check path: Controlpanel - Options - Libraries" , "CANCEL");
+    // 2013-10-01 Pfadtrenner nach EAGLE_DIR und lbr...
+    exit(-768);
+  }
+
+  autosetupinfo("Auto Setup Info");
+  saveconfig();
+  // die felicitas LBR in die USE-Liste eintragen!
+  string uselbr;
+  sprintf(uselbr, "USE -*;\nUSE '%s';", FelicitasSimulationLbr);
+  // Pfade immer in ' (Apostroph) einschließen, besonders bei Windows 7/8 64-Bit,
+  // da es den Ordner "Programm (x86)" gibt, und die Klammern () von Eagle als Koordinate ausgewertet werden!
+  // für die felicitas.lbr muß der absolute Pfad angegeben werden.
+  if (dlgMessageBox("Die USE-Liste ändern?\n\n" + uselbr, "OK", "CANCEL") != 0) exit(-780);
+  exit(uselbr);
+}
+
+// 1. check exist used directory
+if (!check_directory(EAGLE_HOME  + Exchange_Directory + "/" + Logging_Directory)) {
+  if (!make_sub_dir(EAGLE_HOME, Exchange_Directory  + "/" + Logging_Directory)) { // 2014-02-26
+    if (dlgMessageBox("can't make directory :" + EAGLE_HOME + Exchange_Directory + "/"  + Logging_Directory + "\nPlease check rights and the path.", "OK", "CANCEL810") != 0) exit(-788);
+    exit(-787);
+  }
+}
+
+// 2. check is PCBsim running
+if (check_exist_file(PCBSim_Present_txt, "")) {
+  string pcbsimpresent[];
+  int n = fileread(pcbsimpresent, PCBSim_Present_txt);
+  // "VERSION 1 01 Windows Beta version"
+  //dlgMessageBox("PCBsim <b>" + pcbsimpresent[1] + "</b> is running!", "OK");
+  PCBsim_running = 1;
+}
+else {
+  if (Test) dlgMessageBox("PCBsim start now!", "OK"); // die Meldung, das PCBsim jetzt zum ersten mal gestartet wird.
+  PCBsim_running = 0;
+}
+
+// 3. check if PCBsim is busy
+if (check_exist_file(PCBSim_Busy_txt, "")) {
+  string pcbsymbusy;
+  int n = fileread(pcbsymbusy, PCBSim_Busy_txt);
+  dlgMessageBox(pcbsymbusy + "\n\n" "Please try later.", "OK");
+  exit(-809);
+  do {
+    sleep(1); // sleep 1 seconds to check if file time changed
+  } while (check_exist_file(PCBSim_Busy_txt, ""));
+  dlgMessageBox("PCBsym are now ready.", "OK");
+  exit(-814);
+}
+
+/* *****************************
+ ******** main Import **********
+ ***************************** */
+if (argv[1] == "/RELOAD") { /* **** Laden der berechneten Rückgabewerte **** */
+  status("reload ");
+  string reload_text = argv[2];
+  status("wait on PCBsim to reload " + reload_text);
+  int n = 0;
+  do {
+    sleep(1); // sleep 1 second to new check
+    n = check_exist_file(reload_text, "");
+    if (Test) {
+      string h;
+      sprintf(h, "(Test) file %s are exist %d", reload_text, n);
+      if (dlgMessageBox(h, "ok", "esc") != 0) exit(-831);
+    }
+  } while(n);
+  status("start handshake..");
+  reload();
+}
+
+/* *************************
+ ******** Diagnostic *******
+ ************************* */
+if (strupr(argv[1]) == "/?") { // 2013-10-01
+  //autosetupinfo("Diagnose");
+  dlgDialog("Help") {
+    dlgHBoxLayout dlgSpacing(600);
+    dlgHBoxLayout {
+      dlgVBoxLayout dlgSpacing(200);
+      dlgTextView(usage);
+    }
+    dlgHBoxLayout {
+      dlgLabel("System: "+OS_SIGNATURE);
+      dlgStretch(1);
+      dlgLabel("ULP Version : " + ULP_Version);
+    }
+    dlgHBoxLayout {
+      dlgStretch(1);
+      dlgPushButton("OK") dlgAccept();
+      dlgStretch(1);
+    }
+  };
+  exit(-862);
+}
+
+/* ******************************
+ ******** main Export ***********
+ ****************************** */
+if (strupr(argv[2]) == "/S") {
+  ex_setupmenu();
+  exit(0);
+}
+
+if(board) {
+  dlgMessageBox("Die Option der Board-Simulation ist noch nicht verfügbar!", "OK");
+  exit(-875);
+}
+if (schematic) schematic(SCH) {
+  if (strupr(argv[1]) == "/E" || strupr(argv[1]) == "/I") {
+    if (Test) if (dlgMessageBox("(Test) Export Schematic to:\n" + ToPCBSim_Netlist_txt, "OK", "CANCEL") != 0) exit(-879);
+    sheet(S) {
+      if (strupr(argv[1]) == "/E") {
+        S.nets(N) {
+          N.segments(SEG) {
+            if(ingroup(SEG)) {
+              ExportAll = 0;
+              break;
+            }
+          }
+          if (!ExportAll) break;
+        }
+        output(ToPCBSim_AllAttributes_txt, "wt") { // make a new file
+          printf("***** %s, %s *****\n", ToPCBSim_AllAttributes_txt, t2string(time(), "Uyyyy/MM/dd, hh:mm:ss"));
+          ex_globalattribute(SCH);
+          S.instances(I) {
+            if (newpart(I)) { // 2014-02-12 export the Attributes of part only once
+              ex_attrib_value(I);
+            }
+          }
+        }
+        output(ToPCBSim_Netlist_txt, "wt") {
+          printf("***** %s, %s *****\n", ToPCBSim_Netlist_txt, t2string(time(), "Uyyyy/MM/dd, hh:mm:ss"));
+          printf("***** %s Version %s *****\n", filename(argv[0]), ULP_Version);
+          S.nets(N) N.segments(SEG) {
+            if (ingroup(SEG) || ExportAll) {
+              ex_draw_net_wire(SEG, N.name);
+            }
+          }
+          printf("@END");
+        }
+        output(ToPCBSim_AllAttributes_txt, "at") printf("@END"); // write @END
+      }
+      else if (strupr(argv[1]) == "/I") { // nur die Attribute dieser Instance
+        S.instances(I) {
+          if (ingroup(I)) {
+            output(ToPCBSim_SingleAttributes_txt, "wt") { // make a new file
+              printf("***** %s, %s *****\n", ToPCBSim_SingleAttributes_txt, t2string(time(), "Uyyyy/MM/dd, hh:mm:ss"));
+              ex_globalattribute(SCH); // 2014-02-12
+              ex_attribute(I.part);
+              ex_pinlist(I.part);
+              printf("@END"); // write @END
+            }
+            break;
+          }
+        }
+      }
+
+      status(" ..waiting to return of "+filename(Executable));
+
+      if (Ex_WaitOnHandShake) { /* *** Handshake über Datei-Polling *** */
+        status("wait on handshake of PCBsim");
+        // Wenn PCBsim schon läuft, reicht es, wenn die Datei geschrieben wurde,
+        // ansonsten muß PCBsim gestartet und die Datei übergeben werden.
+        if (!PCBsim_running) {
+          string syscommand;
+          if (OS_System == "Windows") {
+            //sprintf(syscommand, "CMD.EXE /C  \"%s\" \"%s\"", lash2backslash(Executable), lash2backslash(ToPCBSim_Netlist_txt));
+            // *** call external programm, exit from call directly on WINDOWS XP ***
+            sprintf(syscommand, "\"%s\" \"%s\"", lash2backslash(Executable), lash2backslash(ToPCBSim_Netlist_txt));
+            if (Test) syscommand = showsyscommand(syscommand, "(Test) Main /E xport SCH", "Ex_WaitOnHandShake");
+            system(syscommand);  // externes Programm starten
+          }
+          else if (OS_System == "Linux") {
+            sprintf(syscommand, "\"%s\" < \"%s\" &", Executable, ToPCBSim_Netlist_txt); // der Linux programm aufruf mit &
+            if (Test) syscommand = showsyscommand(syscommand, "(Test) Main /E xport SCH", "Ex_WaitOnHandShake");
+            system(syscommand);  // externes Programm starten
+          }
+        }
+        if (Test) if (dlgMessageBox("(Test) Jetzt Daten zurück lesen!", "OK", "ESC") != 0) exit(-948);
+        reload();
+        exit(0);
+      }
+      else {
+        /* *****************************************************************************************
+        Kein Handshake, das ULP wartet auf die Beendigung des aufgerufenen Programm (DOS-BOX)
+        und kehrt dann zum aufrufenden Fenster zurück.
+        Vorteil, das Fenster (Schaltplan) hat den Fokus wieder!
+        ****************************************************************************************** */
+        if (OS_System == "Windows") { /* ** generate DOS command MKDIR ** */
+          call_system(ToPCBSim_Netlist_txt, "NO handshake, wait on return from system call");
+        }
+        else if (OS_System == "Linux") {
+          ;
+        }
+        reload();
+      }
+    }
+  }
+}
+else {
+  dlgMessageBox("Start this ULP in a schematic!", "OK");
+  exit(-971);
+}
+

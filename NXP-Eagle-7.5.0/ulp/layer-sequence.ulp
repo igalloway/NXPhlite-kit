@@ -1,0 +1,359 @@
+#usage "en:Set Layer Sequence for PRINT command.<p>"
+       "For printing your drawing it might be important to determine the sequence of printed layers. "
+       "This ULP manages the 'Option.LayerSequence' setting in the file eaglerc.usr.<p>"
+       "From HELP SET:<br>"
+       "<b>Option.LayerSequence</b><br>"
+       "The internal layers are rendered in a sequence that mimics the actual layer stack, "
+       "so that the result looks useful even on printers and PDF or Postscript files, where "
+       "layers are not transparent. Sometimes user defined layers may need to be rendered before "
+       "internal layers instead of after them. This parameter can be used to define the "
+       "sequence in which layers are rendered. It consists of a string of layer numbers or "
+       "layer ranges, followed by an optional 't' or 'b'. <br>"
+       "123 renders layer 123 <br>"
+       "123t renders layer 123 if the output is \"viewed from top\" (not mirrored) <br>"
+       "123b renders layer 123 if the output is \"viewed from bottom\" (mirrored) <br>"
+       "123-140 renders layers 123 through 140 in the given sequence <br>"
+       "140-123 renders layers 140 through 123 in the given sequence <br>"
+       "* inserts the default sequence of the internal layers <br>"
+       "123b * 123t makes layer 123 always be rendered first <br>"
+       "Note that each layer is rendered only once, even if it is listed several times. "
+       "The default sequence of the internal layers is: <br>"
+       "48t 49t 19t 47t 20t 46t 23 27 25 59 57 55 53 50 51 21 44t 45t 37 35 31 29 33 39 41 43t 18t 17t 1-16 17b 18b 43b 42 40 34 30 32 36 38 45b 44b 22 52 54 56 58 60 26 28 24 46b 20b 47b 19b 49b 48b 61-99.<br>"
+       "When viewed from top, the layer sequence is rendered from right to left, while "
+       "when viewed from bottom (mirrored) it is rendered from left to right. For instance, "
+       "layer 48 (Document) is entered as 48t and 48b to always have it rendered as the last one. <br>"
+       "Layers 21 (tPlace) and 22 (bPlace), on the other hand, are listed only once, to have "
+       "them rendered at the proper place, depending on whether the output is mirrored or not. <br>"
+       "Any layers that are not explicitly mentioned in the layer sequence are rendered after "
+       "the given sequence in ascending order. <br>"
+       "<p>"
+       "<author>Author: alf@cadsoft.de</author>"
+       ,
+       "de:Layerreihenfolge für den Ausdruck festlegen.<p>"
+       "Für den Ausdruck kann die Reihenfolge der Layer wichtig sein. Dieses ULP nutzt die Möglichkeit mit "
+       "'Option.LayerSequence' in der eaglerc.usr diese Reihenfolge fest zu legen.<p>"
+       "Auszug aus HELP SET:<br>"
+       "<b>Option.LayerSequence</b><br>"
+       "Die internen Layer werden in der Reihenfolge dargestellt, die dem tatsächlichen Lagenaufbau entspricht, "
+       "so dass das Ergebnis auch auf Druckern und PDF- bzw. Postscript-Dateien brauchbar aussieht, wo die Layer "
+       "nicht transparent sind. Manchmal kann es erforderlich sein, dass benutzerdefinierte Layer vor den internen "
+       "Layern dargestellt werden müssen, anstatt nach diesen. Mit diesem Parameter kann die Reihenfolge, in der "
+       "die Layer dargestellt werden, festgelegt werden. Er besteht aus einer Folge von Layer-Nummern bzw. "
+       "Layer-Bereichen, optional gefolgt von 't' oder 'b'.<br>"
+       "123 stellt Layer 123 dar<br>"
+       "123t stellt Layer 123 dar, wenn die Ausgabe \"von oben gesehen\" erfolgt (nicht gespiegelt)<br>"
+       "123b stellt Layer 123 dar, wenn die Ausgabe \"von unten gesehen\" erfolgt (gespiegelt)<br>"
+       "123-140 stellt die Layer 123 bis 140 in der angegeben Reihenfolge dar<br>"
+       "140-123 stellt die Layer 140 bis 123 in der angegeben Reihenfolge dar<br>"
+       "* fügt die Standard-Sequenz der internen Layer ein<br>"
+       "123b * 123t  sorgt dafür, dass Layer 123 immer als erster dargestellt wird<br>"
+       "Beachten Sie, dass jeder Layer nur einmal dargestellt wird, auch wenn er mehrmals aufgeführt ist. "
+       "Die Standard-Sequenz der internen Layer ist: <br>"
+       "48t 49t 19t 47t 20t 46t 23 27 25 59 57 55 53 50 51 21 44t 45t 37 35 31 29 33 39 41 43t 18t 17t 1-16 17b 18b 43b 42 40 34 30 32 36 38 45b 44b 22 52 54 56 58 60 26 28 24 46b 20b 47b 19b 49b 48b 61-99.<br>"
+       "Bei Ansicht von oben, wird die Layer-Sequenz von rechts nach links abgearbeitet, während sie bei Ansicht "
+       "von unten (gespiegelt) von links nach rechts abgearbeitet wird. Zum Beispiel ist Layer 48 (Document) als "
+       "48t und 48b enthalten, damit dieser immer als letzter dargestellt wird.<br>"
+       "Die Layer 21 (tPlace) und 22 (bPlace) hingegen sind nur jeweils einmal aufgelistet, damit Sie an der "
+       "richtigen Stelle erscheinen, je nachdem, ob die Ausgabe gespiegelt erfolgt oder nicht.<br>"
+       "Alle nicht explizit in der Layer-Sequenz aufgeführten Layer werden nach der gegebenen Sequenz, in "
+       "aufsteigender Reihenfolge, dargestellt.<br>"
+       "<p>"
+       "<author>Author: alf@cadsoft.de</author>"
+
+string Version = "1.0.0"; // 2013-03-21 alf@cadsoft.de
+
+string Default_Sequence = "48t 49t 19t 47t 20t 46t 23 27 25 59 57 55 53 50 51 21 44t 45t 37 35 31 29 33 39 41 43t 18t 17t 1-16 17b 18b 43b 42 40 34 30 32 36 38 45b 44b 22 52 54 56 58 60 26 28 24 46b 20b 47b 19b 49b 48b";
+numeric string Lay[];
+int CntLS;
+
+string LayerSequence = cfgget("EAGLE:Option.LayerSequence", "48t 49t 19t 47t 20t 46t 23 27 25 59 57 55 53 50 51 21 44t 45t 37 35 31 29 33 39 41 43t 18t 17t 1-16 17b 18b 43b 42 40 34 30 32 36 38 45b 44b 22 52 54 56 58 60 26 28 24 46b 20b 47b 19b 49b 48b 61-99");
+string LayerSequenceUndo = LayerSequence;
+
+string LayerNam[];
+int    LayerNum[];
+int Sel = 0;
+int Srt = 0;
+
+
+
+/*** Functions ***/
+void help(void) {
+  dlgDialog("HELP LayerSequence") {
+    dlgLabel(usage);
+    dlgHBoxLayout {
+      dlgStretch(1);
+      dlgPushButton("+OK") dlgAccept();
+      dlgStretch(1);
+    }
+  };
+}
+
+void selerror(void) {
+  if (language() == "de") dlgMessageBox("!Selektieren Sie erst eine Zeile in der Liste.", "ok");
+  else  dlgMessageBox("!First select a list entry.", "ok");
+  return;
+}
+
+string getnewlayer(void) {
+  int selnew = -1;
+  int srt = 0;
+  string newlayer = "";
+  dlgDialog("Insert Layer Sequence") {
+    dlgHBoxLayout dlgSpacing(280);
+    dlgHBoxLayout {
+      dlgVBoxLayout dlgSpacing(400);
+      dlgVBoxLayout {
+        dlgStretch(1);
+        dlgLabel("Layer num.");
+        dlgStringEdit(newlayer);
+        dlgStretch(1);
+      }
+      dlgListView("Layer", LayerNam, selnew, srt) {
+        if (selnew < 0) selerror();
+        else {
+          if (strstr(LayerNam[selnew], "do not use") > 0) {
+          }
+          else sprintf(newlayer, "%d", selnew);
+        }
+      }
+    }
+    dlgHBoxLayout {
+      dlgPushButton("+OK") {
+        if (newlayer) { dlgAccept(); return newlayer+"\t"+LayerNam[selnew]; }
+        else dlgMessageBox("First select a layer", "OK");
+      }
+      dlgPushButton("-CANCEL") dlgReject();
+      dlgStretch(1);
+    }
+  };
+  return "";
+}
+
+void MoveDown(int sel) {
+  if (sel < 0) {
+    selerror();
+    return;
+  }
+  if (sel < CntLS-1) {
+    string t[];
+    int cnt = strsplit(t, Lay[sel], '\t');
+    string t1[];
+    int cnt1 = strsplit(t1, Lay[sel+1], '\t');
+    Lay[sel] = t[0]+"\t"+t1[1]+"\t"+ t1[2];
+    Lay[sel+1] = t1[0]+"\t"+t[1]+"\t"+t[2];
+    Sel++;
+  }
+  return;
+}
+
+void MoveUp(int sel) {
+  if (sel < 0) {
+    selerror();
+    return;
+  }
+  if (sel > 0) {
+    string t[];
+    int cnt = strsplit(t, Lay[sel], '\t');
+    string t1[];
+    int cnt1 = strsplit(t1, Lay[sel-1], '\t');
+    Lay[sel] = t[0]+"\t"+t1[1]+"\t"+ t1[2];
+    Lay[sel-1] = t1[0]+"\t"+t[1]+"\t"+t[2];
+    Sel--;
+  }
+  return;
+}
+
+void Delete(int sel) {
+  if (sel < 0) {
+    selerror();
+    return;
+  }
+  for (int n = sel; n < CntLS-1; n++) {
+    MoveDown(n);
+  }
+  CntLS--;
+  Sel = -1;
+  Lay[CntLS] = "";
+  return;
+}
+
+void Insert(int sel) {
+  if (sel < 0) sel = CntLS; // hänge es hinten dran
+
+  string newlayer = getnewlayer();
+  if (newlayer) {
+    sprintf(Lay[CntLS], "%d\t\%s\t%s", CntLS+1, newlayer, "layernew");
+    CntLS++;
+    for (int n = CntLS-1; n > sel; n--) {
+      MoveUp(n);
+    }
+    Sel = sel;
+  }
+  return;
+}
+
+void Optiont(int sel) {
+  if (sel < 0) {
+    selerror();
+    return;
+  }
+  string l[];
+  strsplit(l, Lay[sel], '\t');
+  int len = strlen(l[1])-1;
+  if (l[1][len] == 't') return;
+  else if (l[1][len] == 'b') {
+    l[1][len] = 't';
+  }
+  else {
+    l[1]+= "t";
+  }
+  Lay[sel] = l[0]+"\t"+l[1]+"\t"+l[2];
+  return;
+}
+
+void Optionb(int sel) {
+  if (sel < 0) {
+    selerror();
+    return;
+  }
+  string l[];
+  strsplit(l, Lay[sel], '\t');
+  int len = strlen(l[1])-1;
+  if (l[1][len] == 'b') return;
+  else if (l[1][len] == 't') {
+    l[1][len] = 'b';
+  }
+  else {
+    l[1]+= "b";
+  }
+  Lay[sel] = l[0]+"\t"+l[1]+"\t"+l[2];
+  return;
+}
+
+void DelOpt(int sel) {
+  if (sel < 0) {
+    selerror();
+    return;
+  }
+  string l[];
+  strsplit(l, Lay[sel], '\t');
+  int len = strlen(l[1])-1;
+  if (l[1][len] == 'b' || l[1][len] == 't') l[1][len] = 0;
+  Lay[sel] = l[0]+"\t"+l[1]+"\t"+l[2];
+  return;
+}
+
+string gensequence(void) {
+  string l[];
+  int n = 0;
+  strsplit(l, Lay[n], '\t');
+  string setseq = l[1];
+  for (n = 1; n < CntLS; n++) {
+    strsplit(l, Lay[n], '\t');
+    setseq += " "+ l[1];
+  }
+  return setseq;
+}
+
+void setsequence(void) {
+  string setseq = gensequence();
+  if (dlgMessageBox("Set sequence:\n"+setseq, "OK", "CANCEL") != 0) return;
+  cfgset("EAGLE:Option.LayerSequence", setseq);
+  return;
+}
+
+void get_layer_name(string ls) {
+  if (project.schematic) project.schematic(SCH) SCH.layers(L) {
+     LayerNam[L.number] = L.name;
+  }
+  if (project.board) project.board(B) B.layers(L) {
+    LayerNam[L.number] = L.name;
+  }
+  for (int xl = 0; xl < 256; xl++) {
+    if (!LayerNam[xl]) sprintf(LayerNam[xl], "%d ~do not use~", xl);
+  }
+  string h;
+  CntLS = strsplit(Lay, ls, ' ');
+  int n = 0;
+  sprintf(Lay[n], "%d\t%s\t%s",n+1, Lay[n], LayerNam[strtol(Lay[n])]);
+  while (Lay[++n]) {
+    if(strchr(Lay[n], '-') < 1) sprintf(Lay[n], "%d\t%s\t%s",n+1, Lay[n], LayerNam[strtol(Lay[n])]);
+    else sprintf(Lay[n], "%d\t%s\t%s",n+1, Lay[n], "#");
+  }
+  CntLS = n;
+  return;
+}
+
+
+void set_default(void) {
+  LayerSequence = Default_Sequence;
+  get_layer_name(LayerSequence);
+  return;
+}
+
+void set_undo(void) {
+  LayerSequence = LayerSequenceUndo;
+  get_layer_name(LayerSequence);
+  return;
+}
+
+void getEditLine(void) {
+  string layseq = gensequence();
+  dlgDialog("Edit Layer Sequence") {
+    dlgHBoxLayout dlgSpacing(900);
+    dlgStringEdit(layseq);
+    dlgHBoxLayout {
+      dlgPushButton("OK") { dlgAccept(); get_layer_name(layseq); return; }
+      dlgPushButton("CANCEL") { dlgReject(); return; }
+      dlgStretch(1);
+    }
+  };
+  return;
+}
+
+get_layer_name(LayerSequence);
+Sel = -1;
+dlgDialog("Layer Sequence") {
+  dlgHBoxLayout {
+    dlgVBoxLayout dlgSpacing(700);
+    dlgVBoxLayout {
+      dlgPushButton("&Default") set_default();
+      dlgPushButton("Edit") getEditLine();
+      dlgStretch(1);
+      if (language() == "de") dlgPushButton("Verschieben &^") MoveUp(Sel);
+      else dlgPushButton("Move &^") MoveUp(Sel);
+      if (language() == "de") dlgPushButton("E&infügen") Insert(Sel);
+      else dlgPushButton("&Insert") Insert(Sel);
+      if (language() == "de") dlgPushButton("&Löschen") Delete(Sel);
+      else dlgPushButton("D&elete") Delete(Sel);
+      dlgPushButton("Option &t") Optiont(Sel);
+      dlgPushButton("Option &b") Optionb(Sel);
+      if (language() == "de") dlgPushButton("Lösche &Opt.") DelOpt(Sel);
+      else dlgPushButton("Del. &Opt.") DelOpt(Sel);
+      if (language() == "de") dlgPushButton("Verschieben &v") MoveDown(Sel);
+      else dlgPushButton("Move &v") MoveDown(Sel);
+      dlgStretch(1);
+    }
+    dlgListView("Num.\tLay.\tName", Lay, Sel, Srt);
+    dlgVBoxLayout {
+      dlgSpacing(22);
+      dlgLabel("<img src=layer-sequence-arrowdown.png>"); // relativer Pfad
+      if (language() == "de") dlgLabel("Reihenfolge<br>der Layer<br>beim Ausdruck<br>von unten<br>(gespiegelt)");
+      else dlgLabel("Layer sequence<br>to print<br>bottom view<br>(mirrored)");
+      dlgStretch(1);
+      dlgPushButton("&HELP") help();
+      dlgStretch(1);
+      if (language() == "de") dlgLabel("Reihenfolge<br>der Layer<br>beim Ausdruck<br>von oben<br>(nicht&nbsp;gespiegelt)");
+      else dlgLabel("Layer sequence<br>to print<br>top view<br>(not mirrored)");
+      dlgLabel("<img src=layer-sequence-arrowup.png>"); // relativer Pfad
+    }
+  }
+  dlgHBoxLayout {
+    dlgPushButton("E&XIT") dlgAccept();
+    dlgStretch(1);
+    dlgPushButton("&SET") setsequence();
+    dlgStretch(1);
+    dlgPushButton("&UNDO") set_undo();
+  }
+};
+

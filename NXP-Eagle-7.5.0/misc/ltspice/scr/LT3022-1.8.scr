@@ -1,0 +1,13 @@
+ Edit 'LT3022-1.8.dev' ;
+ Prefix 'IC' ;
+ Description '1A, 0.9V to 10V, Very Low Dropout Linear Regulator' ;
+ Value off ;
+ Add LT3022-1.8 'G$1' next 0 (0 0) ;
+ Package 'MSOP16(MSE)' 'MSE' ;
+ Technology '' ;
+ Connect ALL 'G$1.IN' '12 14 13' ;
+ Connect ALL 'G$1.GND' '17 11 10 6 7' ;
+ Connect ALL 'G$1.OUT' '4 3' ;
+ Connect 'G$1.ADJ' '5' ;
+ Connect 'G$1.!SHDN' '9' ;
+# Connect ALL 'G$1.NC' '15 16 2 1 8' ;

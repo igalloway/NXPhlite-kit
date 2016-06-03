@@ -1,0 +1,17 @@
+ Edit 'LTC3203B.dev' ;
+ Prefix 'IC' ;
+ Description '500mA Output Current Low Noise Dual Mode Step-Up Charge Pumps' ;
+ Value off ;
+ Add LTC3203B 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.VOUT' '2' ;
+ Connect 'G$1.C1-' '10' ;
+ Connect 'G$1.C2+' '1' ;
+ Connect 'G$1.VIN' '7' ;
+ Connect ALL 'G$1.GND' '9 11' ;
+ Connect 'G$1.FB' '5' ;
+ Connect 'G$1.C1+' '3' ;
+ Connect 'G$1.C2-' '8' ;
+ Connect 'G$1.!SHDN' '4' ;
+ Connect 'G$1.MODE' '6' ;

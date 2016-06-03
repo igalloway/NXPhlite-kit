@@ -1,0 +1,18 @@
+ Edit 'LT3686.dev' ;
+ Prefix 'IC' ;
+ Description '37V/1.2A Step-Down Regulator in 3mm _ 3mm DFN' ;
+ Value off ;
+ Add LT3686 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.SS' '4' ;
+ Connect 'G$1.RT' '5' ;
+ Connect 'G$1.VIN' '1' ;
+ Connect 'G$1.SW' '10' ;
+ Connect 'G$1.GND' '11' ;
+ Connect 'G$1.FB' '3' ;
+ Connect 'G$1.EN/UVLO' '6' ;
+ Connect 'G$1.BD' '2' ;
+ Connect 'G$1.DA' '9' ;
+ Connect 'G$1.MODE' '7' ;
+ Connect 'G$1.BOOST' '8' ;

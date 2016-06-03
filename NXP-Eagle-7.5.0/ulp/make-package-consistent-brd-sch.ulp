@@ -1,0 +1,139 @@
+#usage "<qt><b>Make schematic and board package consistent, use packages from board.</b>"
+       "<p>"
+       "<author>Author: alf@cadsoft.de</author></qt>"
+
+// THIS PROGRAM IS PROVIDED AS IS AND WITHOUT WARRANTY OF ANY KIND, EXPRESSED OR IMPLIED
+string Version = "1.0.0";  // 2011-05-30 alf@cadsoft.de
+
+string Error = "";
+int    NotConsist = 0;
+string ScrName;
+int    CntChange = 0;
+
+// ### Functions ###
+// Replace character with string (to replace technologie "*" and Package-Variant "?" in Deviceset name)
+string ChrStrRep(string str, char a, string b) {
+  string s[];
+  strsplit(s, str, a);
+  if (a) {
+    if (b == "''") return s[0] + s[1];
+    return s[0] + b + s[1];
+  }
+  return str;
+}
+
+
+void change_pac(string ename, string epackagename, string elibraryname) {
+  string s;
+  project.schematic(SCH) {
+    SCH.parts(P) {
+      if (P.name == ename) {
+        if (P.deviceset.library == elibraryname) {
+          string DevNname;
+          string techno = P.device.technologies;
+          string tech[];
+          int cntt;
+          int found = 0;
+          int foundtech = 0;
+          P.deviceset.devices(D) {
+            if (D.package.name == epackagename) {  // check exist technologie in nue package variant
+              DevNname = D.name;
+              cntt = strsplit(tech, D.technologies, ' ');
+              for (int n = 0; n < cntt; n++) {
+                if (techno == tech[n]) {
+                  foundtech = 1;
+                  break;
+                }
+              }
+            }
+          }
+          if (foundtech) {
+            if (P.device.package.name != epackagename) { // different packages in sch and brd?
+              P.deviceset.devices(D) {
+                if (D.package.name == epackagename) {
+                  string dev_name = ChrStrRep(P.deviceset.name, '*', techno);    // replace first with technologie
+                  dev_name = ChrStrRep(dev_name, '?', D.name);                   // replace second with package variant
+                  P.instances(I) {
+                    string cmd;
+                    sprintf(s, "EDIT .S%d;\n", I.sheet);
+                    cmd+= s;
+                    sprintf(s, "CHANGE PACKAGE %s %s;\n", ename, dev_name);
+                    cmd+= s;
+                    printf(cmd);
+                    NotConsist = 1;
+                    found = 1;
+                    CntChange++;
+                    break;
+                  }
+                }
+              }
+              if (!found) {
+                sprintf(s, "%s : Package-Variant %s on Deviceset %s not found!\n",
+                            ename, epackagename, P.deviceset.name);
+                Error += s;
+              }
+              break; // parts
+            }
+          }
+          else {
+            sprintf(s, "%s : Technologie %s in Package-Variant %s not exist! Check device in library %s.lbr\n",
+                        ename, techno, DevNname, P.deviceset.library);
+            Error += s;
+          }
+        }
+        else {
+          sprintf(s, "%s : Different libraries BRD:%s.lbr SCH:%s.lbr\n",
+                      ename, P.deviceset.library, elibraryname);
+          Error += s;
+        }
+      }
+    }
+  }
+  return;
+}
+
+
+// ### Main ###
+if (library) {
+  dlgMessageBox("Start this ULP in a consistent board or schematic.", "OK");
+  exit(0);
+}
+
+if (project.schematic && project.board) {
+  if (project.board) {
+    project.board(B){
+      ScrName = filesetext(B.name, "~pac~consistent~.scr"); // temporary script file
+      output(ScrName, "wtD") {
+        B.elements(E) {
+          int PACcontact = 0;
+          E.package.contacts(C) { // check only packages with contacts
+            change_pac(E.name, E.package.name, E.package.library);
+            break;
+          }
+        }
+      }
+    }
+    if (Error) {
+      dlgDialog("Make PAC consistent errors") {
+        dlgHBoxLayout dlgSpacing(600);
+        dlgTextView(Error);
+        dlgHBoxLayout {
+          dlgStretch(1);
+          dlgPushButton("+OK") dlgAccept();
+          dlgStretch(1);
+        }
+      };
+      exit(-1);
+    }
+    else {
+      if (!NotConsist) {
+        dlgMessageBox("Schematic and Board are Package consistent!", "OK");
+        exit(0);
+      }
+      string cmd;
+      sprintf(cmd, "SCRIPT '%s'\nEDIT .BRD;\nRUN ulpmessage '%d packages changed.';\n\nRUN '%s'", ScrName, CntChange, argv[0]);
+      exit(cmd);
+    }
+  }
+}
+dlgMessageBox("!Board an Schematic are not consistent.\nCheck Element/Part - Value - Netlist!", "OK");

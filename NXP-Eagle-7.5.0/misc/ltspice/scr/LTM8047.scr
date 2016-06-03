@@ -1,0 +1,15 @@
+ Edit 'LTM8047.dev' ;
+ Prefix 'IC' ;
+ Description '3.1VIN to 32VIN Isolated uModule DC/DC Converter' ;
+ Value off ;
+ Add LTM8047 'G$1' next 0 (0 0) ;
+ Package 'BGA45(Y)' 'Y' ;
+ Technology '' ;
+ Connect ALL 'G$1.VOUT-' 'B5 C1 C2 C3 C4 C5 B4 B3 B2 B1 A5 A4 A3 A2 A1' ;
+ Connect 'G$1.SS' 'H6' ;
+ Connect 'G$1.RUN' 'F3' ;
+ Connect ALL 'G$1.VOUT+' 'C7 C6 B7 B6 A7 A6' ;
+ Connect ALL 'G$1.VIN' 'H2 H1 G2 G1' ;
+ Connect ALL 'G$1.GND' 'F6 F7 G4 G5 G6 H4 H7 F5 F4 E1 E2 E3 E4 E5 E6 E7' ;
+ Connect 'G$1.ADJ' 'G7' ;
+ Connect 'G$1.BIAS' 'H5' ;

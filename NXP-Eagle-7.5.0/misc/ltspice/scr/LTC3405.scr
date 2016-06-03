@@ -1,0 +1,13 @@
+ Edit 'LTC3405.dev' ;
+ Prefix 'IC' ;
+ Description '1.5MHz, 300mA Synchronous Step-Down Regulator in ThinSOT' ;
+ Value off ;
+ Add LTC3405 'G$1' next 0 (0 0) ;
+ Package 'SOT6(S6)' 'S6' ;
+ Technology '' ;
+ Connect 'G$1.RUN' '1' ;
+ Connect 'G$1.VIN' '4' ;
+ Connect 'G$1.SW' '3' ;
+ Connect 'G$1.GND' '2' ;
+ Connect 'G$1.FB' '5' ;
+ Connect 'G$1.MODE' '6' ;

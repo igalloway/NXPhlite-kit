@@ -1,0 +1,660 @@
+#usage "en: <b>PCB Quote Service</b\n>"
+           "<p>"
+           "Get a quote for manufacturing your PCB.<br>",
+       "de: <b>PCB-Angebots-Service</b>\n"
+           "<p>"
+           "Hiermit gelangen Sie zu einem Angebot zur Fertigung Ihres Boards.<p>"
+           "<author>Autor: support@cadsoft.de</author><p>"
+
+// THIS PROGRAM IS PROVIDED AS IS AND WITHOUT WARRANTY OF ANY KIND, EXPRESSED OR IMPLIED
+
+#require 5.1000
+int Version = 25;  // Refer to versioning system. Needed because ULP version independent from EAGLE version
+
+enum { false = 0, true = 1 };
+
+// Debug stuff
+int    Dbg = 0;
+string DbgFile;
+string DbgMsg;
+
+// Messages
+string Warnings;
+int Useless;  // When a quote doesn't make sense (e.g empty board or such)
+
+// Design rules
+int Export = 1;
+string DruFile;
+
+// Units / scaling:  Handling change of internal units V5 -> V6:
+int UFactor = (EAGLE_VERSION < 6 && EAGLE_RELEASE < 12) ? 1 : 32;
+int PrefUnit;  // Preferred unit (representation in dialog)
+
+// Fabrication parameters
+string BoardName;
+int NrLayers;
+int CopperThicknessOutside = INT_MAX;
+int CopperThicknessInside = INT_MAX;
+int MaterialThickness;
+int MinTraceWidth = INT_MAX;
+int MinHoleSize = INT_MAX;
+string SolderSides;
+string SilkScreenSides;
+int NrBlindBuriedTypes;
+int MinPitch = INT_MAX;
+int NrSmdPadsTop;
+int NrSmdPadsBottom;
+
+// Assembly parameters
+int NrPackages;
+int NrThruHoles;
+int NrBGAs;
+int NrQFNs;
+int NrFinePitchs;
+int NrOtherSMDs;
+int HasSMDBothSides;
+
+// For computing width and height
+real XMin = REAL_MAX, XMax = -REAL_MAX, YMin = REAL_MAX, YMax = -REAL_MAX;
+
+// Language support for dialogs: German/English
+// Please keep to alphabetic sorting for better maintainability !
+string Dictionary[] = {
+  "en\v"
+  "de\v",
+  "Assembly Parameters:\v"
+  "Bestückungs-Parameter:\v",
+  "Board length (dimension Y):\v"
+  "Boardlänge  (Y-Richtung):\v",
+  "Board name:\v"
+  "Boardname:\v",
+  "Board thickness:\v"
+  "Boarddicke:\v",
+  "Board width  (dimension X):\v"
+  "Boardbreite (X-Richtung):\v",
+  "Board width and length could not be determined from dimension layer. \v"
+  "Boardbreite und -länge konnten nicht bestimmt werden anhand des Dimension-Layers. \v",
+  "Both Sides\v"
+  "beidseitig\v",
+  "Bottom Side\v"
+  "unten\v",
+  "Please use the dimension layer to design the board outline.\v"
+  "Bitte benutzen Sie den Dimension-Layer, um die Boardumrisse festzulegen.\v",
+  "Calculating quote parameters...\v"
+  "Berechne Angebots-Parameter...\v",
+  "Change Country:\v"
+  "Land wechseln:\v",
+  "Close\v"
+  "Schliessen\v",
+  "+Continue...\v"
+  "+Weiter...\v",
+  "Copper thickness outer layers:\v"
+  "Kupferstärke aussen:\v",
+  "Copper thickness inner layers:\v"
+  "Kupferstärke innen:\v",
+  "Estimate based on outer layers failed. \v"
+  "Schätzung basierend auf Aussen-Layer fehlgeschlagen. \v",
+  "Estimation based on outer layers. \v"
+  "Schätzung basierend auf Aussen-Layer. \v",
+  "Fabrication Parameters:\v"
+  "Fertigungs-Parameter:\v",
+  "Get PCB Quote\v"
+  "Zum PCB-Angebot\v",
+  "A quote for this board doesn't make sense yet !\v"
+  "Ein Angebot für dieses Board macht noch keinen Sinn !\v",
+  "If you want to get a quote anyway, please follow the link.\v"
+  "Wenn Sie dennoch ein Angebot erhalten wollen, folgen Sie bitte dem Link.\v",
+  "Information:\v"
+  "Hinweise:\v",
+  "Minimum hole size:\v"
+  "Kleinster Bohrdurchmesser:\v",
+  "Minimum SMD pitch:\v"
+  "Kleinster SMD-Abstand:\v",
+  "Minimum trace width (track width):\v"
+  "Kleinste Bahnbreite:\v",
+  "Minimum trace width could not be determined.\v"
+  "Minimale Bahnbreite konnte nicht bestimmt werden.\v",
+  "No copper found in the signal layers. \v"
+  "Kein Kupfer in den Signal-Layern vorhanden. \v",
+  "No\v"
+  "Nein\v",
+  "None\v"
+  "keine\v",
+  "Number of\v"
+  "Anzahl von\v",
+  "Number of blind or buried hole types:\v"
+  "Anzahl von Blind- oder Buried-Bohrungsarten:\v",
+  "Number of different packages:\v"
+  "Anzahl verschiedener Packages:\v",
+  "Number of fine pitch packages:\v"
+  "Anzahl von Fine-Pitch-Packages:\v",
+  "Number of other SMDs:\v"
+  "Anzahl sonstiger SMDs:\v",
+  "Number of SMD pads on bottom:\v"
+  "Anzahl von SMD-Pads unten:\v",
+  "Number of SMD pads on top:\v"
+  "Anzahl von SMD-Pads oben:\v",
+  "Number of thru hole packages:          \v"
+  "Anzahl von durchkontaktierten Packages:          \v",
+  "Number of layers:\v"
+  "Anzahl Layer:\v",
+  "Wire(s) and/or polygon(s) with zero width found on signal layer(s). \v"
+  "Bahnen und/oder Polygone mit Breite 0 in Signal-Layer(n) gefunden. \v",
+  "None of the signal layers are used.\v"
+  "Keines der Signal-Layer wird verwendet.\v",
+  "Parameters:\v"
+  "Parameter:\v",
+  "PCB Quote Service\v"
+  "PCB-Angebots-Service\v",
+  "Please start from Layout editor !\v"
+  "Bitte starten Sie vom Layout-Editor aus !\v",
+  "Silkscreen sides:\v"
+  "Bestückungsdruck-Seiten:\v",
+  "SMDs on both sides:\v"
+  "SMDs beidseitig:\v",
+  "Solder sides:\v"
+  "Lötseiten:\v",
+  "There are still airwires left.\v"
+  "Es sind noch Luftlinien vorhanden.\v",
+  "Top Side\v"
+  "oben\v",
+  "undefined\v"
+  "unbestimmt\v",
+  "Warnings:\v"
+  "Warnungen:\v",
+  "Yes\v"
+  "Ja\v",
+  "Your board layout is incomplete:\v"
+  "Ihr Board-Layout ist unvollständig:\v"
+};
+
+string DlgLang = language();
+if (DlgLang != "de") DlgLang = "en";
+int LangIdx = strstr(Dictionary[0], DlgLang) / 3;
+
+// Translate, based on dictionary
+string tr(string s) {
+  string t = lookup(Dictionary, s, LangIdx, '\v');
+  return t ? t : s;
+}
+
+string Unknown = tr("undefined");
+
+//- Auxiliary functions -------------------------------------------------------
+
+string GetTargetURL() {
+   return "http://www.element14.com/community/community/knode/pcb_services";
+}
+
+// String handling
+string I2Str(int i)   { string str; sprintf(str, "%d", i); return str; }
+string B2Str(int b)   { return b ? "true" : "false"; }
+
+// HTML stuff
+string LItem(string txt)   { return  "<li>" + txt +  "</li>"; }
+string Bold(string txt)   { return  "<b>" + txt + "</b>"; }
+
+// Unit handling
+string U2MmStr(int i) { string str; sprintf(str, "%f", u2mm(i)); return str; }
+string U2InStr(int i) { string str; sprintf(str, "%f", u2inch(i)); return str; }
+string U2OzStr(int i) { string str; sprintf(str, "%f", i/(350.0 * UFactor)); return str; }// Todo: Check this !
+// Unit to preferred unit as String with extension !
+string U2PrefUStrExt(int i) { return (PrefUnit == GRID_UNIT_MM) ? U2MmStr(i) + " mm" : U2InStr(i) + " in"; }
+
+int Str2U(string s) {
+   if (strstr(s, "mm") > 0) return int(strtod(s) * 10000 * UFactor);
+   if (strstr(s, "mil") > 0) return int(strtod(s) * 10 * UFactor * 25.4);
+   if (strstr(s, "in") > 0) return int(strtod(s) * 10000 * UFactor * 25.4);
+   if (strstr(s, "mic") > 0) return int(strtod(s) * 10 * UFactor);
+   dlgMessageBox("Unknown unit in design rules !"); exit(EXIT_FAILURE);
+   return 0;
+}
+
+//-------------------------------------------------------
+// Get PCB parameters
+//-------------------------------------------------------
+
+// Means really within, not at the borders
+int Within(int val, int l, int u) { return (val > l) && (val < u); }
+
+int ValidBBox() {
+  return (XMin < REAL_MAX) && (XMax > -REAL_MAX) &&
+         (YMin < REAL_MAX) && (YMax > -REAL_MAX) &&
+         (XMax - XMin > 1000) && (YMax - YMin > 1000); // Could make this much bigger, but that's not crucial (currently 0.1 mm)
+}
+
+/*
+int CheckIfBGA(UL_PACKAGE LBRPAC) {
+//   board(B) B.libraries(L) L.packages(PAC)
+//         if (PAC.name == pacName) {
+            int i;
+            LBRPAC.contacts(C) {
+               LbrPacConXs[i] = C.x;
+               LbrPacConYs[i++] = C.y;
+               // Get grid dimensions
+               ConXMin = min(ConXMin, C.x);
+               conXMax = max(conXMax, C.x);
+               ConYMin = min(ConYMin, C.y);
+               conYMax = max(conYMax, C.y);
+               if (Dbg) { sprintf(DbgMsg, "LbrPac: (%f %f)\n", u2mm(LbrPacConXs[i-1]), u2mm(LbrPacConYs[i-1]));  DbgTxt += DbgMsg; }
+               if (C.smd) {
+                  ConDiam = C.smd.dx;
+                  // All dx/dy must be equal
+                  conDiamMin = min(conDiamMin, C.smd.dx);
+                  conDiamMin = min(conDiamMin, C.smd.dy);
+                  conDiamMax = max(conDiamMax, C.smd.dx);
+                  conDiamMax = max(conDiamMax, C.smd.dy);
+                  if (C.smd.roundness - 100 > roundTol) errRound = true;
+               }
+               else {
+                  errType = true;
+                  break;
+               }
+            }
+         }
+}*/
+
+// Update bounding box with another box
+void UpdateBBoxBox(int xmin, int ymin, int xmax, int ymax) {
+   XMin = min(XMin, xmin);
+   XMax = max(XMax, xmax);
+   YMin = min(YMin, ymin);
+   YMax = max(YMax, ymax);
+}
+
+void UpdateBBoxWire(UL_WIRE W, int layer) {
+  if (W.layer == layer) {
+     real w2 = W.width/2;
+     real xmin = min(W.x1 - w2, W.x2 - w2), ymin = min(W.y1 - w2, W.y2 - w2);
+     real xmax = max(W.x1 + w2, W.x2 + w2), ymax = max(W.y1 + w2, W.y2 + w2);
+     if (W.arc) {
+        if (W.arc.angle2 > 360)
+           xmax = W.arc.xc + W.arc.radius + w2;
+        if (((W.arc.angle1 <  90) && (W.arc.angle2 >  90)) || (W.arc.angle2 > 450))
+           ymax = W.arc.yc + W.arc.radius + w2;
+        if (((W.arc.angle1 < 180) && (W.arc.angle2 > 180)) || (W.arc.angle2 > 540))
+           xmin = W.arc.xc - W.arc.radius - w2;
+        if (((W.arc.angle1 < 270) && (W.arc.angle2 > 270)) || (W.arc.angle2 > 630))
+           ymin = W.arc.yc - W.arc.radius - w2;
+     }
+     UpdateBBoxBox(xmin, ymin, xmax, ymax);
+  }
+}
+
+void UpdateBBoxCircle(UL_CIRCLE C, int layer) {
+   if (C.layer == layer) {
+      real w2 = C.width / 2;
+      UpdateBBoxBox(C.x - C.radius - w2, C.y - C.radius - w2, C.x + C.radius + w2, C.y + C.radius + w2);
+   }
+}
+
+void UpdateBBox(int layer, int el_origin) {
+   board(B) {
+      B.wires(W) UpdateBBoxWire(W, layer);
+      B.circles(C) UpdateBBoxCircle(C, layer);
+      B.elements(E) {
+         if (el_origin) UpdateBBoxBox(E.x, E.y, E.x, E.y);  // Elements are always on signal layers.
+         E.package.wires(W) UpdateBBoxWire(W, layer);
+         E.package.circles(C) UpdateBBoxCircle(C, layer);
+      }
+  }
+}
+
+void GetDruParams() {
+   string lines[];
+   int nrlines = fileread(lines, DruFile);
+   if (nrlines == 0) dlgMessageBox("Error reading design rules !");
+   int layer_used[], nrlayers, bottom_idx;
+
+   for (int i = 0; i < nrlines; ++i) {
+      string words[];
+      int nrwords = strsplit(words, lines[i], ' ');
+      if (nrwords < 3) continue;    // Empty line or some other stuff
+      string keyword = words[0];
+      if (keyword == "layerSetup")
+         for (int k = 1; k <= 16; ++k) {
+            string nr_pattern;
+            sprintf(nr_pattern, "[\\D]%d[\\D]", k);  // Number, surrounded by 'no number character'
+            if (strxstr(words[2], nr_pattern) != -1) {
+               layer_used[k - 1] = true;
+               ++NrLayers;
+               bottom_idx = k - 1;
+            }
+         }
+      else if (keyword == "mtCopper") {
+         if (nrwords != 18) dlgMessageBox("Unexpected design rules !");
+         int top_thickness = -1, bot_thickness;
+         for (int k = 2; k < nrwords; ++k) {
+            if (layer_used[k - 2]) {
+               int thickness = Str2U(words[k]);
+               if (top_thickness == -1)
+                  top_thickness = thickness;
+               else if (k - 2 ==  bottom_idx)
+                  bot_thickness = thickness;
+               else
+                  CopperThicknessInside = min(thickness, CopperThicknessInside);
+               MaterialThickness += thickness;
+            }
+         }
+         CopperThicknessOutside = min(top_thickness, bot_thickness);
+      }
+      else if (keyword == "mtIsolate") {
+         if (nrwords != 17) dlgMessageBox("Unexpected design rules !");
+         // n used layers => n-1 isolate layers. If only 1 layer, also 1 isolate layer.
+         for (int k = 2; k < nrwords; ++k)
+            if (layer_used[k - 2])
+               MaterialThickness += Str2U(words[k]);
+      }
+      else if (keyword == "mdSmdSmd")
+         MinPitch = Str2U(words[2]);
+   }
+}
+
+void CalcMinTraceWidth() {
+   board(B) {
+      B.wires(W) if (W.layer <= 16) MinTraceWidth = min(W.width, MinTraceWidth);
+      B.signals(S) {
+         S.polygons(P) if (P.layer <= 16) MinTraceWidth = min(P.width, MinTraceWidth);
+         S.wires(W) if (W.layer <= 16) MinTraceWidth = min(W.width, MinTraceWidth);
+      }
+   }
+}
+
+void CheckHoles() {
+   int idx[], start[], end[], k;
+   board(B) {
+      B.holes(H) MinHoleSize = min(MinHoleSize, H.drill);
+      B.signals(S) S.vias(V) {
+         MinHoleSize = min(MinHoleSize, V.drill);
+         // Collect blind/buried holes !
+         if ((V.start > 1) || (V.end < 16)) {
+            start[k] = V.start;
+            end[k] = V.end;
+            ++k;
+         }
+      }
+      B.elements(E) {
+         E.package.contacts(C) if (C.pad)
+            MinHoleSize = min(MinHoleSize, C.pad.drill);
+         E.package.holes(H) MinHoleSize = min(MinHoleSize, H.drill);
+      }
+   }
+   // NrBlindBuriedTypes: Find out how many different ones exist !
+   sort(k, idx, start, end);
+   for (int l = 0, cur_s = 0, cur_e = 0; l < k; ++l)
+      if ((start[idx[l]] != cur_s) || (end[idx[l]] != cur_e)) {
+         ++NrBlindBuriedTypes;
+         cur_s = start[idx[l]];
+         cur_e = end[idx[l]];
+      }
+}
+
+void GetPCBParams() {
+   // Check out layers:
+   int smask_top, smask_bottom, silk_top, silk_bottom;
+   int nr_used_layers;
+   board(B) {
+      BoardName = filename(B.name);
+      B.layers(L) if (L.used)
+         if (L.number <= 16) ++nr_used_layers;
+         else if (L.number == LAYER_TSTOP) smask_top = 1;
+         else if (L.number == LAYER_BSTOP) smask_bottom = 1;
+         else if (L.number == LAYER_TPLACE) silk_top = 1;    // Could also take TNAMES/TVALUES. Leave the criterium less strict
+         else if (L.number == LAYER_BPLACE) silk_bottom = 1; // Could also take BNAMES/BVALUES. Leave the criterium less strict
+   }
+   SolderSides = smask_top ? (smask_bottom ? "Both Sides" : "Top Side") :
+                             (smask_bottom ? "Bottom Side" : "None");
+   SilkScreenSides = (silk_top) ? (silk_bottom ? "Both Sides" : "Top Side") :
+                                  (silk_bottom ? "Bottom Side" : "None");
+   if (nr_used_layers == 0) {
+      Warnings += LItem(tr("None of the signal layers are used."));
+      Useless = 1;
+   }
+
+   // Board outlines:
+   UpdateBBox(LAYER_DIMENSION, 0);
+   if (!ValidBBox()) {
+      Warnings += "<li>" + tr("Board width and length could not be determined from dimension layer. ");
+      UpdateBBox(LAYER_TOP, 1);
+      UpdateBBox(LAYER_BOTTOM, 1);
+      if (!ValidBBox())
+         Warnings += tr("Estimate based on outer layers failed. ") +
+                     tr("Please use the dimension layer to design the board outline.") + "</li>";
+      else
+         Warnings += tr("Estimation based on outer layers. ") + "</li>";
+   }
+
+   CalcMinTraceWidth();
+   if (MinTraceWidth == INT_MAX)
+      Warnings += LItem(tr("No copper found in the signal layers. ") +
+                        tr("Minimum trace width could not be determined."));
+   if (MinTraceWidth == 0)
+      Warnings += LItem(tr("Wire(s) and/or polygon(s) with zero width found on signal layer(s). ") +
+                        tr("Minimum trace width could not be determined."));
+   GetDruParams();
+   CheckHoles();
+   int air_wires = 0;
+   {  // Check if there are still airwires:
+      board(B) {
+         B.wires(W) if (W.layer == LAYER_UNROUTED) air_wires = 1;
+         B.signals(S) {
+            S.polygons(P) if (P.layer == LAYER_UNROUTED) air_wires = 1;
+            S.wires(W) if (W.layer == LAYER_UNROUTED) air_wires = 1;
+         }
+      }
+   }
+   if (air_wires)
+      Warnings += LItem(tr("There are still airwires left."));
+
+   // Analysis of elements
+   // Alternative idea for performance optimization:
+   // Run SMD analysis over all library packages to avoid multiple runs
+   // Keep results in Arrays
+   string keyBGA = "BGA", keyQFN = "QFN";
+   real sqLimitFinePitch = 0.5 * 0.5; // Square of the threshold for Fine Pitch (in mm)
+   board(B) B.elements(E) {
+      int isThruHole, isSMD;
+      E.package.contacts(C)
+         if (C.smd) {
+            isSMD = true;
+            if (C.smd.layer == LAYER_TOP) ++NrSmdPadsTop;
+            else ++NrSmdPadsBottom;
+         }
+         else
+            isThruHole = true;  // Assuming there are no mixed versions
+      if (isThruHole) ++NrThruHoles;
+      else if (isSMD) {         // There might also be the case of NO contacts !
+         // Collect contacts in untransformed state to make geometrical checks !
+         real conXs[], conYs[];
+         int nrCons;
+         B.libraries(L)
+            if (L.name == E.package.library) L.packages(P)
+               if (P.name == E.package.name) P.contacts(C) {
+                  conXs[nrCons] = u2mm(C.x);
+                  conYs[nrCons++] = u2mm(C.y);
+               }
+         if (strstr(E.name, keyBGA) >= 0 ||
+             strstr(E.package.name, keyBGA) >= 0 ||
+             strstr(E.package.description, keyBGA) >= 0) {
+            // Plausibility check
+            ++NrBGAs;
+         }
+         else if (strstr(E.name, keyQFN) >= 0 ||
+             strstr(E.package.name, keyQFN) >= 0 ||
+             strstr(E.package.description, keyQFN) >= 0) {
+            // Plausibility check
+            ++NrQFNs;
+         }
+         else {
+            // if there's a contact pair with distance <= fine pitch limit it's a FINE Pitch, else it's an other SMD
+            for (int isFP = false, i = 0; i < nrCons && !isFP; ++i)
+               for (int j = i + 1; j < nrCons && !isFP; ++j)
+                   if ((conXs[j] - conXs[i]) * (conXs[j] - conXs[i]) +
+                       (conYs[j] - conYs[i]) * (conYs[j] - conYs[i]) <= sqLimitFinePitch)
+                      isFP = true;
+            if (isFP)
+               ++NrFinePitchs;
+            else
+               ++NrOtherSMDs;
+         }
+      }
+   }
+   HasSMDBothSides = NrSmdPadsTop * NrSmdPadsBottom > 0;
+
+   // Packages (number of unique elements)
+   // Only those with contacts !
+   board(B) B.libraries(L) L.packages(P) P.contacts(C) {
+      ++NrPackages;
+      break;
+   }
+}
+
+string MakeParamSendString() {
+   // Fab parameters:
+   //  - Parameters that always can be determined:
+   string send = "?source=SBPCAD" +
+                 "&boardName=" + BoardName +
+                 "&numLayers=" + I2Str(NrLayers) +
+                 "&materialThicknessMm=" + U2MmStr(MaterialThickness) +
+                 "&materialThicknessIn=" + U2InStr(MaterialThickness) +
+                 "&copperThicknessOutsideMm=" + U2MmStr(CopperThicknessOutside) +
+                 "&copperThicknessOutsideOz=" + U2OzStr(CopperThicknessOutside) +
+                 "&solderSides=" + SolderSides +
+                 "&silkScreenSides=" + SilkScreenSides +
+                 "&blindBuriedHoles=" + I2Str(NrBlindBuriedTypes) +
+                 "&numPadsTop=" + I2Str(NrSmdPadsTop) +
+                 "&numPadsBottom=" + I2Str(NrSmdPadsBottom);
+   //  - Parameters that might miss:
+   if (ValidBBox())
+      send +=    "&boardWidthMm=" + U2MmStr(XMax - XMin) +
+                 "&boardWidthIn=" + U2InStr(XMax - XMin) +
+                 "&boardLengthMm=" + U2MmStr(YMax - YMin) +
+                 "&boardLengthIn=" + U2InStr(YMax - YMin);
+   if (Within(CopperThicknessInside, 0, INT_MAX))
+      send +=    "&copperThicknessInsideMm=" + U2MmStr(CopperThicknessInside) +
+                 "&copperThicknessInsideOz=" + U2OzStr(CopperThicknessInside);
+   if (Within(MinTraceWidth, 0, INT_MAX))
+      send +=    "&minTraceWidthMm=" + U2MmStr(MinTraceWidth) +
+                 "&minTraceWidthIn=" + U2InStr(MinTraceWidth);
+   if (MinPitch < INT_MAX)
+      send +=    "&minPitchMm=" + U2MmStr(MinPitch) +
+                 "&minPitchIn=" + U2InStr(MinPitch);
+   if (MinHoleSize < INT_MAX)
+      send +=    "&minHoleSizeMm=" + U2MmStr(MinHoleSize) +
+                 "&minHoleSizeIn=" + U2InStr(MinHoleSize);
+   // Assy parameters:
+   send +=       "&numPackages=" + I2Str(NrPackages) +
+                 "&numBGAs=" + I2Str(NrBGAs) +
+                 "&numQFNs=" + I2Str(NrQFNs) +
+                 "&numFinePitch=" + I2Str(NrFinePitchs) +
+                 "&numOtherSMDs=" + I2Str(NrOtherSMDs) +
+                 "&numThruHoles=" + I2Str(NrThruHoles) +
+                 "&hasSMDBothSides=" + B2Str(HasSMDBothSides);
+
+   if (Dbg) output(DbgFile, "wba") printf("%s\n%s\n", GetTargetURL(), send);
+   return send;
+}
+
+int Dialog() {
+   string Info[] = {
+      "Based on your board layout and the design rules, key parameters for manufacturing "
+      "your board like board size, minimum hole size etc. are determined. Your design "
+      "should be complete and have passed a DRC successfully.<br>"
+      "By following the link below you get to the PCB quote site on Element14 where these "
+      "parameters are transferred. This way with a few steps you get a quote for manufacturing "
+      "your board."
+      ,
+      "Basierend auf Ihr Board-Layout und den Designregeln werden wichtige Parameter zur Fertigung "
+      "des Boards ermittelt wie zum Beispiel Boardgrösse, kleinster Bohrdurchmesser usw. "
+      "Ihr Design sollte möglichst vollständig und ein erfolgreicher DRC durchgeführt worden sein.<br>"
+      "Durch Klicken des Links unten gelangen Sie zur PCB-Angebotsseite auf Element14, wo diese "
+      "Parameter übernommen werden. Mit wenigen Schritten erhalten Sie so ein Angebot zur Fertigung "
+      "Ihres Boards."
+   };
+   string url = "<a href=\"" + GetTargetURL() + MakeParamSendString() + "\">";
+   return dlgDialog(tr("PCB Quote Service (Version " + I2Str(Version) + ")")) {
+      dlgHBoxLayout dlgSpacing(470);
+      dlgGroup(tr("Information:"))
+         dlgLabel(Info[LangIdx], 1);
+      if (Warnings)
+         dlgHBoxLayout
+            dlgGroup(tr("Warnings:"))
+               dlgLabel(Warnings);
+      if (!Useless) {
+         dlgGroup(tr("Fabrication Parameters:"))
+            dlgGridLayout {
+               int Row;
+               dlgCell(Row, 0) dlgLabel(tr("Number of layers:"));                       dlgCell(Row++, 1) dlgLabel(Bold(I2Str(NrLayers)));
+               dlgCell(Row, 0) dlgLabel(tr("Board name:"));                             dlgCell(Row++, 1) dlgLabel(Bold(BoardName));
+               dlgCell(Row, 0) dlgLabel(tr("Board width  (dimension X):"));             dlgCell(Row++, 1) dlgLabel(Bold(ValidBBox() ? U2PrefUStrExt(XMax - XMin) : Unknown));
+               dlgCell(Row, 0) dlgLabel(tr("Board length (dimension Y):"));             dlgCell(Row++, 1) dlgLabel(Bold(ValidBBox() ? U2PrefUStrExt(YMax - YMin) : Unknown));
+               dlgCell(Row, 0) dlgLabel(tr("Board thickness:"));                        dlgCell(Row++, 1) dlgLabel(Bold(U2PrefUStrExt(MaterialThickness)));
+               dlgCell(Row, 0) dlgLabel(tr("Copper thickness outer layers:"));          dlgCell(Row++, 1) dlgLabel(Bold(U2PrefUStrExt(CopperThicknessOutside)));
+               dlgCell(Row, 0) dlgLabel(tr("Copper thickness inner layers:"));          dlgCell(Row++, 1) dlgLabel(Bold(Within(CopperThicknessInside, 0, INT_MAX) ? U2PrefUStrExt(CopperThicknessInside) : Unknown));
+               dlgCell(Row, 0) dlgLabel(tr("Solder sides:"));                           dlgCell(Row++, 1) dlgLabel(Bold(tr(SolderSides)));
+               dlgCell(Row, 0) dlgLabel(tr("Silkscreen sides:"));                       dlgCell(Row++, 1) dlgLabel(Bold(tr(SilkScreenSides)));
+               dlgCell(Row, 0) dlgLabel(tr("Number of SMD pads on top:"));              dlgCell(Row++, 1) dlgLabel(Bold(I2Str(NrSmdPadsTop)));
+               dlgCell(Row, 0) dlgLabel(tr("Number of SMD pads on bottom:"));           dlgCell(Row++, 1) dlgLabel(Bold(I2Str(NrSmdPadsBottom)));
+               dlgCell(Row, 0) dlgLabel(tr("Number of blind or buried hole types:"));   dlgCell(Row++, 1) dlgLabel(Bold(I2Str(NrBlindBuriedTypes)));
+               dlgCell(Row, 0) dlgLabel(tr("Minimum trace width (track width):"));      dlgCell(Row++, 1) dlgLabel(Bold(Within(MinTraceWidth, 0, INT_MAX) ? U2PrefUStrExt(MinTraceWidth) : Unknown));
+               dlgCell(Row, 0) dlgLabel(tr("Minimum SMD pitch:"));                      dlgCell(Row++, 1) dlgLabel(Bold(MinPitch < INT_MAX ? U2PrefUStrExt(MinPitch) : Unknown));
+               dlgCell(Row, 0) dlgLabel(tr("Minimum hole size:"));                      dlgCell(Row++, 1) dlgLabel(Bold(MinHoleSize < INT_MAX ? U2PrefUStrExt(MinHoleSize) : Unknown));
+            }
+         dlgGroup(tr("Assembly Parameters:"))
+            dlgGridLayout {
+               int Row;
+               dlgCell(Row, 0) dlgLabel(tr("Number of different packages:"));           dlgCell(Row++, 1) dlgLabel(Bold(I2Str(NrPackages)));
+               dlgCell(Row, 0) dlgLabel(tr("Number of") + " BGAs:");                    dlgCell(Row++, 1) dlgLabel(Bold(I2Str(NrBGAs)));
+               dlgCell(Row, 0) dlgLabel(tr("Number of") + " QFNs:");                    dlgCell(Row++, 1) dlgLabel(Bold(I2Str(NrQFNs)));
+               dlgCell(Row, 0) dlgLabel(tr("Number of fine pitch packages:"));          dlgCell(Row++, 1) dlgLabel(Bold(I2Str(NrFinePitchs)));
+               dlgCell(Row, 0) dlgLabel(tr("Number of other SMDs:"));                   dlgCell(Row++, 1) dlgLabel(Bold(I2Str(NrOtherSMDs)));
+               dlgCell(Row, 0) dlgLabel(tr("Number of thru hole packages:          ")); dlgCell(Row++, 1) dlgLabel(Bold(I2Str(NrThruHoles)));
+               dlgCell(Row, 0) dlgLabel(tr("SMDs on both sides:"));                     dlgCell(Row++, 1) dlgLabel(Bold(HasSMDBothSides ? tr("Yes") : tr("No")));
+            }
+      }
+      dlgHBoxLayout {
+         dlgStretch(1);
+         if (!Useless)
+            dlgLabel("<b>" + url + tr("Get PCB Quote") + "</b>", 1);
+         dlgStretch(1);
+         dlgPushButton(tr("Close")) dlgReject();
+      }
+   };
+}
+
+//-----------------------------------------------------------------------------
+// main section
+//-----------------------------------------------------------------------------
+
+// Parse arguments
+for (int i = 1; i <= argc; ++i) {
+   if (argv[i] == "-noexp") Export = 0;
+}
+
+if (board) {
+   string dir = filedir(argv[0]);
+   board(B) DruFile = dir + "dl-" + filename(filesetext(B.name, ".dru"));
+   if (Export)
+      exit("DRC SAVE '" + DruFile + "';\nRUN '" + argv[0] + "' -noexp;");
+   if (Dbg) board(B) {
+     DbgFile = filedir(B.name) + "/dbg-pcb-service.txt";
+     output(DbgFile, "wba") printf("\nBoard: %s\n", filename(B.name));
+   }
+   status(tr("Calculating quote parameters..."));
+   GetPCBParams();
+   if (Warnings) {
+      string tmp = tr("Your board layout is incomplete:") + "<ul>" + Warnings + "</ul>";
+      if (Useless) tmp += tr("A quote for this board doesn't make sense yet !");
+      else tmp += tr("If you want to get a quote anyway, please follow the link.");
+      Warnings = tmp;
+   }
+   if (Dbg && Warnings) output(DbgFile, "wba") printf("Warnings: \n%s\n", Warnings);
+   board(B) {
+      int grU = B.grid.unit;
+      PrefUnit = (grU == GRID_UNIT_MM || grU == GRID_UNIT_MIC) ? GRID_UNIT_MM : GRID_UNIT_INCH;
+   }
+   while (Dialog() == 1);
+   exit(EXIT_SUCCESS);
+}
+else
+   dlgMessageBox(tr("Please start from board editor !"));

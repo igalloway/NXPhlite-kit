@@ -1,0 +1,394 @@
+#usage "en: <b>DesignLink Library Tool</b>\n"
+           "<p>"
+           "ULP for embedding Farnell and/or Newark order codes and related data to EAGLE library devices."
+           "<p>"
+           "Usage: run designlink-lbr [-both_oc]|[-sop]\n"
+           "<p>"
+           "Options:"
+           "<p>"
+           "<i>-both_oc:</i> This lets you search both in Farnell and Newark databases and embed both order codes.<br>\n"
+           "<i>-sop    :</i> Search option package. By default searching for Farnell parts "
+                            "is done with device name and technology. With this option the "
+                            "package name is taken additionally for getting more accurate results.\n"
+           "<p>"
+           "<author>Author: support@cadsoft.de</author>",
+       "de: <b>DesignLink Library Tool</b>\n"
+           "<p>"
+           "ULP für die Zuweisung von Farnell- und/oder Newark-Ordercodes und verwandte Daten zu EAGLE-Devices."
+           "<p>"
+           "Usage: run designlink-lbr [-both_oc]|[-sop]\n"
+           "<p>"
+           "Optionen:"
+           "<p>"
+           "<i>-both_oc:</i> Damit können Sie sowohl in der Farnell- als auch in der Newark-Datenbank suchen"
+           "                 und Ordercodes zuweisen.<br>\n"
+           "<i>-sop    :</i> Search option package. Fuer die Produktsuche zu einem Bauteil wird "
+                            "standardmässig der Value verwendet. Mit dieser Option wird mit "
+                            "Value und Packagebezeichnung gesucht, um genauere Ergebnisse zu erzielen.\n"
+           "<p>"
+           "<author>Author: support@cadsoft.de</author>"
+
+#require 5.1001
+
+// THIS PROGRAM IS PROVIDED AS IS AND WITHOUT WARRANTY OF ANY KIND, EXPRESSED OR IMPLIED
+
+#include "designlink-inc.ulp"
+
+string Version = "1.0.7";
+string NotAssigned = "not assigned";
+string LibName;
+int NrDev = 0;
+string DevFullName[];
+string DevSet[];
+string DevName[];
+string DevPkg[];
+string DevTech[];
+string DevDesc[];
+int    DevOCIdx[];
+string DevOC[];
+string DevMF[];
+string DevMPN[];
+string DevProdDesc[];
+string DevImgLink[];
+numeric string DevList[];
+
+// For transferring OCs to other library
+int Transfer = 0;
+string NewLibPath;
+
+
+if (DIVersion != Version) {
+  dlgMessageBox(tr("Verschiedene Versionen von ") + filename(argv[0]) + " (" + Version + ") " +
+                tr("und Include ") + "designlink-inc.ulp (" + DIVersion + ") !\n");
+}
+
+InitCountryData();
+InitCfg();
+
+DIAdvice = "\n <b>" + tr("Bitte manuell suchen oder Part überspringen !") + "<b>\n";
+DISkipRem = 0;  // For processing the libraries we don't want to skip the unfound parts by default
+
+// Cool string replace function...
+string StrRep(string str, string a, string b) {
+  int la = strlen(a), lb = strlen(b);
+  if (la == 0) return str; // Makes no sense. Should be treated as an error !
+  for (int pos = strstr(str, a); pos >= 0; pos = strstr(str, a, pos + lb)) {
+    str = strsub(str, 0, pos) + b + strsub(str, pos + la);
+  }
+  return str;
+}
+
+// Windows uses backslashes for directories which have to be backslashed which have to be backslashed...
+string SetWeirdBackSlashesForWindows(string ReasonblePathWithSlashes) {
+  return StrRep(ReasonblePathWithSlashes, "/", "\\\\");
+}
+
+string ImgFile(string s) {
+  return StrRep(s, "/", "@") + ".png";
+}
+
+void InitFarnellNewark(int idx) {
+  DILanguage = "en";
+  DICountry = (idx == 0) ? "UK" : "US";
+  InitCountryData();
+}
+
+void FillDevListRow(int idx) {
+  sprintf(DevList[idx], "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", DevSet[idx], DevPkg[idx],
+          DevTech[idx], DevFullName[idx], DICompany, DevOC[idx], DevMPN[idx], DevProdDesc[idx]);
+}
+
+void SearchDev(int sel_idx) {
+  DISkipRem = 0;
+  Clear();
+
+  // Prepare country settings, Farnell/Newark
+  InitFarnellNewark(DevOCIdx[sel_idx]);
+  // Go ahead !
+  // translate to German !!!
+  string product = SingleSearch(DIModeLbrSearch, tr(" DesignLink Devicesuche und -anzeige - ") + LibName,
+                                DevDesc[sel_idx], DevImgLink[sel_idx],
+                                (DevOC[sel_idx] == NotAssigned) ? DISearchByKeyword : DISearchByOC,
+                                (DevOC[sel_idx] == NotAssigned) ? DevFullName[sel_idx] : DevOC[sel_idx],
+                                DevFullName[sel_idx]);
+  // Cancel: Nothing to do. Reset Flag.
+  if (DICancelSearch) {
+    DICancelSearch = 0;
+    return;
+  }
+  if (product != "") {
+    string s[];
+    strsplit(s, product, '\t');
+    DevOC[sel_idx] = s[0];
+    DevMF[sel_idx] = s[1];
+    DevMPN[sel_idx] = s[2];
+    DevProdDesc[sel_idx] = s[5];
+  }
+  else {
+    DevOC[sel_idx] = DIUnknown;
+    DevMF[sel_idx] = "";
+    DevMPN[sel_idx] = "";
+    DevProdDesc[sel_idx] = "";
+  }
+  FillDevListRow(sel_idx);
+}
+
+// Save the stuff !
+string SaveAttributes() {
+  string cmds, cmd;
+  // Transfer option
+  if (Transfer) sprintf(cmd, "OPEN '%s';\n", NewLibPath); cmds += cmd;
+  //-------------------------------------------------------------------
+  for (int i = 0; i < NrDev; i++) {
+    if (DevOC[i] != NotAssigned) {
+      InitFarnellNewark(DevOCIdx[i]);
+      sprintf(cmd, "EDIT %s.dev;\n", DevSet[i]);                                   cmds += cmd;
+      sprintf(cmd, "PACKAGE '%s';\n", (DevName[i] == "''") ? "" : DevName[i]);     cmds += cmd;
+      sprintf(cmd, "TECHNOLOGY '%s';\n", (DevTech[i] == "''") ? "" : DevTech[i]);  cmds += cmd;
+      sprintf(cmd, "ATTRIBUTE %s '%s';\n", DIAttOC, DevOC[i]);                     cmds += cmd;
+      sprintf(cmd, "ATTRIBUTE %s '%s';\n", DIAttMF, DevMF[i]);                     cmds += cmd;
+      sprintf(cmd, "ATTRIBUTE %s '%s';\n", DIAttMPN, DevMPN[i]);                   cmds += cmd;
+    }
+  }
+  cmds += "WRITE;\n";
+  return cmds;
+}
+
+// ------------ Library Device --------------------
+if (!library) {
+  dlgMessageBox(tr("Bitte starten Sie vom Bibliotheks-Editor aus !"));
+  exit(EXIT_FAILURE);
+}
+
+library(L) {
+  // Parsing arguments:
+  int both_oc, export, skip_exp;
+  // Statistic stuff
+  int statistics;
+  string st_opt_list =       "-st_list";
+  string st_opt_idx =        "-st_idx";
+  string st_opt_nr_dev =     "-st_nr_dev";
+  string st_opt_nr_oc_f =    "-st_nr_oc_f";
+  string st_opt_nr_oc_n =    "-st_nr_oc_n";
+  string st_opt_nr_not_ass = "-st_nr_not_ass";
+  // The parameters themselves
+  string st_list;
+  int st_idx = -1;
+  int st_all_nr_dev;
+  int st_all_nr_oc_f;
+  int st_all_nr_oc_n;
+  int st_all_nr_not_ass;
+  int st_nr_oc_f;
+  int st_nr_oc_n;
+  int st_nr_not_ass;
+
+  for (int i = 1; i <= argc; ++i) {
+    if (argv[i] == "-sop") DISearchOptPac = 1;
+    if (argv[i] == "-both_oc") both_oc = 1;
+    if (argv[i] == "-skip_exp") skip_exp = 1;
+    // Transfer option: Not supported officially. Used internally.
+    if (strsub(argv[i], 0, 9) == "-transfer") {
+      Transfer = 1;
+      NewLibPath = strsub(argv[i], 9); // Full path
+    }
+    // Statistic function: Also for internal use.
+    if (strsub(argv[i], 0, strlen(st_opt_list)) == st_opt_list) {
+      statistics = 1;
+      both_oc = 1;  // In that case we want it for both order codes
+      skip_exp = 1; // In that case we don't want the images exported
+      st_list = strsub(argv[i], strlen(st_opt_list)); // Full path
+    }
+    if (strsub(argv[i], 0, strlen(st_opt_idx)) == st_opt_idx)
+      st_idx = strtol(strsub(argv[i], strlen(st_opt_idx)));
+    if (strsub(argv[i], 0, strlen(st_opt_nr_dev)) == st_opt_nr_dev)
+      st_all_nr_dev = strtol(strsub(argv[i], strlen(st_opt_nr_dev)));
+    if (strsub(argv[i], 0, strlen(st_opt_nr_oc_f)) == st_opt_nr_oc_f)
+      st_all_nr_oc_f = strtol(strsub(argv[i], strlen(st_opt_nr_oc_f)));
+    if (strsub(argv[i], 0, strlen(st_opt_nr_oc_n)) == st_opt_nr_oc_n)
+      st_all_nr_oc_n = strtol(strsub(argv[i], strlen(st_opt_nr_oc_n)));
+    if (strsub(argv[i], 0, strlen(st_opt_nr_not_ass)) == st_opt_nr_not_ass)
+      st_all_nr_not_ass = strtol(strsub(argv[i], strlen(st_opt_nr_not_ass)));
+  }
+  if (Transfer && !NewLibPath) {
+    dlgMessageBox("Missing transfer library path !");
+    exit(EXIT_FAILURE);
+  }
+  if (statistics && !st_list) {
+    dlgMessageBox("Missing library list for statistics !");
+    exit(EXIT_FAILURE);
+  }
+  // Optional generation of image files
+  // If not specified to skip the export check if it's necessary:
+  if (!skip_exp) {
+    string cmds, cmd;
+    string img_dir = filesetext(L.name, "");
+    string matches[];
+    int dir_error;
+    if (!fileglob(matches, img_dir)) {
+      // Need to use CMD for Windows (?)
+      if (system("CMD /C \"mkdir \"" +  SetWeirdBackSlashesForWindows(img_dir)  + "\"\"") != 0) {
+         dlgMessageBox("Creating image directory " + SetWeirdBackSlashesForWindows(img_dir) + " failed !");
+         dir_error = 1;
+      }
+      export = 1;
+    }
+    L.packages(P) {
+      string img_file = ImgFile(P.name);
+      if (!fileglob(matches, img_dir + "/" + img_file)) {
+        export = 1;
+        real large = u2inch(P.area.x2 - P.area.x1);
+        if (P.area.y2 - P.area.y1 > large)
+          large = u2inch(P.area.y2 - P.area.y1);
+        large = max(0.01, large);  // use a minimum size to avoid 0 (in case of empty package)
+        real f = max(50, min(1.0 / large * 150, 2400.0));  // max. 2 Inch long
+        sprintf(cmd, "EDIT %s.PAC;\nEXPORT IMAGE '%s' %.0f;\n", P.name, img_dir + "/" + img_file, f);
+        cmds += cmd;
+      }
+    }
+    if (export && !dir_error) {
+      dlgMessageBox(tr("Erzeugung der Package-Bilder zunächst !"));
+      cmds += "RUN '" + argv[0] + "' -skip_exp";  // Run again without doing the export !
+      for (int i = 1; i <= argc; ++i) cmds += " " + argv[i];
+      exit(cmds);
+    }
+  }
+  //------------------------------------------------------------------------
+  // We don't use those flags here. Set them to false
+  DIInStock = 0;
+  DIRoHS = 0;
+  LibName = filename(L.name);
+  string dev_list_head = tr("Deviceset\tPackage\tTechnologie\tDevicename\tOrdercode-Typ\tOrdercode\tHerstellercode\tBeschreibung");
+
+  L.devicesets(DS) {
+    DS.devices(D) {
+      if (D.package) {
+        string t[];
+        int n = strsplit(t, D.technologies, ' ');
+        for (int i = 0; i < n;  i++) {
+          string full_name = techpacvar(DS.name, D.name, t[i], D.package.name);
+          // Same problem like for package names
+          string description = "<b> Deviceset: </b>" + DS.name + " " +
+                               "<b> Package: </b>" + (D.package.name ? D.package.name : "---") +
+                               "<b> Technology: </b>" + t[i] +
+                               "<b> Device name: </b>" + full_name + "<p>" +
+                               DS.description;
+          string image = "<img src=\"" +  filesetext(L.name, "") + "/" + ImgFile(D.package.name) + "\">";
+
+          for (int j = 0; j < (both_oc ? 2 : 1);  j++) {
+            DevSet[NrDev] = DS.name;
+            DevName[NrDev] = D.name;
+            DevPkg[NrDev] = D.package.name;
+            DevTech[NrDev] = t[i];
+            DevFullName[NrDev] = full_name;
+            InitFarnellNewark(j);
+            DevOCIdx[NrDev] = j;
+            DevOC[NrDev] = NotAssigned;
+            DevMF[NrDev] = "";
+            DevMPN[NrDev] = "";
+            D.attributes(A, t[i])
+              if ((A.name == DIAttOC) && (A.value != "")) DevOC[NrDev] = A.value;
+              else if (A.name == DIAttMPN) DevMPN[NrDev] = A.value;
+              else if (A.name == DIAttMF) DevMF[NrDev] = A.value;
+            if (DevOC[NrDev] == NotAssigned) {
+              DevMPN[NrDev] = "";
+              DevMF[NrDev] = "";
+            }
+            DevDesc[NrDev] = description; // lot of memory ?
+            DevImgLink[NrDev] = image;
+            DevProdDesc[NrDev] = "";
+            // For statistic purpose:
+            if (statistics && (st_idx >= 0))
+              if      (DevOC[NrDev] == NotAssigned) ++st_nr_not_ass;
+              else if (DevOC[NrDev] != DIUnknown)
+                if (DevOCIdx[NrDev] == 0) ++st_nr_oc_f;
+                else ++st_nr_oc_n;
+            FillDevListRow(NrDev++);
+          }
+        }
+      }
+    }
+  }
+  // Process Statistics
+  if (statistics) {
+    string res_file = filedir(st_list) + "stat_lbr.txt";
+    if (st_idx >= 0) {
+      output(res_file, "wba")
+        printf("%-40s:%6d   %6d      %6d     %6d      %6d\n", LibName, NrDev/2, st_nr_oc_f, st_nr_oc_n,
+               NrDev - st_nr_oc_f - st_nr_oc_n, st_nr_not_ass);
+      st_all_nr_dev += NrDev/2;
+      st_all_nr_oc_f += st_nr_oc_f;
+      st_all_nr_oc_n += st_nr_oc_n;
+      st_all_nr_not_ass += st_nr_not_ass;
+    }
+    else
+      output(res_file, "wt") printf("Library Order Code Statistics.\n\n"
+        "Name                                     #Devices #Farnell OCs #Newark OCs #Without OCs #Not assigned\n"
+        "-----------------------------------------------------------------------------------------------------\n");
+    // Read name of next library:
+    ++st_idx;
+    string lines[];
+    int nr_l = fileread(lines, st_list);
+    int i, idx = -1;
+    for ( ; (i < nr_l) && (idx < st_idx); ++i)
+      if ((lines[i] != "") && (strchr(lines[i], '#') == -1)) ++idx;
+    string next_lbr = ((idx == st_idx) ? lines[--i] : "");
+    // Run again with next library
+    if (next_lbr != "") {
+      string cmd;
+      sprintf(cmd, "OPEN '%s';RUN '%s' %s%s %s%d %s%d %s%d %s%d %s%d ;", next_lbr, argv[0],
+              st_opt_list, st_list,
+              st_opt_idx, st_idx,
+              st_opt_nr_dev, st_all_nr_dev,
+              st_opt_nr_oc_f, st_all_nr_oc_f,
+              st_opt_nr_oc_n, st_all_nr_oc_n,
+              st_opt_nr_not_ass, st_all_nr_not_ass);
+      exit(cmd);
+    }
+    // Print total numbers
+    else {
+      output(res_file, "wba") {
+        int nr_without = 2 * st_all_nr_dev - st_all_nr_oc_f - st_all_nr_oc_n;
+        printf("=====================================================================================================\n");
+        printf("%-40s:%6d   %6d      %6d     %6d      %6d\n", "Total absolute", st_all_nr_dev,
+               st_all_nr_oc_f, st_all_nr_oc_n, nr_without, st_all_nr_not_ass);
+        printf("%-40s:  %3.1f      %3.1f        %3.1f      %3.1f         %3.1f \n", "Total percentages", 100.0,
+               real(st_all_nr_oc_f)/st_all_nr_dev * 100, real(st_all_nr_oc_n)/st_all_nr_dev * 100,
+               real(nr_without)/(2 * st_all_nr_dev) * 100, real(st_all_nr_not_ass)/(2 * st_all_nr_dev) *100);
+        printf("=====================================================================================================\n");
+      }
+      exit(EXIT_SUCCESS);
+    }
+  }
+  // Master dialog
+  int save = 1, sel_idx = -1;
+  int ret = dlgDialog("DesignLink " + tr("Ordercode-Zuweisung - ") + LibName) {
+    dlgHBoxLayout dlgSpacing(800);
+    dlgHBoxLayout {
+      dlgVBoxLayout dlgSpacing(400);
+      dlgVBoxLayout {
+        dlgListView(dev_list_head, DevList, sel_idx)
+          SearchDev(sel_idx);
+        dlgLabel(tr("Zur Detailansicht oder Suche und Zuweisung eines Artikels bitte Device doppelklicken !"));
+        dlgHBoxLayout {
+          dlgStretch(1);
+          dlgCheckBox(tr("Ordercodes speichern"), save);
+          dlgPushButton(tr("Exportieren") + "...") {
+            string file = dlgFileSave(tr("Export als Textdatei"), filesetext(L.name,".txt"));
+            if (file) output(file, "wt") {
+              printf("%s\n", dev_list_head);
+              for (int i = 0; i < NrDev; ++i)
+                printf("%s\n", DevList[i]);
+            }
+          }
+          dlgPushButton(tr("Beenden")) dlgAccept();
+        }
+      }
+    }
+  };  // Warum hier der ';' ?
+  SaveCfg();
+  if (ret == -1) exit(1);
+  if (save) {
+    status(tr("Speichere Ordercodes") + " ..."); // This can take a little time for large files
+    exit(SaveAttributes());
+  }
+}

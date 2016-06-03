@@ -1,0 +1,17 @@
+ Edit 'LTC3201.dev' ;
+ Prefix 'IC' ;
+ Description '100mA Ultralow Noise Charge Pump LED Supply with Output Current Adjust' ;
+ Value off ;
+ Add LTC3201 'G$1' next 0 (0 0) ;
+ Package 'MSOP10(MS)' 'MS' ;
+ Technology '' ;
+ Connect 'G$1.VOUT' '1' ;
+ Connect 'G$1.VIN' '9' ;
+ Connect 'G$1.GND' '5' ;
+ Connect 'G$1.FB' '10' ;
+ Connect 'G$1.D2' '8' ;
+ Connect 'G$1.D0' '6' ;
+ Connect 'G$1.D1' '7' ;
+ Connect 'G$1.CP' '2' ;
+ Connect 'G$1.CM' '4' ;
+ Connect 'G$1.FILTER' '3' ;

@@ -1,0 +1,17 @@
+ Edit 'LTC3225.dev' ;
+ Prefix 'IC' ;
+ Description '150mA Supercapacitor Charger' ;
+ Value off ;
+ Add LTC3225 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DDB)' 'DDB' ;
+ Technology '' ;
+ Connect 'G$1.CX' '3' ;
+ Connect 'G$1.PROG' '7' ;
+ Connect 'G$1.VIN' '9' ;
+ Connect ALL 'G$1.GND' '8 11' ;
+ Connect 'G$1.PGOOD' '5' ;
+ Connect 'G$1.!SHDN' '4' ;
+ Connect 'G$1.VSEL' '6' ;
+ Connect 'G$1.COUT' '10' ;
+ Connect 'G$1.C+' '1' ;
+ Connect 'G$1.C-' '2' ;

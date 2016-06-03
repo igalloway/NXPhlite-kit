@@ -1,0 +1,12 @@
+ Edit 'LTC3406B-1.2.dev' ;
+ Prefix 'IC' ;
+ Description '1.5MHz, 600mA Synchronous Step-Down Regulator in ThinSOT' ;
+ Value off ;
+ Add LTC3406B-1.2 'G$1' next 0 (0 0) ;
+ Package 'SOT5(S5)' 'S5' ;
+ Technology '' ;
+ Connect 'G$1.RUN' '1' ;
+ Connect 'G$1.VOUT' '5' ;
+ Connect 'G$1.VIN' '4' ;
+ Connect 'G$1.SW' '3' ;
+ Connect 'G$1.GND' '2' ;

@@ -1,0 +1,13 @@
+ Edit 'LTC3400-1.dev' ;
+ Prefix 'IC' ;
+ Description '600mA, 1.2MHz Micropower Synchronous Boost Converter in ThinSOT' ;
+ Value off ;
+ Add LTC3400-1 'G$1' next 0 (0 0) ;
+ Package 'SOT6(S6)' 'S6' ;
+ Technology '' ;
+ Connect 'G$1.VOUT' '5' ;
+ Connect 'G$1.VIN' '6' ;
+ Connect 'G$1.SW' '1' ;
+ Connect 'G$1.GND' '2' ;
+ Connect 'G$1.FB' '3' ;
+ Connect 'G$1.!SHDN' '4' ;

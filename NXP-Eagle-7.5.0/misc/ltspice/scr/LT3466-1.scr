@@ -1,0 +1,14 @@
+ Edit 'LT3466-1.dev' ;
+ Prefix 'IC' ;
+ Description 'White LED Driver and Boost Converter in 3mm x 3mm DFN' ;
+ Value off ;
+ Add LT3466-1 'G$1' next 0 (0 0) ;
+ Package 'DFN10(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.RT' '8' ;
+ Connect ALL 'G$1.VOUT' '5 1' ;
+ Connect 'G$1.VIN' '3' ;
+ Connect ALL 'G$1.SW' '2 4' ;
+ Connect 'G$1.GND' '11' ;
+ Connect ALL 'G$1.FB' '10 6' ;
+ Connect ALL 'G$1.CTRL' '9 7' ;

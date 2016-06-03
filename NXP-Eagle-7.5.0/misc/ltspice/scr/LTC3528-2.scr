@@ -1,0 +1,15 @@
+ Edit 'LTC3528-2.dev' ;
+ Prefix 'IC' ;
+ Description '1A, 2MHz Synchronous Step-Up DC/DC Converter in 2mm _ 3mm DFN' ;
+ Value off ;
+ Add LTC3528-2 'G$1' next 0 (0 0) ;
+ Package 'DFN8(DDB)' 'DDB' ;
+ Technology '' ;
+ Connect 'G$1.VOUT' '4' ;
+ Connect 'G$1.PGND' '6' ;
+ Connect 'G$1.VIN' '8' ;
+ Connect 'G$1.SW' '5' ;
+ Connect 'G$1.FB' '2' ;
+ Connect 'G$1.PGOOD' '3' ;
+ Connect ALL 'G$1.SGND' '9 7' ;
+ Connect 'G$1.!SHDN' '1' ;

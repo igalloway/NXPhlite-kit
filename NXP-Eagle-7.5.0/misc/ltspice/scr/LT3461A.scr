@@ -1,0 +1,13 @@
+ Edit 'LT3461A.dev' ;
+ Prefix 'IC' ;
+ Description '1.3MHz Step-Up DC/DC Converter in ThinSOT' ;
+ Value off ;
+ Add LT3461A 'G$1' next 0 (0 0) ;
+ Package 'SOT6(S6)' 'S6' ;
+ Technology '' ;
+ Connect 'G$1.VOUT' '5' ;
+ Connect 'G$1.VIN' '6' ;
+ Connect 'G$1.SW' '1' ;
+ Connect 'G$1.GND' '2' ;
+ Connect 'G$1.FB' '3' ;
+ Connect 'G$1.!SHDN' '4' ;

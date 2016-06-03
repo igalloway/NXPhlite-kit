@@ -1,0 +1,37 @@
+Hinweise zu den aktuellen EAGLE-Bibliotheken
+============================================
+
+Die Bibliotheken wurden mit großer Sorgfalt erstellt. Dennoch sind
+Fehler nicht auszuschließen. Bitte haben Sie Verständnis dafür, dass
+die Firma CadSoft keinerlei Gewähr für die Richtigkeit der
+Bauelemente-Definitionen Übernimmt.
+
+Vor der Installation einer neuen EAGLE-Version sollten Sie vorsichtshalber
+alle bisherigen Bibliotheken sichern, insbesondere wenn Sie eigene
+Modifikationen durchgeführt haben.
+
+Weitere Bibliotheken, die nicht oder noch nicht zum offiziellen
+EAGLE-Lieferumfang gehören, finden Sie im Download-Bereich von
+CadSofts Internet-Seiten (www.cadsoft.de).
+
+Bibliotheken lassen sich sehr elegant mit Hilfe der Befehle EXPORT und
+SCRIPT bearbeiten.
+
+Alle Packages sind so angelegt, dass tNames die Bauteilnamen und tPlace
+den restlichen Platinenaufdruck enthält. Für den Dokumentationsdruck
+wird zusätzlich der Layer tDocu eingeblendet. Er enthält zusätzliche
+grafische Elemente, die nicht auf die Platine gedruckt werden sollen.
+
+Für Bauelemente, die auf der Unterseite der Platine plaziert wurden,
+wandern die entsprechenden Informationen automatisch in die jeweiligen
+b...-Layer (also bNames usw.).
+
+Weitere Verwendung von Layern:
+
+Holes:       Montagebohrungen.
+t/bFinish:   Veredelung, z. B. AT-Slot
+t/bStop:     Flächen ohne Lötstoplack, z. B. für Lötbrücken
+t/bRestrict: Fläche ohne Leiterbahnen, z. B. um Montagebohrung
+t/bKeepout:  Fläche ohne Bauteile bzw. Begrenzung innerhalb der kein
+             anderes Bauteil plaziert werden darf (siehe
+             IPC-Bibliotheken)

@@ -1,0 +1,15 @@
+ Edit 'LTC3444.dev' ;
+ Prefix 'IC' ;
+ Description 'Micropower Synchronous Buck-Boost DC/DC Converter for WCDMA Applications' ;
+ Value off ;
+ Add LTC3444 'G$1' next 0 (0 0) ;
+ Package 'DFN8(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.VC' '7' ;
+ Connect 'G$1.VOUT' '5' ;
+ Connect 'G$1.VIN' '6' ;
+ Connect ALL 'G$1.GND' '9 3' ;
+ Connect 'G$1.FB' '8' ;
+ Connect 'G$1.SW1' '2' ;
+ Connect 'G$1.!SHDN' '1' ;
+ Connect 'G$1.SW2' '4' ;

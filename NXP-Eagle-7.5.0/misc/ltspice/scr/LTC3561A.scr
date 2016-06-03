@@ -1,0 +1,15 @@
+ Edit 'LTC3561A.dev' ;
+ Prefix 'IC' ;
+ Description '1A, 4MHz, Synchronous Step-Down DC/DC Converter' ;
+ Value off ;
+ Add LTC3561A 'G$1' next 0 (0 0) ;
+ Package 'DFN8(DD)' 'DD' ;
+ Technology '' ;
+ Connect 'G$1.ITH' '8' ;
+ Connect 'G$1.PGND' '4' ;
+ Connect 'G$1.SW' '3' ;
+ Connect 'G$1.FB' '7' ;
+ Connect 'G$1.SVIN' '6' ;
+ Connect ALL 'G$1.SGND' '2 9' ;
+ Connect 'G$1.PVIN' '5' ;
+ Connect 'G$1.SHDN/RT' '1' ;

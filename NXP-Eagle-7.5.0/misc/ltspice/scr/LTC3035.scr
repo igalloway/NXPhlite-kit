@@ -1,0 +1,15 @@
+ Edit 'LTC3035.dev' ;
+ Prefix 'IC' ;
+ Description '300mA VLDO Linear Regulator with Charge Pump Bias Generator' ;
+ Value off ;
+ Add LTC3035 'G$1' next 0 (0 0) ;
+ Package 'DFN8(DDB)' 'DDB' ;
+ Technology '' ;
+ Connect 'G$1.IN' '4' ;
+ Connect ALL 'G$1.GND' '3 9' ;
+ Connect 'G$1.OUT' '5' ;
+ Connect 'G$1.ADJ' '6' ;
+ Connect 'G$1.!SHDN' '7' ;
+ Connect 'G$1.CP' '1' ;
+ Connect 'G$1.BIAS' '8' ;
+ Connect 'G$1.CM' '2' ;
