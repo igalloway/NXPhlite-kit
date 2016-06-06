@@ -1,0 +1,24 @@
+[Eagle]
+Version="07 05 00"
+Platform="Windows"
+Serial="66184173B3-LSR-WLM-1CP"
+Globals="Globals"
+Desktop="Desktop"
+
+[Globals]
+AutoSaveProject=1
+UsedLibrary="C:/Users/b49904/Documents/ETC/eagle/lbr/etc-connector-003a.lbr"
+UsedLibrary="C:/Users/b49904/Documents/ETC/eagle/lbr/etc-logic.lbr"
+UsedLibrary="C:/Users/b49904/Documents/ETC/eagle/lbr/etc-nxp.lbr"
+UsedLibrary="C:/Users/b49904/Documents/ETC/eagle/lbr/etc-nxp_MC34GD3000EP.lbr"
+UsedLibrary="C:/Users/b49904/Documents/ETC/eagle/lbr/etc-rcl.lbr"
+
+[Win_1]
+Type="Control Panel"
+Loc="0 0 1919 1002"
+State=1
+Number=0
+
+[Desktop]
+Screen="1920 1080"
+Window="Win_1"

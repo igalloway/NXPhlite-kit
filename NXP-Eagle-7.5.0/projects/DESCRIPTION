@@ -1,12 +1,3 @@
-<language en>
-<b>Project Folder</b>
-<p>
-This folder contains subfolders which contain all your projects.
-<p>
-Subfolders which contain an EAGLE project file (eagle.epf) have
-a red folder icon. Click on a project's marker here in the projects branch
-to open or close an existing project.
-</language>
 <language de>
 <b>Projekt-Verzeichnis</b>
 <p>
@@ -15,4 +6,15 @@ Dieses Verzeichnis enthält Unterverzeichnisse, die Ihre Projekte enthalten.
 Unterverzeichnisse, die eine EAGLE-Projekt-Datei (eagle.epf) enthalten, werden
 mit einem roten Icon markiert. Klicken Sie auf den Marker eines Projekts hier
 im Projects-Zweig, öffnen bzw. schließen Sie ein bestehendes Projekt.
-</language>
+</language de>
+<language en>
+<b>NXPhlite-kit Project Folder</b>
+<p>
+This folder contains subfolders which contain the subprojects for NXPhilte-kit.
+<p>
+This includes NXPX4 - PX4 Flight Controller<br>and NXPESC-UF1 - Electronic Speed Controller for UAVs with Field Oriented Control
+<p>
+Subfolders which contain an EAGLE project file (eagle.epf) have
+a red folder icon. Click on a project's marker here in the projects branch
+to open or close an existing project.
+</language en>
