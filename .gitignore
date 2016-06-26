@@ -1,3 +1,4 @@
 *.epf
 .*#*
 *.*#*
+/NXP-Eagle-7.5.0/lbr/NXPhlite/transistor-fet2.lbr
