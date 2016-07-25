@@ -1,8 +1,12 @@
 # NXPhlite-kit
 This is the EAGLE-PCB based hardware board files for the initial 'lite' kit for a UAV/Multicopter.
+This is Opensource hardware, using NXP Kinetis K64 and other NXP devices.
+
 The project currently defines:
-* NXPHlite-PX4 - A Flight controller (refernced from PIXHAWK) which will run PX4 software. Opensource hardware, using NXP Kinetis K64 and other NXP devices 
-* NXPESC-UF1 - An ESC for UAVs with Field oriented Control based off NXP Kinetis KV31 and/or KV11. Using KV31 for now since KMS is currently only supported for that part. KV31 does not have CAN-bus but using same pins as KV11. 
+* NXPhlite-PX4 - A Flight controller board which will run PX4 software.(Similar to PIXHAWK) 
+* NXPESC-UF1 - An ESC for UAVs with Field oriented Control based off NXP Kinetis KV31 or KV11.
+  * Note1: We will use KV31 until KV11 is gains KMS (Kinetis Motor Suite) software support. 
+  * Nate2: KV31 does not have CAN-bus but will use use similar pins as KV11. 
 
 <br><br>
 
