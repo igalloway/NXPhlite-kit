@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="7.6.0">
+<eagle version="7.5.0">
 <drawing>
 <settings>
 <setting alwaysvectorfont="yes"/>
@@ -36,7 +36,7 @@
 <layer number="26" name="bNames" color="7" fill="1" visible="no" active="yes"/>
 <layer number="27" name="tValues" color="7" fill="1" visible="no" active="yes"/>
 <layer number="28" name="bValues" color="7" fill="1" visible="no" active="yes"/>
-<layer number="29" name="tStop" color="7" fill="3" visible="no" active="yes"/>
+<layer number="29" name="tStop" color="7" fill="3" visible="yes" active="yes"/>
 <layer number="30" name="bStop" color="7" fill="6" visible="no" active="yes"/>
 <layer number="31" name="tCream" color="7" fill="4" visible="no" active="yes"/>
 <layer number="32" name="bCream" color="7" fill="5" visible="no" active="yes"/>
@@ -55,7 +55,7 @@
 <layer number="45" name="Holes" color="7" fill="1" visible="no" active="yes"/>
 <layer number="46" name="Milling" color="3" fill="1" visible="no" active="yes"/>
 <layer number="47" name="Measures" color="7" fill="1" visible="no" active="yes"/>
-<layer number="48" name="Document" color="7" fill="1" visible="no" active="yes"/>
+<layer number="48" name="Document" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="49" name="Reference" color="7" fill="1" visible="no" active="yes"/>
 <layer number="50" name="dxf" color="7" fill="1" visible="no" active="yes"/>
 <layer number="51" name="tDocu" color="7" fill="1" visible="no" active="yes"/>
@@ -165,6 +165,28 @@
 <wire x1="59.69" y1="34.544" x2="35.814" y2="34.544" width="0" layer="20"/>
 <wire x1="35.814" y1="34.544" x2="35.814" y2="22.352" width="0" layer="20"/>
 <rectangle x1="64" y1="0" x2="82" y2="22" layer="115"/>
+<text x="65.278" y="8.89" size="1.778" layer="48">Electrolytic
+Capacitor</text>
+<text x="64.77" y="-5.334" size="1.778" layer="48">Electrolytic
+Capacitor</text>
+<text x="9.652" y="27.94" size="1.778" layer="48">KV11</text>
+<text x="36.068" y="34.798" size="1.778" layer="48">Optional 
+Encoder input
+for Robotics </text>
+<text x="-39.37" y="7.112" size="1.778" layer="48">Alternate
+connector
+types</text>
+<text x="35.56" y="-16.764" size="1.778" layer="48">Adjust board size
+for soldering
+wires and CAP</text>
+<wire x1="39.37" y1="-2.286" x2="39.37" y2="-3.81" width="0.4064" layer="48"/>
+<wire x1="39.37" y1="-3.81" x2="43.942" y2="-8.382" width="0.4064" layer="48"/>
+<wire x1="57.912" y1="-3.048" x2="57.912" y2="-4.318" width="0.4064" layer="48"/>
+<wire x1="57.912" y1="-4.318" x2="54.102" y2="-8.128" width="0.4064" layer="48"/>
+<text x="4.318" y="-8.89" size="1.778" layer="48">CAN
+Transceiver</text>
+<wire x1="5.588" y1="2.286" x2="5.588" y2="-2.54" width="0.4064" layer="48"/>
+<wire x1="5.588" y1="-2.54" x2="6.35" y2="-3.302" width="0.4064" layer="48"/>
 </plain>
 <libraries>
 <library name="FAN7888">
@@ -2697,18 +2719,18 @@ design rules under a new name.
 <element name="R30" library="etc-rcl" package="C0603" value="RESC0603-10R-1" x="-11.176" y="6.096"/>
 <element name="R31" library="etc-rcl" package="C0603" value="RESC0603-10R-1" x="-10.922" y="2.794"/>
 <element name="P8" library="pixhawk2" package="DF13A-4P-1.25H" value="DF13-4P-1.25H" x="2.286" y="6.096" rot="R90"/>
-<element name="U$15" library="pixhawk2" package="S4B-PH-SM4-TB" value="CONN_CAN-SMD" x="12.192" y="-11.176" rot="R90"/>
+<element name="U$15" library="pixhawk2" package="S4B-PH-SM4-TB" value="CONN_CAN-SMD" x="-17.272" y="7.62" rot="R90"/>
 <element name="P1" library="NXPHLITE" package="MPAD1" value="MOT_PWR_PAD-1" x="57.912" y="16.51" rot="R90"/>
 <element name="P2" library="NXPHLITE" package="MPAD1" value="MOT_PWR_PAD-1" x="57.912" y="3.81" rot="R90"/>
 <element name="P3" library="NXPHLITE" package="MPAD1" value="MOT_PWR_PAD-1" x="57.912" y="10.16" rot="R270"/>
 <element name="P4" library="NXPHLITE" package="MPAD1" value="MOT_PWR_PAD-1" x="36.576" y="-0.508" rot="MR180"/>
 <element name="P5" library="NXPHLITE" package="MPAD1" value="MOT_PWR_PAD-1" x="39.624" y="-0.254"/>
 <element name="C19" library="etc-rcl" package="ETR1" value="" x="58.853603125" y="0.941603125" rot="R45"/>
-<element name="P15" library="pixhawk2" package="DF13A-6P-1.25H" value="DF13-6P-1.25H" x="-30.48" y="-18.034"/>
+<element name="P15" library="pixhawk2" package="DF13A-6P-1.25H" value="DF13-6P-1.25H" x="-22.606" y="22.352"/>
 <element name="U1" library="74LVX14MTCX" package="SOP65P640X120-14N" value="74LVX14MTCX" x="51.308" y="28.448"/>
 <element name="P18" library="pixhawk2" package="DF13A-5P-1.25H" value="DF13-5P-1.25H" x="38.1" y="28.448" rot="R90"/>
-<element name="R42" library="pixhawk2" package="0402-RES" value="" x="-35.814" y="-23.368"/>
-<element name="J1" library="pixhawk2" package="FTSH-105-01-XXX-DV" value="ARM_MINI_JTAG-TH" x="-36.068" y="-27.686"/>
+<element name="R42" library="pixhawk2" package="0402-RES" value="" x="-27.94" y="17.018"/>
+<element name="J1" library="pixhawk2" package="FTSH-105-01-XXX-DV" value="ARM_MINI_JTAG-TH" x="1.524" y="15.494"/>
 <element name="RN1" library="pixhawk2" package="CTS742C083" value="CTS742C083" x="40.894" y="29.464" rot="MR270">
 <attribute name="OC_NEWARK" value="unknown" x="40.894" y="29.464" size="1.778" layer="28" rot="MR270" display="off"/>
 <attribute name="OC_FARNELL" value="unknown" x="40.894" y="29.464" size="1.778" layer="28" rot="MR270" display="off"/>
@@ -2728,11 +2750,11 @@ design rules under a new name.
 <attribute name="MPN" value="" x="48.768" y="29.464" size="1.778" layer="28" rot="MR90" display="off"/>
 <attribute name="MF" value="" x="48.768" y="29.464" size="1.778" layer="28" rot="MR90" display="off"/>
 </element>
-<element name="SH1" library="etc-rcl" package="C0603" value="RESC0603-0R" x="-36" y="-37"/>
+<element name="SH1" library="etc-rcl" package="C0603" value="RESC0603-0R" x="-28.126" y="3.386"/>
 <element name="C21" library="etc-rcl" package="C0603" value="CAP0603-1UF-50V" x="28.194" y="8.128"/>
-<element name="C1" library="etc-rcl" package="C0603" value="CAP0603-1UF-50V" x="-36.322" y="-42.164"/>
-<element name="C20" library="etc-rcl" package="C0603" value="CAP0603-1UF-50V" x="-36.322" y="-47.244"/>
-<element name="C22" library="etc-rcl" package="C0603" value="CAP0603-1UF-50V" x="-36.322" y="-52.324"/>
+<element name="C1" library="etc-rcl" package="C0603" value="CAP0603-1UF-50V" x="-28.448" y="-1.778"/>
+<element name="C20" library="etc-rcl" package="C0603" value="CAP0603-1UF-50V" x="-28.448" y="-6.858"/>
+<element name="C22" library="etc-rcl" package="C0603" value="CAP0603-1UF-50V" x="-28.448" y="-11.938"/>
 </elements>
 <signals>
 <signal name="GND">
@@ -2804,7 +2826,7 @@ design rules under a new name.
 <wire x1="43.922" y1="27.198" x2="43.942" y2="27.178" width="0.254" layer="1"/>
 <contactref element="SH1" pad="2"/>
 <contactref element="C21" pad="2"/>
-<wire x1="-4.23" y1="-1.27" x2="-35.15" y2="-37" width="0" layer="19" extent="1-1"/>
+<wire x1="-4.23" y1="-1.27" x2="-27.276" y2="3.386" width="0" layer="19" extent="1-1"/>
 <wire x1="-4.23" y1="3.81" x2="-4.23" y2="-1.27" width="0" layer="19" extent="1-1"/>
 <wire x1="-4.23" y1="6.35" x2="-4.23" y2="3.81" width="0" layer="19" extent="1-1"/>
 <wire x1="-4.23" y1="8.89" x2="-4.23" y2="6.35" width="0" layer="19" extent="1-1"/>
@@ -3019,7 +3041,7 @@ design rules under a new name.
 <via x="52.578" y="16.51" extent="1-16" drill="0.254"/>
 <via x="54.356" y="14.732" extent="1-16" drill="0.254"/>
 <contactref element="C1" pad="2"/>
-<wire x1="24.412" y1="15.621" x2="-35.472" y2="-42.164" width="0" layer="19" extent="1-1"/>
+<wire x1="24.412" y1="15.621" x2="-27.598" y2="-1.778" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="PH_B">
 <contactref element="U$1" pad="14"/>
@@ -3110,7 +3132,7 @@ design rules under a new name.
 <via x="56.388" y="1.016" extent="1-16" drill="0.254"/>
 <via x="52.578" y="1.016" extent="1-16" drill="0.254"/>
 <contactref element="C20" pad="2"/>
-<wire x1="21.336" y1="2.794" x2="-35.472" y2="-47.244" width="0" layer="19" extent="1-16"/>
+<wire x1="21.336" y1="2.794" x2="-27.598" y2="-6.858" width="0" layer="19" extent="1-16"/>
 </signal>
 <signal name="PH_C">
 <contactref element="U$1" pad="8"/>
@@ -3185,7 +3207,7 @@ design rules under a new name.
 <via x="54.356" y="7.366" extent="1-16" drill="0.254"/>
 <via x="56.388" y="7.366" extent="1-16" drill="0.254"/>
 <contactref element="C22" pad="2"/>
-<wire x1="15.212" y1="9.271" x2="-35.472" y2="-52.324" width="0" layer="19" extent="1-1"/>
+<wire x1="15.212" y1="9.271" x2="-27.598" y2="-11.938" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="N$1">
 <contactref element="R3" pad="2"/>
@@ -3631,7 +3653,7 @@ design rules under a new name.
 <wire x1="36.576" y1="2.032" x2="36.576" y2="2.026" width="0.254" layer="16"/>
 <wire x1="29.718" y1="1.778" x2="29.044" y2="1.778" width="0.254" layer="16"/>
 <contactref element="SH1" pad="1"/>
-<wire x1="29.044" y1="1.778" x2="-36.85" y2="-37" width="0" layer="19" extent="1-16"/>
+<wire x1="29.044" y1="1.778" x2="-28.976" y2="3.386" width="0" layer="19" extent="1-16"/>
 <wire x1="59.751628125" y1="1.839628125" x2="36.576" y2="2.026" width="0" layer="19" extent="16-16"/>
 </signal>
 <signal name="CUR_DCB">
@@ -4092,7 +4114,7 @@ design rules under a new name.
 <via x="22.606" y="18.288" extent="1-16" drill="0.254"/>
 <wire x1="22.606" y1="18.288" x2="23.706" y2="18.288" width="0.254" layer="16"/>
 <contactref element="C1" pad="1"/>
-<wire x1="22.733" y1="18.161" x2="-37.172" y2="-42.164" width="0" layer="19" extent="1-1"/>
+<wire x1="22.733" y1="18.161" x2="-29.298" y2="-1.778" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="N$16">
 <contactref element="D2" pad="C"/>
@@ -4102,13 +4124,13 @@ design rules under a new name.
 <via x="22.352" y="13.208" extent="1-16" drill="0.254"/>
 <wire x1="22.352" y1="13.208" x2="23.284" y2="13.208" width="0.254" layer="16"/>
 <contactref element="C20" pad="1"/>
-<wire x1="22.479" y1="13.081" x2="-37.172" y2="-47.244" width="0" layer="19" extent="1-1"/>
+<wire x1="22.479" y1="13.081" x2="-29.298" y2="-6.858" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="N$18">
 <contactref element="U$1" pad="10"/>
 <contactref element="D1" pad="C"/>
 <contactref element="C22" pad="1"/>
-<wire x1="14.14" y1="6.604" x2="-37.172" y2="-52.324" width="0" layer="19" extent="1-16"/>
+<wire x1="14.14" y1="6.604" x2="-29.298" y2="-11.938" width="0" layer="19" extent="1-16"/>
 <wire x1="15.212" y1="6.731" x2="14.14" y2="6.604" width="0" layer="19" extent="1-16"/>
 </signal>
 <signal name="PWM_CT">
@@ -4296,4 +4318,10 @@ design rules under a new name.
 </errors>
 </board>
 </drawing>
+<compatibility>
+<note version="6.3" minversion="6.2.2" severity="warning">
+Since Version 6.2.2 text objects can contain more than one line,
+which will not be processed correctly with this version.
+</note>
+</compatibility>
 </eagle>
