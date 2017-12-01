@@ -1,4 +1,8 @@
 # NXPhlite-kit
+
+*** Update - The NXPhlite kit is being made available through NXP. The ECAD files have moved to Atium and the files here are well out of date. I will leave them here for reference. Please contact NXP and ask for NXPhlite Drones and Rovers reference design information. 
+
+
 This is the EAGLE-PCB based hardware board files for the initial 'lite' kit for a UAV/Multicopter.
 This is Opensource hardware, using NXP Kinetis K64 and other NXP devices.
 
