@@ -1,0 +1,8 @@
+title: NXPhlite-kit
+description: UAV, Multicopter, ESC and Flight controller
+google_analytics: 
+show_downloads: true
+theme: jekyll-theme-architect
+
+gems:
+  - jekyll-mentions
